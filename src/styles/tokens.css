@@ -1,0 +1,51 @@
+:root {
+  /* Desk (bàn gỗ/olive tối) */
+  --desk-900: #23231d;
+  --desk-700: #34342b;
+  --desk-500: #4a4a3d;
+
+  /* Giấy ngả vàng */
+  --paper: #e9e3cf;
+  --paper-dim: #d8d0b6;
+  --paper-line: #b9b093;
+
+  /* Mực */
+  --ink: #1d1d19;
+  --ink-soft: #4a4a40;
+
+  /* Con dấu */
+  --stamp-red: #b3261e;
+  --stamp-green: #2e6b3a;
+  --stamp-blue: #27508a;
+
+  /* Nhấn vàng (điền tự động / cảnh báo) */
+  --amber: #d9a441;
+
+  /* CRT hệ thống */
+  --crt-bg: #0c1a10;
+  --crt-fg: #7fe08a;
+  --crt-dim: #3d7a46;
+
+  /* Màu lane (dùng trên bản đồ) */
+  --lane-l1-sys: #2c4a3a;
+  --lane-l2-adv: #4a3f2c;
+  --lane-l3-ctsv: #3a3a52;
+  --lane-l4-bgh: #52342f;
+  --pool-sv: #2c3b4a;
+
+  /* Bo góc nhỏ (2–4px) */
+  --radius-sm: 2px;
+  --radius-md: 4px;
+
+  /* Bóng đổ cứng (offset, không blur) */
+  --shadow-paper: 3px 3px 0px rgba(10, 10, 8, 0.7);
+  --shadow-paper-lg: 5px 5px 0px rgba(10, 10, 8, 0.85);
+  --shadow-stamp: 2px 2px 0px rgba(0, 0, 0, 0.4);
+  --shadow-hard: 2px 2px 0px #11110e;
+
+  /* Fonts offline (Courier Prime thiếu subset Vietnamese -> dùng IBM Plex Mono) */
+  --font-paper: 'IBM Plex Mono', monospace;
+  --font-hud: 'VT323', 'IBM Plex Mono', monospace;
+  --font-read: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+}

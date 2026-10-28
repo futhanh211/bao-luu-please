@@ -1,0 +1,18 @@
+/* IBM Plex Mono */
+@import "@fontsource/ibm-plex-mono/latin.css";
+@import "@fontsource/ibm-plex-mono/latin-ext.css";
+@import "@fontsource/ibm-plex-mono/vietnamese.css";
+
+/* VT323 */
+@import "@fontsource/vt323/latin.css";
+@import "@fontsource/vt323/latin-ext.css";
+@import "@fontsource/vt323/vietnamese.css";
+
+/* Be Vietnam Pro */
+@import "@fontsource/be-vietnam-pro/latin.css";
+@import "@fontsource/be-vietnam-pro/latin-ext.css";
+@import "@fontsource/be-vietnam-pro/vietnamese.css";
+
+/* Courier Prime */
+@import "@fontsource/courier-prime/latin.css";
+@import "@fontsource/courier-prime/latin-ext.css";
