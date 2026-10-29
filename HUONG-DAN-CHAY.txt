@@ -1,0 +1,51 @@
+====================================================================
+           BẢO LƯU, PLEASE — HƯỚNG DẪN CHẠY LOCALHOST
+====================================================================
+
+Dự án mô phỏng quy trình To-Be "Nghỉ học tạm thời / Bảo lưu" 
+(Trường ĐH Kinh tế – ĐH Đà Nẵng, BPMN 2.0).
+
+YÊU CẦU TIÊN QUYẾT:
+- Máy tính đã cài đặt Node.js (khuyến nghị phiên bản 18 trở lên).
+  Nếu chưa có, tải tại: https://nodejs.org
+
+--------------------------------------------------------------------
+CÁC BƯỚC KHỞI CHẠY (CHỈ 3 BƯỚC):
+--------------------------------------------------------------------
+
+Bước 1: Mở thư mục này trong PowerShell hoặc Command Prompt / VS Code.
+
+Bước 2: Cài đặt thư viện phụ thuộc (chỉ cần chạy 1 lần):
+   npm install
+
+Bước 3: Chạy chương trình:
+   npm run dev
+
+   -> Terminal sẽ hiển thị đường link: http://localhost:5173
+   -> Giữ phím Ctrl và click chuột vào link hoặc mở trình duyệt gõ:
+      http://localhost:5173
+
+--------------------------------------------------------------------
+CHẾ ĐỘ THUYẾT TRÌNH KHUYẾN NGHỊ (OFFLINE PREVIEW):
+--------------------------------------------------------------------
+Khi lên lớp hoặc tổng duyệt không phụ thuộc internet:
+1. Chạy lệnh:
+   npm run build
+2. Chạy tiếp lệnh:
+   npm run preview
+3. Mở: http://localhost:4173 và bấm F11 để vào chế độ Toàn màn hình.
+
+--------------------------------------------------------------------
+CÁC PHÍM TẮT QUAN TRỌNG KHI DEMO:
+--------------------------------------------------------------------
+- Phím [ D ] : Bật chế độ Đạo diễn (Director mode) — Tự động chạy toàn bộ kịch bản S1 trong 90s và thuyết minh.
+- Phím [ B ] : Bật / tắt Bản đồ BPMN toàn màn hình (xem 2 Pool, 4 Lane, token di chuyển).
+- Phím [ S ] : Bật chế độ Từng bước (Step mode).
+- Phím [ Space ] : Tạm dừng / Tiếp tục hoặc Bước tiếp 1 bước.
+- Phím [ 1 – 5 ] : Chuyển đổi nhanh 5 bàn làm việc (1: SV, 2: Hệ thống, 3: Cố vấn, 4: CTSV, 5: BGH).
+- Phím [ T ] : Tua +1 ngày làm việc.
+- Phím [ Shift + T ] : Tua +3 ngày làm việc (kích hoạt chuông nhắc việc quá hạn SLA).
+- Phím [ M ] : Bật / tắt âm thanh văn phòng cơ học (WebAudio).
+- Phím [ R ] : Đặt lại trạng thái ca làm việc (Reset).
+- Phím [ ? ] : Mở bảng trợ giúp chi tiết và hướng dẫn các kịch bản mẫu.
+====================================================================
