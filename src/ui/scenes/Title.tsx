@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAppStore } from '../../store/useApp';
+import { useAuthStore } from '../../store/useAuth';
 import { screenVariants } from '../motion';
+import { sfx } from '../audio/sfx';
 
 export const Title: React.FC = () => {
   const setScreen = useAppStore((s) => s.setScreen);
+  const setSessionMode = useAppStore((s) => s.setSessionMode);
   const muted = useAppStore((s) => s.muted);
   const toggleMute = useAppStore((s) => s.toggleMute);
+  const toggleAsIs = useAppStore((s) => s.toggleAsIs);
+  const logout = useAuthStore((s) => s.logout);
 
   const [bootLines, setBootLines] = useState<string[]>([]);
   const fullLines = [
@@ -145,39 +150,107 @@ export const Title: React.FC = () => {
         </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
-          <button
-            onClick={() => setScreen('scenario')}
-            style={{
-              fontFamily: 'var(--font-paper)',
-              fontSize: '20px',
-              fontWeight: 'bold',
-              backgroundColor: 'var(--desk-900)',
-              color: 'var(--amber)',
-              padding: '14px 42px',
-              borderRadius: 'var(--radius-sm)',
-              border: '2px solid var(--amber)',
-              boxShadow: 'var(--shadow-hard)',
-              cursor: 'pointer',
-              letterSpacing: '1px',
-              transition: 'transform 0.15s ease, background-color 0.15s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--desk-700)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--desk-900)';
-            }}
-          >
-            ▶ BẮT ĐẦU CA LÀM VIỆC
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap', justifyContent: 'center' }}>
+            <button
+              onClick={() => {
+                setSessionMode('portal');
+                setScreen('login');
+              }}
+              style={{
+                fontFamily: 'var(--font-paper)',
+                fontSize: '18px',
+                fontWeight: 'bold',
+                backgroundColor: 'var(--amber)',
+                color: 'var(--desk-900)',
+                padding: '14px 28px',
+                borderRadius: 'var(--radius-sm)',
+                border: '2px solid var(--desk-900)',
+                boxShadow: 'var(--shadow-hard)',
+                cursor: 'var(--cursor-pointer)',
+                letterSpacing: '0.5px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                transition: 'transform 0.15s ease, background-color 0.15s ease',
+              }}
+              title="Đăng nhập cổng Sinh viên (tạo đơn) hoặc Cổng Giáo viên (duyệt đơn)"
+            >
+              <span>🔐</span>
+              <span>CỔNG ĐĂNG NHẬP PHÂN VAI</span>
+            </button>
+
+            <button
+              onClick={() => {
+                logout();
+                setSessionMode('demo');
+                setScreen('scenario');
+              }}
+              style={{
+                fontFamily: 'var(--font-paper)',
+                fontSize: '18px',
+                fontWeight: 'bold',
+                backgroundColor: 'var(--desk-900)',
+                color: 'var(--amber)',
+                padding: '14px 28px',
+                borderRadius: 'var(--radius-sm)',
+                border: '2px solid var(--amber)',
+                boxShadow: 'var(--shadow-hard)',
+                cursor: 'var(--cursor-pointer)',
+                letterSpacing: '1px',
+                transition: 'transform 0.15s ease, background-color 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--desk-700)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--desk-900)';
+              }}
+              title="Xem và vận hành tổng thể toàn bộ các kịch bản mẫu"
+            >
+              ▶ CHỌN KỊCH BẢN (DEMO TOÀN DIỆN)
+            </button>
+
+            <button
+              onClick={toggleAsIs}
+              style={{
+                fontFamily: 'var(--font-paper)',
+                fontSize: '17px',
+                fontWeight: 'bold',
+                backgroundColor: 'transparent',
+                color: 'var(--ink)',
+                padding: '14px 24px',
+                borderRadius: 'var(--radius-sm)',
+                border: '2px dashed var(--stamp-red)',
+                cursor: 'var(--cursor-pointer)',
+                letterSpacing: '0.5px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                transition: 'background-color 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(179, 38, 30, 0.08)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }}
+              title="Xem mô phỏng bối cảnh quy trình giấy cũ (22 ngày)"
+            >
+              <span>📂</span>
+              <span>XEM BẢN AS-IS (22 NGÀY)</span>
+            </button>
+          </div>
 
           <div
-            onClick={toggleMute}
+            onClick={() => {
+              sfx.setEnabled(muted);
+              toggleMute();
+            }}
             style={{
               fontSize: '15px',
               color: 'var(--ink-soft)',
               fontFamily: 'var(--font-paper)',
-              cursor: 'pointer',
+              cursor: 'var(--cursor-pointer)',
               display: 'flex',
               alignItems: 'center',
               gap: '6px',

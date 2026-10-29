@@ -285,6 +285,89 @@ describe('Process Engine Headless (Milestone M1)', () => {
     expect(engine.getWaitingTasks()).toContain('T9');
   });
 
+  it('S1 nộp thiếu minh chứng (start submission): -> E_END_RETURNED, T2 chạy, MF2 gửi', async () => {
+    const s1 = getScenario('s1');
+    ai.setScript(s1.aiScript);
+
+    const engine = createEngine(PROCESS_DEF, s1, deps);
+    engine.subscribe((e) => events.push(e));
+
+    // Nộp đơn S1 nhưng không đính kèm minh chứng nào
+    await engine.start({ form: s1.form, attachedEvidenceIds: [] });
+    await engine.runUntilBlocked();
+
+    expect(engine.state.evidence).toHaveLength(0);
+    expect(engine.state.validity.evidenceOk).toBe(false);
+
+    const completedNodeIds = events
+      .filter((e) => e.type === 'node.completed')
+      .map((e) => (e as { nodeId: string }).nodeId);
+    expect(completedNodeIds).toContain('T2');
+    expect(completedNodeIds).not.toContain('T3');
+
+    const endEvent = events.find((e) => e.type === 'case.ended');
+    expect(endEvent).toBeDefined();
+    if (endEvent?.type === 'case.ended') {
+      expect(endEvent.endEventId).toBe('E_END_RETURNED');
+      expect(endEvent.outcome).toBe('Trả hồ sơ');
+    }
+
+    expect(engine.state.messages.filter((m) => m.flowId === 'MF2')).toHaveLength(1);
+  });
+
+  it('S1 nhưng MSSV không có trong DS2 (start submission): -> E_END_RETURNED', async () => {
+    const s1 = getScenario('s1');
+    ai.setScript(s1.aiScript);
+
+    const engine = createEngine(PROCESS_DEF, s1, deps);
+    engine.subscribe((e) => events.push(e));
+
+    await engine.start({
+      form: { ...s1.form, mssv: '9999999999' },
+      attachedEvidenceIds: ['ev_01'],
+    });
+    await engine.runUntilBlocked();
+
+    expect(engine.state.validity.complete).toBe(false);
+    expect(engine.state.validity.missing.some((m) => m.includes('Không tìm thấy'))).toBe(true);
+
+    const endEvent = events.find((e) => e.type === 'case.ended');
+    expect(endEvent).toBeDefined();
+    if (endEvent?.type === 'case.ended') {
+      expect(endEvent.endEventId).toBe('E_END_RETURNED');
+    }
+    expect(engine.state.messages.filter((m) => m.flowId === 'MF2')).toHaveLength(1);
+  });
+
+  it('S1 đính kèm đúng minh chứng (start submission): -> E_END_OK như cũ', async () => {
+    const s1 = getScenario('s1');
+    ai.setScript(s1.aiScript);
+
+    const engine = createEngine(PROCESS_DEF, s1, deps);
+    engine.subscribe((e) => events.push(e));
+
+    await engine.start({ form: s1.form, attachedEvidenceIds: ['ev_01'] });
+    await engine.runUntilBlocked();
+
+    expect(engine.state.evidence).toHaveLength(1);
+    expect(engine.state.validity.complete).toBe(true);
+    expect(engine.state.validity.evidenceOk).toBe(true);
+
+    await engine.completeUserTask('T4', 'confirmed');
+    await engine.completeUserTask('T5', 'valid');
+    await engine.runUntilBlocked();
+    await engine.completeUserTask('T9', { signerName: 'PGS.TS. Đoàn Ngọc Phi Anh' });
+    await engine.runUntilBlocked();
+
+    const endEvent = events.find((e) => e.type === 'case.ended');
+    expect(endEvent).toBeDefined();
+    if (endEvent?.type === 'case.ended') {
+      expect(endEvent.endEventId).toBe('E_END_OK');
+      expect(endEvent.outcome).toBe('Bảo lưu thành công');
+    }
+    expect(engine.state.messages.filter((m) => m.flowId === 'MF4')).toHaveLength(1);
+  });
+
   it('Reset: reset() dọn sạch và chạy lại cho kết quả hoàn toàn giống nhau', async () => {
     const s1 = getScenario('s1');
     ai.setScript(s1.aiScript);

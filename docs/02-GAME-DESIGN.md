@@ -68,7 +68,11 @@ Nút "Xem bản As-Is" (trên màn tiêu đề và báo cáo cuối ca) chạy m
 - Mục đích duy nhất: tạo tương phản trước khi vào To-Be, và làm số so sánh ở báo cáo cuối ca.
 
 ## 6. Báo cáo cuối ca ("Case Report")
-Hiện khi ca kết thúc (bất kỳ End Event chính nào): kết cục, thời gian giả lập, X/11 task tự động đã chạy (tính theo task thực sự chạy trong ca), số task người, số thông điệp đã gửi, số lần đọc/ghi CSDL, số lần "Người ≠ AI", so sánh với As-Is (từ config), nút Chơi lại / Chọn kịch bản khác / Xem X-quang.
+Hiện khi ca kết thúc bằng End Event chính (`E_END_OK`, `E_END_REJECTED`, `E_END_RETURNED`): kết cục, thời gian giả lập, số task máy đã chạy, số task người hoàn tất, số thông điệp đã gửi, số lần đọc/ghi CSDL, số lần "Người ≠ AI", so sánh với As-Is (từ config), nút Chạy lại / Chọn kịch bản khác / Xem X-quang. `E_END_REMIND` chỉ kết thúc nhánh nhắc việc nên **không** mở báo cáo; đóng báo cáo rồi vẫn mở lại được bằng nút "📄 BÁO CÁO" trên HUD.
+
+**Phân biệt rõ hai chỉ số tự động hóa:**
+- **Chỉ số vận hành ca (động):** "MÁY ĐÃ CHẠY: n" (số task service/send/rule thực sự chạy trong ca) song hành với "NGƯỜI: m" (số user task người hoàn tất), "THÔNG ĐIỆP: k", "NGÀY: d". Ví dụ ca S1 hoàn tất có 5 task máy (T1, T3, T8, T10, T11), 3 task người (T4, T5, T9), 1 thông điệp (MF4). "LẦN ĐỌC CSDL" đếm cả lần tra DS2 ở T1 lẫn lần đọc DS1 ở T3 (S1 = 2); "LẦN GHI CSDL" đếm lần cập nhật DS2 ở T10.
+- **Chỉ số thiết kế quy trình (tĩnh):** Badge cố định "THIẾT KẾ: 8/11 tự động (72,7%)" phản ánh cấu trúc thiết kế BPMN 2.0 To-Be: 8 tác vụ do hệ thống thực thi tự động (T1, T2, T3, T6, T7, T8, T10, T11) trên tổng 11 tác vụ của quy trình (T1–T11), 3 tác vụ do con người xem xét & ký số (T4, T5, T9).
 
 ## 7. Cảm giác (game feel) — danh sách khoảnh khắc phải có
 - Giấy trượt vào bàn, hơi nghiêng ngẫu nhiên.

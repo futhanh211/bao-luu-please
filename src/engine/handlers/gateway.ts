@@ -14,6 +14,7 @@ export function evaluateXorGateway(
       state.ruleResult.pass &&
       state.advisor.status === 'confirmed' &&
       state.ctsv.status === 'valid';
+    state.eligible = isEligible;
     return isEligible ? 'T8' : 'T7';
   }
 

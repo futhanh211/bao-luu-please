@@ -72,17 +72,28 @@ export class InMemoryAcademicFinanceDB implements AcademicFinanceDB {
 
   constructor(initialList: AcademicFinanceRecord[] = INITIAL_ACADEMIC_FINANCE) {
     this.data = new Map();
-    initialList.forEach((r) => this.data.set(r.mssv, { ...r }));
+    initialList.forEach((r) => {
+      const mssv = r.mssv.trim();
+      this.data.set(mssv, { ...r, mssv });
+    });
   }
 
   public get(mssv: string): AcademicFinanceRecord | undefined {
-    const record = this.data.get(mssv);
+    const record = this.data.get(mssv.trim());
     return record ? { ...record } : undefined;
+  }
+
+  public upsert(record: AcademicFinanceRecord): void {
+    const mssv = record.mssv.trim();
+    this.data.set(mssv, { ...record, mssv });
   }
 
   public reset(initialList: AcademicFinanceRecord[] = INITIAL_ACADEMIC_FINANCE): void {
     this.data.clear();
-    initialList.forEach((r) => this.data.set(r.mssv, { ...r }));
+    initialList.forEach((r) => {
+      const mssv = r.mssv.trim();
+      this.data.set(mssv, { ...r, mssv });
+    });
   }
 }
 

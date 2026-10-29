@@ -51,11 +51,14 @@ Máy chiếu → cỡ chữ tối thiểu 18px, tiêu đề 28–48px.
 - Chữ ký số: `stroke-dashoffset` vẽ 1200ms + dấu đỏ chát.
 - Chữ AI: máy đánh chữ 25–35ms/ký tự; có dấu "đang suy nghĩ…" 3 chấm.
 - Số liệu: đếm lăn 400ms. CRT: nhấp nháy rất nhẹ, tắt được.
+- Chuyển màn: vệt giấy quét ngang 700ms (`SceneWipe`), giữ khung giấy giữa đường quét, tắt khi giảm hiệu ứng.
 - Tôn trọng `prefers-reduced-motion` và công tắc "Giảm hiệu ứng" trong cài đặt (còn đủ tín hiệu: đổi màu, không rung).
 
 ## 7. Âm thanh (WebAudio synth, KHÔNG file mp3)
 `src/ui/audio/sfx.ts` sinh: chát con dấu (sine thấp + noise ngắn), giấy sột soạt (noise lọc), gõ máy chữ (click nhẹ), chuông (tổng hòa sin), buzz lỗi, chime thành công, tiếng "bíp" CRT khi service chạy.
 Mặc định **TẮT** (an toàn khi lên chiếu); màn tiêu đề có gợi ý "Bấm M để bật âm thanh". Âm lượng tối đa 40%.
+- Bảng cài đặt (nút ⚙ trên HUD): bật/tắt âm thanh, thanh âm lượng 0–40%, "Giảm hiệu ứng", tốc độ; `Esc` hoặc bấm nền để đóng. Nút "Chế độ nhẹ" ở Phòng điều khiển dùng chung cờ `reducedMotion`.
+- Ánh xạ SFX: con dấu → `stamp`; thông điệp/DO → `paper`; đọc/ghi CSDL, task máy, token → `crt`; timer → `bell`; kết cục OK → `chime`; từ chối/lỗi rule → `buzz`; ký số → `pen`; cắm token → `token`; chữ AI → `type` (throttle 70ms).
 
 ## 8. Phím tắt (hiện trong menu "?")
 - `1`–`5`: chuyển bàn (SV, Hệ thống, Cố vấn, CTSV, BGH) · `B`: bản đồ toàn màn hình · `Space`: bước tiếp / tạm dừng · `D`: Director · `S`: Step · `T`: tua +1 ngày (`Shift+T` +3 ngày) · `+`/`-`: tốc độ · `P`: ghim caption · `M`: âm thanh · `R`: reset ca · `F`: toàn màn hình · `?`: trợ giúp.

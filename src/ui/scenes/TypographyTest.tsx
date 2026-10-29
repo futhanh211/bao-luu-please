@@ -158,6 +158,7 @@ export const TypographyTest: React.FC = () => {
             borderRadius: 'var(--radius-sm)',
             border: '1px dashed var(--desk-500)',
             fontSize: '14px',
+            marginBottom: '32px',
           }}
         >
           <div style={{ fontWeight: 'bold', marginBottom: '6px', color: 'var(--stamp-red)' }}>
@@ -169,6 +170,247 @@ export const TypographyTest: React.FC = () => {
           <p style={{ fontSize: '13px', color: 'var(--paper-dim)' }}>
             Lưu ý: Package <code>@fontsource/courier-prime</code> chỉ hỗ trợ latin/latin-ext và thiếu subset tiếng Việt chính thức, dẫn đến các nguyên âm có dấu thanh phức tạp (ẩ, ẫ, ể, ỗ, ợ, ử, ự) bị lệch glyph. Dự án đã tự động chuẩn hóa vai trò văn bản giấy tờ sang <code>IBM Plex Mono</code> theo đúng chỉ đạo trong spec.
           </p>
+        </section>
+
+        {/* 4. Bureaucratic Cursor Set Showroom */}
+        <section
+          style={{
+            backgroundColor: 'var(--desk-700)',
+            border: '2px solid var(--amber)',
+            borderRadius: 'var(--radius-sm)',
+            padding: '24px 28px',
+            boxShadow: 'var(--shadow-paper-lg)',
+          }}
+        >
+          <div style={{ borderBottom: '1px solid var(--desk-500)', paddingBottom: '10px', marginBottom: '18px' }}>
+            <h2
+              style={{
+                fontFamily: 'var(--font-paper)',
+                fontSize: '22px',
+                color: 'var(--amber)',
+                margin: 0,
+                letterSpacing: '1px',
+              }}
+            >
+              4. BỘ CON TRỎ CÔNG SỞ ĐỘC BẢN (Bureaucratic Cursor Set)
+            </h2>
+            <p style={{ color: 'var(--paper-dim)', fontSize: '14px', marginTop: '4px' }}>
+              Rê chuột và nhấn thử vào các ô tiêu bản dưới đây để kiểm tra trực tiếp trạng thái con trỏ vector SVG:
+            </p>
+          </div>
+
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+              gap: '16px',
+            }}
+          >
+            {/* Specimen 1: Default Arrow */}
+            <div
+              style={{
+                backgroundColor: 'var(--desk-900)',
+                border: '1px solid var(--desk-500)',
+                padding: '16px',
+                borderRadius: 'var(--radius-sm)',
+                cursor: 'var(--cursor-default)',
+              }}
+            >
+              <div style={{ color: 'var(--amber)', fontFamily: 'var(--font-paper)', fontWeight: 700, fontSize: '14px' }}>
+                Mũi tên công chức retro
+              </div>
+              <div style={{ color: 'var(--paper-dim)', fontSize: '12px', marginTop: '4px' }}>
+                Góc cạnh thước kẻ, viền giấy kem, sống lưng vàng, bóng cứng nổi khối.
+              </div>
+              <div style={{ fontSize: '11px', color: 'var(--crt-dim)', marginTop: '8px' }}>
+                Hotspot: <code>0 0</code> · Biến: <code>--cursor-default</code>
+              </div>
+            </div>
+
+            {/* Specimen 2: Manicule */}
+            <div
+              style={{
+                backgroundColor: 'var(--paper)',
+                color: 'var(--ink)',
+                border: '1px solid var(--paper-line)',
+                padding: '16px',
+                borderRadius: 'var(--radius-sm)',
+                cursor: 'var(--cursor-pointer)',
+              }}
+            >
+              <div style={{ color: 'var(--stamp-blue)', fontFamily: 'var(--font-paper)', fontWeight: 700, fontSize: '14px' }}>
+                Bàn tay Manicule ☞
+              </div>
+              <div style={{ color: 'var(--ink-soft)', fontSize: '12px', marginTop: '4px' }}>
+                Chỉ ngón trỏ công văn cổ điển, măng-sét trắng, tay áo olive & khuy đồng.
+              </div>
+              <div style={{ fontSize: '11px', color: 'var(--ink-soft)', marginTop: '8px' }}>
+                Hotspot: <code>5 1</code> · Biến: <code>--cursor-pointer</code>
+              </div>
+            </div>
+
+            {/* Specimen 3: Stamp */}
+            <div
+              style={{
+                backgroundColor: 'var(--desk-900)',
+                border: '2px solid var(--stamp-red)',
+                padding: '16px',
+                borderRadius: 'var(--radius-sm)',
+                cursor: 'var(--cursor-stamp)',
+              }}
+              onMouseDown={(e) => {
+                e.currentTarget.style.cursor = 'var(--cursor-stamp-active)';
+              }}
+              onMouseUp={(e) => {
+                e.currentTarget.style.cursor = 'var(--cursor-stamp)';
+              }}
+            >
+              <div style={{ color: 'var(--stamp-red)', fontFamily: 'var(--font-paper)', fontWeight: 700, fontSize: '14px' }}>
+                Cán con dấu dập gỗ (Nhấn giữ!)
+              </div>
+              <div style={{ color: 'var(--paper-dim)', fontSize: '12px', marginTop: '4px' }}>
+                Cán gỗ gụ tiện tròn, khấc đồng, đế dập mực đỏ. Nhấn chuột để thấy lún mực!
+              </div>
+              <div style={{ fontSize: '11px', color: 'var(--crt-dim)', marginTop: '8px' }}>
+                Hotspot: <code>16 28</code> · Biến: <code>--cursor-stamp</code>
+              </div>
+            </div>
+
+            {/* Specimen 4: Pen */}
+            <div
+              style={{
+                backgroundColor: 'var(--paper)',
+                color: 'var(--ink)',
+                border: '1px solid var(--amber)',
+                padding: '16px',
+                borderRadius: 'var(--radius-sm)',
+                cursor: 'var(--cursor-pen)',
+              }}
+            >
+              <div style={{ color: 'var(--amber)', fontFamily: 'var(--font-paper)', fontWeight: 700, fontSize: '14px' }}>
+                Ngòi bút máy Ban Giám Hiệu
+              </div>
+              <div style={{ color: 'var(--ink-soft)', fontSize: '12px', marginTop: '4px' }}>
+                Ngòi bút mạ vàng hai tông, rãnh xẻ mực, góc 45° sắc nét phục vụ ký duyệt.
+              </div>
+              <div style={{ fontSize: '11px', color: 'var(--ink-soft)', marginTop: '8px' }}>
+                Hotspot: <code>1 1</code> · Biến: <code>--cursor-pen</code>
+              </div>
+            </div>
+
+            {/* Specimen 5: Loupe */}
+            <div
+              style={{
+                backgroundColor: 'var(--desk-900)',
+                border: '1px solid var(--crt-fg)',
+                padding: '16px',
+                borderRadius: 'var(--radius-sm)',
+                cursor: 'var(--cursor-inspect)',
+              }}
+            >
+              <div style={{ color: 'var(--crt-fg)', fontFamily: 'var(--font-paper)', fontWeight: 700, fontSize: '14px' }}>
+                Kính lúp kiểm tra CTSV
+              </div>
+              <div style={{ color: 'var(--paper-dim)', fontSize: '12px', marginTop: '4px' }}>
+                Vành đồng, tròng phản quang xanh, tâm ngắm hồng tâm soi từng con số hồ sơ.
+              </div>
+              <div style={{ fontSize: '11px', color: 'var(--crt-dim)', marginTop: '8px' }}>
+                Hotspot: <code>11 11</code> · Biến: <code>--cursor-inspect</code>
+              </div>
+            </div>
+
+            {/* Specimen 6: Grab & Grabbing */}
+            <div
+              style={{
+                backgroundColor: 'var(--paper-dim)',
+                color: 'var(--ink)',
+                border: '1px solid var(--paper-line)',
+                padding: '16px',
+                borderRadius: 'var(--radius-sm)',
+                cursor: 'var(--cursor-grab)',
+              }}
+              onMouseDown={(e) => {
+                e.currentTarget.style.cursor = 'var(--cursor-grabbing)';
+              }}
+              onMouseUp={(e) => {
+                e.currentTarget.style.cursor = 'var(--cursor-grab)';
+              }}
+            >
+              <div style={{ color: 'var(--ink)', fontFamily: 'var(--font-paper)', fontWeight: 700, fontSize: '14px' }}>
+                Kẹp giấy / Pan bản đồ (Nhấn giữ!)
+              </div>
+              <div style={{ color: 'var(--ink-soft)', fontSize: '12px', marginTop: '4px' }}>
+                Bàn tay mở kẹp mép tài liệu. Nhấn giữ chuột để nắm chặt giấy.
+              </div>
+              <div style={{ fontSize: '11px', color: 'var(--ink-soft)', marginTop: '8px' }}>
+                Hotspot: <code>10 10</code> · Biến: <code>--cursor-grab / grabbing</code>
+              </div>
+            </div>
+
+            {/* Specimen 7: Not allowed */}
+            <div
+              style={{
+                backgroundColor: 'var(--desk-900)',
+                border: '1px dashed var(--stamp-red)',
+                padding: '16px',
+                borderRadius: 'var(--radius-sm)',
+                cursor: 'var(--cursor-not-allowed)',
+              }}
+            >
+              <div style={{ color: 'var(--stamp-red)', fontFamily: 'var(--font-paper)', fontWeight: 700, fontSize: '14px' }}>
+                Con dấu khước từ [✕]
+              </div>
+              <div style={{ color: 'var(--paper-dim)', fontSize: '12px', marginTop: '4px' }}>
+                Dấu mộc đỏ thô ráp nghiêng nhẹ, thể hiện nút bị khóa hoặc ngoài thẩm quyền.
+              </div>
+              <div style={{ fontSize: '11px', color: 'var(--crt-dim)', marginTop: '8px' }}>
+                Hotspot: <code>16 16</code> · Biến: <code>--cursor-not-allowed</code>
+              </div>
+            </div>
+
+            {/* Specimen 8: Typewriter Bar */}
+            <div
+              style={{
+                backgroundColor: 'var(--paper)',
+                color: 'var(--ink)',
+                border: '1px solid var(--paper-line)',
+                padding: '16px',
+                borderRadius: 'var(--radius-sm)',
+                cursor: 'var(--cursor-text)',
+              }}
+            >
+              <div style={{ color: 'var(--ink)', fontFamily: 'var(--font-paper)', fontWeight: 700, fontSize: '14px' }}>
+                Thước gá máy đánh chữ
+              </div>
+              <div style={{ color: 'var(--ink-soft)', fontSize: '12px', marginTop: '4px' }}>
+                Thanh ép giấy và khấc vạch đo cơ học dùng cho các ô điền đơn từ.
+              </div>
+              <div style={{ fontSize: '11px', color: 'var(--ink-soft)', marginTop: '8px' }}>
+                Hotspot: <code>16 15</code> · Biến: <code>--cursor-text</code>
+              </div>
+            </div>
+
+            {/* Specimen 9: Regulatory Help */}
+            <div
+              style={{
+                backgroundColor: 'var(--desk-900)',
+                border: '1px solid var(--stamp-blue)',
+                padding: '16px',
+                borderRadius: 'var(--radius-sm)',
+                cursor: 'var(--cursor-help)',
+              }}
+            >
+              <div style={{ color: 'var(--stamp-blue)', fontFamily: 'var(--font-paper)', fontWeight: 700, fontSize: '14px' }}>
+                Tem mộc hỏi đáp quy chế (?)
+              </div>
+              <div style={{ color: 'var(--paper-dim)', fontSize: '12px', marginTop: '4px' }}>
+                Con mộc tròn xanh mang dấu hỏi phong cách tài liệu lưu trữ cổ.
+              </div>
+              <div style={{ fontSize: '11px', color: 'var(--crt-dim)', marginTop: '8px' }}>
+                Hotspot: <code>10 10</code> · Biến: <code>--cursor-help</code>
+              </div>
+            </div>
+          </div>
         </section>
       </div>
     </div>

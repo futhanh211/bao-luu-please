@@ -4,6 +4,7 @@ import {
   CaseState,
   EngineEvent,
   EngineDeps,
+  StartSubmission,
 } from './types';
 import { ScenarioConfig } from '../data/scenarios';
 import { handleServiceTask } from './handlers/service';
@@ -16,7 +17,7 @@ import { TimerManager } from './handlers/timer';
 export interface EngineInstance {
   state: CaseState;
   subscribe: (subscriber: (event: EngineEvent) => void) => () => void;
-  start: () => Promise<void>;
+  start: (submission?: StartSubmission) => Promise<void>;
   step: () => Promise<boolean>;
   runUntilBlocked: () => Promise<void>;
   completeUserTask: (taskId: string, outcome: unknown) => Promise<void>;
@@ -31,12 +32,18 @@ export function createEngine(
   scenario: ScenarioConfig,
   deps: EngineDeps
 ): EngineInstance {
-  const initialStudent = deps.db.ds2.get(scenario.form.mssv);
+  const cloneForm = (form: CaseState['form']): CaseState['form'] => ({ ...form });
+  const cloneEvidence = (evidence: CaseState['evidence']): CaseState['evidence'] =>
+    evidence.map((e) => ({ ...e }));
+
+  let baselineForm = cloneForm(scenario.form);
+  let baselineEvidence = scenario.evidence ? cloneEvidence(scenario.evidence) : [];
+  let initialStudent = deps.db.ds2.get(baselineForm.mssv);
 
   const state: CaseState = {
     caseId: scenario.code,
-    form: { ...scenario.form },
-    evidence: scenario.evidence ? scenario.evidence.map((e) => ({ ...e })) : [],
+    form: cloneForm(baselineForm),
+    evidence: cloneEvidence(baselineEvidence),
     validity: { complete: false, missing: [], evidenceOk: false },
     ruleResult: { pass: false, violations: [] },
     advisor: { status: 'pending' },
@@ -60,14 +67,31 @@ export function createEngine(
   }
 
   function subscribe(fn: (event: EngineEvent) => void): () => void {
-    subscribers.push(fn);
+    if (!subscribers.includes(fn)) {
+      subscribers.push(fn);
+    }
     return () => {
       const idx = subscribers.indexOf(fn);
       if (idx !== -1) subscribers.splice(idx, 1);
     };
   }
 
-  async function start(): Promise<void> {
+  async function start(submission?: StartSubmission): Promise<void> {
+    if (submission) {
+      const scenarioEvidence = scenario.evidence ? cloneEvidence(scenario.evidence) : [];
+      const attachedIds = submission.attachedEvidenceIds;
+      baselineForm = cloneForm(submission.form);
+      baselineEvidence =
+        attachedIds === undefined
+          ? scenarioEvidence
+          : scenarioEvidence.filter((e) => attachedIds.includes(e.id));
+
+      state.form = cloneForm(baselineForm);
+      state.evidence = cloneEvidence(baselineEvidence);
+      initialStudent = deps.db.ds2.get(state.form.mssv);
+      state.studentStatus = initialStudent?.status || 'Đang học';
+    }
+
     emit({ type: 'case.started', caseId: state.caseId });
 
     // Pool Sinh viên: SV_START -> SV_T1 -> MF1 -> E_START
@@ -247,6 +271,7 @@ export function createEngine(
       throw new Error(`Task ${taskId} is not waiting for completion`);
     }
 
+    timerManager.cancel(taskId);
     handleUserTaskCompletion(taskId, outcome, state, emit);
     waitingUserTasks.delete(taskId);
     emit({ type: 'node.completed', nodeId: taskId, tokenId: token.id, outcome });
@@ -276,25 +301,28 @@ export function createEngine(
     tokens = [];
     waitingUserTasks.clear();
     arrivedAtG3.length = 0;
-    subscribers.length = 0;
 
-    // Reset state
-    state.form = { ...scenario.form };
-    state.evidence = scenario.evidence ? scenario.evidence.map((e) => ({ ...e })) : [];
+    // Reset state về đúng hồ sơ đã nộp (mặc định kịch bản nếu chưa nộp)
+    state.form = cloneForm(baselineForm);
+    state.evidence = cloneEvidence(baselineEvidence);
     state.validity = { complete: false, missing: [], evidenceOk: false };
     state.ruleResult = { pass: false, violations: [] };
     state.advisor = { status: 'pending' };
     state.ctsv = { status: 'pending' };
     state.eligible = false;
+    // Reset student status in DS2 if modified
+    if (baselineForm.mssv) {
+      deps.db.ds2.updateStudentStatus(baselineForm.mssv, 'Đang học');
+    }
+    if (state.form.mssv) {
+      deps.db.ds2.updateStudentStatus(state.form.mssv, 'Đang học');
+    }
+
+    initialStudent = deps.db.ds2.get(baselineForm.mssv);
     state.studentStatus = initialStudent?.status || 'Đang học';
     state.messages = [];
     state.decisionDoc = undefined;
     state.dataObjects = { DO1: false, DO2: false, DO3: false };
-
-    // Reset student status in DS2 if modified
-    if (initialStudent) {
-      deps.db.ds2.updateStudentStatus(initialStudent.mssv, initialStudent.status);
-    }
   }
 
   return {

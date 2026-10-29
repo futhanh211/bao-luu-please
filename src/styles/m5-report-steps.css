@@ -1,0 +1,107 @@
+/* M5 · Báo cáo cuối ca — nhật ký thực thi, nút hành động, responsive */
+
+/* Nhật ký thực thi */
+.report-steps { min-width: 0; }
+
+.report-step-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.report-step {
+  display: grid;
+  grid-template-columns: 78px minmax(0, 1fr);
+  gap: 9px;
+  padding: 5px 6px;
+  border-bottom: 1px dotted var(--paper-line);
+}
+
+.report-step-actor {
+  align-self: start;
+  padding: 2px 4px;
+  border: 1px solid var(--ink);
+  font-family: var(--font-paper);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+  letter-spacing: 0.5px;
+}
+
+.report-step[data-actor='machine'] .report-step-actor {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.report-step[data-actor='human'] .report-step-actor {
+  background: var(--amber);
+  color: var(--ink);
+}
+
+.report-step-body { min-width: 0; }
+.report-step-name { display: block; font-size: 18px; line-height: 1.25; }
+.report-step-detail { display: block; font-size: 18px; line-height: 1.25; color: var(--ink-soft); }
+
+/* ---------- Chân báo cáo ---------- */
+.report-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 22px;
+  background: var(--paper-dim);
+  border-top: 2px solid var(--ink);
+}
+
+.report-sim-note {
+  font-family: var(--font-paper);
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.report-action-group {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.report-btn {
+  padding: 7px 12px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-paper);
+  font-size: 15px;
+  box-shadow: var(--shadow-stamp);
+  cursor: pointer;
+}
+
+.report-btn:hover { background: var(--paper-dim); }
+
+.report-btn[data-variant='primary'] {
+  background: var(--stamp-green);
+  border-color: var(--stamp-green);
+  color: var(--text-on-stamp);
+}
+
+.report-btn[data-variant='primary']:hover { background: var(--ink); border-color: var(--ink); }
+.report-btn[data-variant='ghost'] { box-shadow: none; color: var(--ink-soft); }
+
+@media (max-width: 1050px) {
+  .report-body { grid-template-columns: 1fr; }
+  .report-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-height: 820px) {
+  .report-overlay { padding: 10px; }
+  .report-card { max-height: calc(100vh - 20px); }
+  .report-title { font-size: 22px; }
+  .report-body { padding: 12px 16px; gap: 14px; }
+  .report-metric-value { font-size: 26px; }
+  .report-step { padding: 3px 6px; }
+  .report-step-list { gap: 3px; }
+}

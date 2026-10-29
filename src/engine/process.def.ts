@@ -312,5 +312,12 @@ export const PROCESS_DEF: ProcessDef = {
     { id: 'MF2', from: 'T2', to: 'SV_R1', label: 'Thông báo hồ sơ chưa hợp lệ', type: 'message' },
     { id: 'MF3', from: 'T7', to: 'SV_R2', label: 'Thông báo không đủ điều kiện', type: 'message' },
     { id: 'MF4', from: 'T11', to: 'SV_R3', label: 'Quyết định bảo lưu kèm ký số', type: 'message' },
+
+    // Associations
+    { id: 'assoc_t1_do1', from: 'T1', to: 'DO1', type: 'association' },
+    { id: 'assoc_ds1_t3', from: 'DS1', to: 'T3', type: 'association' },
+    { id: 'assoc_t8_do2', from: 'T8', to: 'DO2', type: 'association' },
+    { id: 'assoc_t9_do3', from: 'T9', to: 'DO3', type: 'association' },
+    { id: 'assoc_t10_ds2', from: 'T10', to: 'DS2', type: 'association' },
   ],
 };

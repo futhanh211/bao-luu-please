@@ -63,6 +63,13 @@ export class TimerManager {
     return null;
   }
 
+  public cancel(targetNodeId?: string): void {
+    if (!this.scheduled) return;
+    if (!targetNodeId || this.scheduled.targetNodeId === targetNodeId) {
+      this.scheduled = null;
+    }
+  }
+
   public reset(): void {
     this.scheduled = null;
   }

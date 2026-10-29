@@ -23,7 +23,7 @@ export interface Node {
   config?: Record<string, unknown>;
 }
 
-export type EdgeType = 'sequence' | 'message';
+export type EdgeType = 'sequence' | 'message' | 'association';
 
 export interface Edge {
   id: string;
@@ -74,12 +74,34 @@ export interface StudentApplicationForm {
   commitment: boolean;
 }
 
+export interface EvidenceFieldAnomaly {
+  id: string;
+  issue: string;
+  severity: 'low' | 'medium' | 'high';
+}
+
+export interface EvidenceField {
+  id: string;
+  label: string;
+  value: string;
+  anomaly?: EvidenceFieldAnomaly;
+}
+
 export interface EvidenceItem {
   id: string;
   type: string;
   name: string;
   content: string;
   issueNotes?: string;
+  /** Các trường đọc được trên tờ minh chứng (M4 · bàn CTSV soi từng trường). */
+  fields?: EvidenceField[];
+}
+
+// Payload sinh viên nộp qua MF1. `attachedEvidenceIds` trỏ tới minh chứng
+// của kịch bản (scenario.evidence); bỏ trống = không đính kèm gì.
+export interface StartSubmission {
+  form: StudentApplicationForm;
+  attachedEvidenceIds?: string[];
 }
 
 export interface ValidityState {
@@ -111,6 +133,8 @@ export interface SentMessage {
   content: string;
   day: number;
   attachments?: string[];
+  /** Nội dung do AI-4 soạn (T2/T7) — UI hiển thị nhãn "AI soạn". */
+  aiGenerated?: boolean;
 }
 
 export interface DecisionDoc {
@@ -165,6 +189,7 @@ export type EngineEvent =
   | { type: 'timer.fired'; timerId: string; targetNodeId: string; day: number }
   | { type: 'ai.requested'; touchpoint: string; source: string; payload?: unknown }
   | { type: 'ai.responded'; touchpoint: string; source: string; result: unknown }
+  | { type: 'human.disagreed'; taskId: string; human: string; ai: string }
   | { type: 'case.ended'; endEventId: string; outcome: string };
 
 // Database interfaces for dependency injection
@@ -190,10 +215,12 @@ export interface AcademicFinanceRecord {
 export interface StudentsDB {
   get(mssv: string): StudentRecord | undefined;
   updateStudentStatus(mssv: string, status: 'Đang học' | 'Bảo lưu'): void;
+  upsert?(record: StudentRecord): void;
 }
 
 export interface AcademicFinanceDB {
   get(mssv: string): AcademicFinanceRecord | undefined;
+  upsert?(record: AcademicFinanceRecord): void;
 }
 
 // Forward declare AIProvider interface (defined in ai/provider.ts)

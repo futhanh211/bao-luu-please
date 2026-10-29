@@ -1,0 +1,392 @@
+/* Giao diện Biên bản hoàn tất hồ sơ điện tử (Paper, Please / Hệ thống Một cửa số) */
+
+.portal-result-container {
+  width: 100%;
+  max-width: 980px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  animation: portal-fade-in 300ms ease-out both;
+}
+
+@keyframes portal-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Bìa biên bản bàn giao hồ sơ chính thức (Paper) */
+.portal-docket-paper {
+  position: relative;
+  background-color: var(--paper) !important;
+  color: var(--ink) !important;
+  border: 1px solid var(--paper-line) !important;
+  box-shadow: var(--shadow-paper-lift) !important;
+  border-radius: var(--radius-sm);
+  padding: 28px 34px !important;
+  font-family: var(--font-read);
+}
+
+/* Header cơ quan hành chính */
+.portal-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  border-bottom: 2px solid var(--ink);
+  padding-bottom: 12px;
+  margin-bottom: 18px;
+  gap: 16px;
+}
+
+.portal-agency-title {
+  font-family: var(--font-paper);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin: 0 0 2px 0;
+}
+
+.portal-system-sub {
+  font-family: var(--font-paper);
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--ink);
+  margin: 0;
+}
+
+.portal-header-code {
+  font-family: var(--font-paper);
+  font-size: 12px;
+  color: var(--ink-soft);
+  text-align: right;
+  letter-spacing: 1px;
+}
+
+/* Kicker trạng thái nghiệp vụ */
+.portal-status-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-paper);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 12px;
+  border: 1px dashed currentColor;
+}
+
+.portal-status-kicker.confirmed,
+.portal-status-kicker.valid,
+.portal-status-kicker.signed {
+  color: var(--stamp-green);
+  background: var(--wash-green);
+}
+
+.portal-status-kicker.declined,
+.portal-status-kicker.invalid {
+  color: var(--stamp-red);
+  background: var(--wash-red);
+}
+
+.portal-status-kicker.gold {
+  color: var(--seal-gold);
+  background: rgba(201, 158, 50, 0.12);
+  border-color: var(--seal-gold);
+}
+
+/* Tiêu đề & nội dung biên bản */
+.portal-main-heading {
+  font-family: var(--font-paper);
+  font-size: 23px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0 0 8px 0;
+  line-height: 1.35;
+}
+
+.portal-main-desc {
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--ink-soft);
+  margin: 0 0 20px 0;
+  max-width: 680px;
+}
+
+/* Lưới trích yếu thông tin hồ sơ (Routing Docket) */
+.portal-summary-docket {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  background: var(--paper-dim);
+  border: 1px dashed var(--paper-line);
+  border-radius: var(--radius-sm);
+  padding: 14px 18px;
+  margin-bottom: 22px;
+}
+
+.portal-docket-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.portal-docket-label {
+  font-family: var(--font-paper);
+  font-size: 11px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.portal-docket-value {
+  font-family: var(--font-read);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.portal-docket-mono {
+  font-family: var(--font-paper);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.portal-next-hop-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-paper);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--stamp-green);
+}
+
+/* Thanh nút bấm hành động (Action Bar) */
+.portal-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-top: 14px;
+  border-top: 1px dashed var(--paper-line);
+}
+
+.portal-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 22px;
+  font-family: var(--font-paper);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  background-color: var(--amber);
+  color: var(--desk-900);
+  border: 2px solid var(--desk-900);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-hard);
+  cursor: var(--cursor-pointer);
+  transition: transform 120ms ease, box-shadow 120ms ease;
+  user-select: none;
+}
+
+.portal-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+}
+
+.portal-btn-primary:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 #111;
+}
+
+.portal-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 18px;
+  font-family: var(--font-paper);
+  font-size: 13.5px;
+  font-weight: 700;
+  background-color: var(--paper-dim);
+  color: var(--ink);
+  border: 1.5px solid var(--ink);
+  border-radius: var(--radius-sm);
+  cursor: var(--cursor-pointer);
+  transition: background-color 150ms ease;
+  user-select: none;
+}
+
+.portal-btn-secondary:hover {
+  background-color: var(--paper);
+}
+
+.portal-btn-secondary.active {
+  background-color: var(--desk-900);
+  color: var(--paper);
+  border-color: var(--desk-900);
+}
+
+.portal-btn-logout {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 14px;
+  font-family: var(--font-paper);
+  font-size: 13px;
+  background-color: transparent;
+  color: var(--ink-soft);
+  border: 1px dashed var(--paper-line);
+  border-radius: var(--radius-sm);
+  cursor: var(--cursor-pointer);
+  margin-left: auto;
+  transition: color 150ms ease, border-color 150ms ease;
+}
+
+.portal-btn-logout:hover {
+  color: var(--stamp-red);
+  border-color: var(--stamp-red);
+}
+
+/* Khay công văn đã bàn giao (Dispatched Outbox Tray) */
+.dispatched-outbox-tray {
+  background: var(--desk-700);
+  border: 2px solid var(--desk-500);
+  border-radius: var(--radius-sm);
+  padding: 18px 24px;
+  box-shadow: var(--shadow-paper-lg);
+  color: var(--paper);
+  position: relative;
+  overflow: hidden;
+}
+
+.dispatched-outbox-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--desk-500);
+  padding-bottom: 10px;
+  margin-bottom: 12px;
+}
+
+.dispatched-outbox-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-paper);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+
+.dispatched-outbox-body {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.dispatched-outbox-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-sm);
+  background: var(--desk-900);
+  border: 1px solid var(--desk-500);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--amber);
+}
+
+.dispatched-outbox-title {
+  font-family: var(--font-paper);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--paper);
+  margin: 0 0 4px 0;
+}
+
+.dispatched-outbox-desc {
+  font-size: 13.5px;
+  color: var(--paper-dim);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* 3 Chứng thực đồng bộ To-Be (BGH PKI Audit Proofs) */
+.portal-sync-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.portal-sync-card {
+  background: var(--paper-dim);
+  border: 1px dashed var(--paper-line);
+  border-left: 3px solid var(--stamp-green);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.portal-sync-title {
+  font-family: var(--font-paper);
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--stamp-green);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.portal-sync-desc {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--ink-soft);
+}
+
+/* Khung số hiệu quyết định trang trọng */
+.decision-number-plaque {
+  padding: 10px 18px;
+  background: var(--paper-dim);
+  border: 2px solid var(--seal-gold);
+  border-radius: var(--radius-sm);
+  text-align: center;
+}
+
+.decision-number-label {
+  font-family: var(--font-paper);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-bottom: 2px;
+}
+
+.decision-number-value {
+  font-family: var(--font-paper);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: 0.5px;
+}

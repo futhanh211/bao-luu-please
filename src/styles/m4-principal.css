@@ -1,0 +1,50 @@
+/* M4 · bàn Ban Giám hiệu (T9): dự thảo, ký số, chữ ký SVG */
+
+.principal-grid { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(300px, 0.85fr); gap: 18px; align-items: start; }
+.decision-paper { position: relative; color: var(--ink); }
+.decision-head { text-align: center; border-bottom: 2px solid var(--ink); padding-bottom: 10px; }
+.decision-kicker { font-family: var(--font-paper); font-size: 11px; letter-spacing: 1.5px; }
+.decision-title { margin: 8px 0 4px; font-family: var(--font-paper); font-size: 26px; letter-spacing: 2px; }
+.decision-number { font-size: 12.5px; color: var(--ink-soft); }
+.decision-body { margin-top: 12px; display: flex; flex-direction: column; }
+.decision-row { display: grid; grid-template-columns: 150px 1fr auto; gap: 10px; align-items: baseline; padding: 7px 6px; border-bottom: 1px dotted var(--paper-line); font-size: 14px; }
+.decision-label { font-family: var(--font-paper); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--ink-soft); }
+.decision-value { font-weight: 600; }
+.auto-field { background: var(--wash-amber); }
+.auto-tag { font-family: var(--font-paper); font-size: 9.5px; color: var(--ink-soft); white-space: nowrap; }
+.decision-basis { margin-top: 12px; display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+.decision-basis p { margin: 0; line-height: 1.55; }
+.decision-sign-area { margin-top: 16px; display: flex; justify-content: flex-end; border-top: 1px dashed var(--paper-line); padding-top: 8px; }
+.decision-sign-label { display: flex; flex-direction: column; align-items: center; gap: 2px; font-family: var(--font-paper); font-size: 11px; color: var(--ink-soft); }
+.signature-box { width: 260px; }
+.signature-name { text-align: center; font-family: var(--font-paper); font-size: 12px; color: var(--ink); }
+.decision-stamp { position: absolute; right: 34px; bottom: 92px; }
+.decision-footnote { margin-top: 16px; border-top: 1px dashed var(--paper-line); padding-top: 6px; font-size: 10.5px; color: var(--ink-soft); }
+
+.signing-panel { background: var(--desk-700); border: 1px solid var(--desk-500); padding: 18px; display: flex; flex-direction: column; gap: 12px; color: var(--paper); }
+.signing-kicker { font-family: var(--font-paper); font-size: 10.5px; letter-spacing: 2px; color: var(--amber); }
+.signing-title { margin: 0; font-family: var(--font-paper); font-size: 21px; }
+.signing-sub { margin: 0; font-size: 13px; color: var(--paper-dim); line-height: 1.5; }
+.signing-note { font-size: 11px; color: var(--paper-dim); line-height: 1.45; margin: 4px 0 0; }
+
+.usb-token { display: flex; align-items: center; gap: 0; height: 74px; transform: translateY(-18px); opacity: 0.45; transition: transform var(--token-ms, 600ms) ease-out, opacity var(--token-ms, 600ms) ease-out; }
+.usb-token[data-inserted='true'] { transform: translateY(0); opacity: 1; }
+.usb-token[data-reduced='true'] { transition: none; }
+.usb-body { width: 68px; height: 42px; background: linear-gradient(135deg, #e4dfd3 0%, #c8c0af 50%, #ada390 100%); border: 2px solid var(--ink); color: var(--ink); font-family: var(--font-paper); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px; border-radius: 4px; box-shadow: 2px 3px 6px rgba(0, 0, 0, 0.4); position: relative; }
+.usb-plug { width: 22px; height: 20px; background: linear-gradient(to right, #7a8289 0%, #c5cbd2 50%, #5d656d 100%); border: 2px solid var(--ink); border-left: none; border-radius: 0 3px 3px 0; }
+.usb-led { width: 7px; height: 7px; border-radius: 50%; background: var(--amber); border: 1px solid rgba(0,0,0,0.4); box-shadow: 0 0 4px var(--amber); }
+.usb-token[data-inserted='true'] .usb-led { background: var(--crt-fg); box-shadow: 0 0 8px var(--crt-fg); }
+
+.signing-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-family: var(--font-paper); font-size: 12px; }
+.signing-steps li { display: flex; align-items: center; gap: 8px; color: var(--paper-dim); }
+.signing-steps li[data-state='active'] { color: var(--amber); font-weight: 700; }
+.signing-steps li[data-state='done'] { color: var(--crt-fg); }
+.signing-step-dot { width: 9px; height: 9px; border: 2px solid currentColor; border-radius: 50%; flex: none; }
+.signing-steps li[data-state='done'] .signing-step-dot { background: var(--crt-fg); }
+
+.pin-box { background: var(--crt-bg); border: 1px solid var(--crt-dim); padding: 8px 10px; }
+.pin-label { font-family: var(--font-paper); font-size: 10px; color: var(--crt-dim); letter-spacing: 1px; }
+.pin-dots { font-family: var(--font-hud); font-size: 28px; letter-spacing: 6px; color: var(--crt-fg); }
+
+.signing-done { background: var(--desk-700); border: 1px solid var(--stamp-green); padding: 18px; display: flex; flex-direction: column; gap: 8px; }
+.signing-done-name { font-family: var(--font-paper); font-size: 14px; color: var(--crt-fg); }

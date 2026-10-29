@@ -41,13 +41,19 @@ export function handleUserTaskCompletion(
 ): void {
   switch (taskId) {
     case 'T4': {
-      const status = outcome as AdvisorState['status'];
+      const status =
+        typeof outcome === 'object' && outcome !== null && 'status' in outcome
+          ? (outcome as { status: AdvisorState['status'] }).status
+          : (outcome as AdvisorState['status']);
       state.advisor.status = status;
       break;
     }
 
     case 'T5': {
-      const status = outcome as CtsvState['status'];
+      const status =
+        typeof outcome === 'object' && outcome !== null && 'status' in outcome
+          ? (outcome as { status: CtsvState['status'] }).status
+          : (outcome as CtsvState['status']);
       state.ctsv.status = status;
       break;
     }

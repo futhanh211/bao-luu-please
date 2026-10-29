@@ -1,0 +1,184 @@
+/**
+ * BẢO LƯU, PLEASE — Bộ con trỏ công sở retro độc bản (Bureaucratic Cursor Set)
+ * 100% Base64 SVG inline data URI: Tương thích hoàn hảo với Chromium, Edge, Chrome, Firefox.
+ * Thiết kế sắc nét, tương phản cao trên nền gỗ tối & giấy kem, đổ bóng cứng, hotspot chính xác.
+ */
+
+:root {
+  /* 1. Mũi tên công chức retro (Administrative Arrow) - Hotspot: 0 0 */
+  --cursor-default: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDMyIDMyIj4KICA8cGF0aCBkPSJNMiAyIEwyIDI0IEw3IDE5IEwxMiAyOSBMMTYgMjcgTDExIDE3IEwxOSAxNyBaIiBmaWxsPSIjMTExMTBlIi8+CiAgPHBhdGggZD0iTTAgMCBMMCAyMiBMNSAxNyBMMTAgMjcgTDE0IDI1IEw5IDE1IEwxNyAxNSBaIiBmaWxsPSIjZjRlZmUyIiBzdHJva2U9IiMxMTExMGUiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CiAgPHBhdGggZD0iTTIgMyBMMiAxOCBMNiAxNCBMMTAgMjIgTDEyIDIxIEw4IDEzIEwxNCAxMyBaIiBmaWxsPSIjMjMyMzFkIi8+CiAgPGxpbmUgeDE9IjMiIHkxPSI0IiB4Mj0iNyIgeTI9IjEzIiBzdHJva2U9IiNkOWE0NDEiIHN0cm9rZS13aWR0aD0iMS4yIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KPC9zdmc+') 0 0, default;
+
+  /* 2. Bàn tay chỉ ngón cổ điển (Vintage Manicule ☞) - Hotspot: 5 1 */
+  --cursor-pointer: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDMyIDMyIj4KICA8ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgyLCAyKSIgb3BhY2l0eT0iMC43Ij4KICAgIDxwYXRoIGQ9Ik01IDEgQzQgMSAzIDIgNCA0IEw4IDkgTDYgOSBDNC41IDkgMy41IDEwLjUgNCAxMiBMNyAxNiBDOCAxNy41IDkuNSAxOCAxMSAxOCBMMTUgMTggTDE3IDIzIEwyNSAyMSBMMjMgMTYgTDE3IDE1IEwxNiAxMSBMMTIgOCBMOCAzIEM3IDEuNSA2IDEgNSAxIFoiIGZpbGw9IiMxMTExMGUiLz4KICAgIDxyZWN0IHg9IjE3IiB5PSIyMCIgd2lkdGg9IjEwIiBoZWlnaHQ9IjkiIHJ4PSIxIiBmaWxsPSIjMTExMTBlIi8+CiAgPC9nPgogIDxyZWN0IHg9IjE2IiB5PSIxOSIgd2lkdGg9IjEwIiBoZWlnaHQ9IjEwIiByeD0iMS41IiBmaWxsPSIjMzQzNDJiIiBzdHJva2U9IiMxMTExMGUiIHN0cm9rZS13aWR0aD0iMS41Ii8+CiAgPGxpbmUgeDE9IjE2IiB5MT0iMTkiIHgyPSIyNiIgeTI9IjE5IiBzdHJva2U9IiNmNGVmZTIiIHN0cm9rZS13aWR0aD0iMiIvPgogIDxjaXJjbGUgY3g9IjIxIiBjeT0iMjQiIHI9IjEuNSIgZmlsbD0iI2Q5YTQ0MSIgc3Ryb2tlPSIjMTExMTBlIiBzdHJva2Utd2lkdGg9IjAuOCIvPgogIDxwYXRoIGQ9Ik01IDEgQzMuOCAxIDMgMiAzLjggMy41IEw3IDguNSBMNSA4LjUgQzMuOCA4LjUgMyA5LjggMy41IDExIEw2LjUgMTUuNSBDNy41IDE3IDkgMTcuNSAxMC41IDE3LjUgTDE1IDE3LjUgTDE3IDIxIEwyMyAxOSBMMjEgMTUgTDE2IDE0IEwxNSAxMC41IEwxMS41IDcuNSBMNy41IDIuNSBDNi44IDEuNSA1LjggMSA1IDEgWiIgZmlsbD0iI2Y0ZWZlMiIgc3Ryb2tlPSIjMTExMTBlIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxwYXRoIGQ9Ik02LjUgNi41IEw5IDgiIHN0cm9rZT0iI2I5YjA5MyIgc3Ryb2tlLXdpZHRoPSIxIi8+CiAgPHBhdGggZD0iTTkuNSAxMS41IEwxMy41IDExLjUiIHN0cm9rZT0iIzFkMWQxOSIgc3Ryb2tlLXdpZHRoPSIxLjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgogIDxwYXRoIGQ9Ik0xMC41IDE0IEwxNCAxNCIgc3Ryb2tlPSIjMWQxZDE5IiBzdHJva2Utd2lkdGg9IjEuMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CiAgPHBhdGggZD0iTTcuNSAxMSBDOC41IDEwIDEwIDEwLjUgMTEgMTIiIHN0cm9rZT0iIzFkMWQxOSIgc3Ryb2tlLXdpZHRoPSIxLjIiIGZpbGw9Im5vbmUiLz4KPC9zdmc+') 5 1, pointer;
+
+  /* 3. Cán con dấu dập gỗ gụ (Desk Stamp) - Hotspot: 16 28 */
+  --cursor-stamp: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDMyIDMyIj4KICA8cmVjdCB4PSI2IiB5PSIyNCIgd2lkdGg9IjIyIiBoZWlnaHQ9IjYiIHJ4PSIxIiBmaWxsPSIjMTExMTBlIi8+CiAgPGVsbGlwc2UgY3g9IjE2IiBjeT0iNiIgcng9IjYiIHJ5PSI1IiBmaWxsPSIjNTIzNDJmIiBzdHJva2U9IiMxMTExMGUiIHN0cm9rZS13aWR0aD0iMS41Ii8+CiAgPGVsbGlwc2UgY3g9IjE0IiBjeT0iNC41IiByeD0iMyIgcnk9IjIiIGZpbGw9IiM4YTUzNDUiLz4KICA8Y2lyY2xlIGN4PSIxMyIgY3k9IjMuNSIgcj0iMSIgZmlsbD0iI2Y0ZWZlMiIgb3BhY2l0eT0iMC43Ii8+CiAgPHBhdGggZD0iTTEzIDEwIEMxMyAxMCAxMiAxMyAxMCAxOCBMMjIgMTggQzIwIDEzIDE5IDEwIDE5IDEwIFoiIGZpbGw9IiM0MjI3MjAiIHN0cm9rZT0iIzExMTEwZSIgc3Ryb2tlLXdpZHRoPSIxLjUiLz4KICA8bGluZSB4MT0iMTYiIHkxPSIxMCIgeDI9IjE2IiB5Mj0iMTciIHN0cm9rZT0iIzZlM2UzMSIgc3Ryb2tlLXdpZHRoPSIxLjUiLz4KICA8cmVjdCB4PSI4IiB5PSIxOCIgd2lkdGg9IjE2IiBoZWlnaHQ9IjQiIHJ4PSIwLjUiIGZpbGw9IiNjOTllMzIiIHN0cm9rZT0iIzExMTEwZSIgc3Ryb2tlLXdpZHRoPSIxLjUiLz4KICA8bGluZSB4MT0iMTAiIHkxPSIxOS41IiB4Mj0iMjIiIHkyPSIxOS41IiBzdHJva2U9IiNmZmU4OTQiIHN0cm9rZS13aWR0aD0iMSIvPgogIDxyZWN0IHg9IjUiIHk9IjIyIiB3aWR0aD0iMjIiIGhlaWdodD0iMyIgcng9IjEiIGZpbGw9IiMyMzIzMWQiIHN0cm9rZT0iIzExMTEwZSIgc3Ryb2tlLXdpZHRoPSIxLjIiLz4KICA8cmVjdCB4PSI2IiB5PSIyNSIgd2lkdGg9IjIwIiBoZWlnaHQ9IjMuNSIgcng9IjAuNSIgZmlsbD0iI2IzMjYxZSIgc3Ryb2tlPSIjMTExMTBlIiBzdHJva2Utd2lkdGg9IjEiLz4KICA8bGluZSB4MT0iOCIgeTE9IjI3LjUiIHgyPSIyNCIgeTI9IjI3LjUiIHN0cm9rZT0iI2ZmNmU2MyIgc3Ryb2tlLXdpZHRoPSIxIi8+Cjwvc3ZnPg==') 16 28, pointer;
+
+  /* 3b. Con dấu dập xuống mặt bàn (:active) - Hotspot: 16 26 */
+  --cursor-stamp-active: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDMyIDMyIj4KICA8ZWxsaXBzZSBjeD0iMTYiIGN5PSI4IiByeD0iNiIgcnk9IjUiIGZpbGw9IiM1MjM0MmYiIHN0cm9rZT0iIzExMTEwZSIgc3Ryb2tlLXdpZHRoPSIxLjUiLz4KICA8ZWxsaXBzZSBjeD0iMTQiIGN5PSI2LjUiIHJ4PSIzIiByeT0iMiIgZmlsbD0iIzhhNTM0NSIvPgogIDxwYXRoIGQ9Ik0xMyAxMiBDMTMgMTIgMTIgMTUgMTAgMTkgTDIyIDE5IEMyMCAxNSAxOSAxMiAxOSAxMiBaIiBmaWxsPSIjNDIyNzIwIiBzdHJva2U9IiMxMTExMGUiIHN0cm9rZS13aWR0aD0iMS41Ii8+CiAgPHJlY3QgeD0iOCIgeT0iMTkiIHdpZHRoPSIxNiIgaGVpZ2h0PSI0IiByeD0iMC41IiBmaWxsPSIjYzk5ZTMyIiBzdHJva2U9IiMxMTExMGUiIHN0cm9rZS13aWR0aD0iMS41Ii8+CiAgPHJlY3QgeD0iNSIgeT0iMjMiIHdpZHRoPSIyMiIgaGVpZ2h0PSIzIiByeD0iMSIgZmlsbD0iIzIzMjMxZCIgc3Ryb2tlPSIjMTExMTBlIiBzdHJva2Utd2lkdGg9IjEuMiIvPgogIDxyZWN0IHg9IjQiIHk9IjI2IiB3aWR0aD0iMjQiIGhlaWdodD0iNCIgcng9IjEiIGZpbGw9IiNiMzI2MWUiIHN0cm9rZT0iIzdkMTgxMiIgc3Ryb2tlLXdpZHRoPSIxLjIiLz4KICA8Y2lyY2xlIGN4PSIyIiBjeT0iMjgiIHI9IjEiIGZpbGw9IiNiMzI2MWUiLz4KICA8Y2lyY2xlIGN4PSIzMCIgY3k9IjI4IiByPSIxIiBmaWxsPSIjYjMyNjFlIi8+Cjwvc3ZnPg==') 16 26, pointer;
+
+  /* 4. Ngòi bút máy mạ vàng Ban Giám Hiệu (Fountain Pen) - Hotspot: 1 1 */
+  --cursor-pen: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDMyIDMyIj4KICA8ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgyLCAyKSIgb3BhY2l0eT0iMC43NSI+CiAgICA8cGF0aCBkPSJNMSAxIEwzIDggTDcgMTEgTDExIDE2IEwxNiAxMSBMMTEgNyBMOCAzIFoiIGZpbGw9IiMxMTExMGUiLz4KICAgIDxwYXRoIGQ9Ik0xMSAxNiBMMjIgMjcgTDI3IDIyIEwxNiAxMSBaIiBmaWxsPSIjMTExMTBlIi8+CiAgPC9nPgogIDxwYXRoIGQ9Ik0xMSAxNiBMMjEgMjYgTDI2IDIxIEwxNiAxMSBaIiBmaWxsPSIjMzQxYjE4IiBzdHJva2U9IiMxMTExMGUiIHN0cm9rZS13aWR0aD0iMS41Ii8+CiAgPGxpbmUgeDE9IjEyIiB5MT0iMTciIHgyPSIxNyIgeTI9IjEyIiBzdHJva2U9IiNjOTllMzIiIHN0cm9rZS13aWR0aD0iMiIvPgogIDxsaW5lIHgxPSIxNCIgeTE9IjE5IiB4Mj0iMTkiIHkyPSIxNCIgc3Ryb2tlPSIjZmZlODk0IiBzdHJva2Utd2lkdGg9IjEiLz4KICA8cGF0aCBkPSJNMSAxIEw0IDkgTDggMTIgTDEyIDEyIEwxMiA4IEw5IDQgWiIgZmlsbD0iI2M5OWUzMiIgc3Ryb2tlPSIjMTExMTBlIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxwYXRoIGQ9Ik0xIDEgTDMgNiBMNiA4IEw4IDYgTDYgMyBaIiBmaWxsPSIjZjRlZmUyIiBzdHJva2U9IiMxMTExMGUiIHN0cm9rZS13aWR0aD0iMC44Ii8+CiAgPGxpbmUgeDE9IjEiIHkxPSIxIiB4Mj0iNyIgeTI9IjciIHN0cm9rZT0iIzFkMWQxOSIgc3Ryb2tlLXdpZHRoPSIxLjIiLz4KICA8Y2lyY2xlIGN4PSI3IiBjeT0iNyIgcj0iMS4yIiBmaWxsPSIjMWQxZDE5Ii8+CiAgPGxpbmUgeDE9IjIiIHkxPSIxIiB4Mj0iMSIgeTI9IjIiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLXdpZHRoPSIxIi8+Cjwvc3ZnPg==') 1 1, crosshair;
+
+  /* 5. Kính lúp kiểm tra đối chiếu CTSV (Inspector Loupe) - Hotspot: 11 11 */
+  --cursor-inspect: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDMyIDMyIj4KICA8Y2lyY2xlIGN4PSIxMyIgY3k9IjEzIiByPSI5IiBmaWxsPSIjMTExMTBlIiBvcGFjaXR5PSIwLjciLz4KICA8cmVjdCB4PSIxOSIgeT0iMTkiIHdpZHRoPSIxMCIgaGVpZ2h0PSI0IiByeD0iMSIgdHJhbnNmb3JtPSJyb3RhdGUoNDUgMTkgMTkpIiBmaWxsPSIjMTExMTBlIiBvcGFjaXR5PSIwLjciLz4KICA8cmVjdCB4PSIxNyIgeT0iMTciIHdpZHRoPSIxMSIgaGVpZ2h0PSI0IiByeD0iMS41IiB0cmFuc2Zvcm09InJvdGF0ZSg0NSAxNyAxNykiIGZpbGw9IiM0YTJlMWIiIHN0cm9rZT0iIzExMTEwZSIgc3Ryb2tlLXdpZHRoPSIxLjIiLz4KICA8Y2lyY2xlIGN4PSIyNSIgY3k9IjI1IiByPSIyIiBmaWxsPSIjYzk5ZTMyIiBzdHJva2U9IiMxMTExMGUiIHN0cm9rZS13aWR0aD0iMSIvPgogIDxjaXJjbGUgY3g9IjExIiBjeT0iMTEiIHI9IjkiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2M5OWUzMiIgc3Ryb2tlLXdpZHRoPSIyLjUiLz4KICA8Y2lyY2xlIGN4PSIxMSIgY3k9IjExIiByPSI5IiBmaWxsPSJub25lIiBzdHJva2U9IiMxMTExMGUiIHN0cm9rZS13aWR0aD0iMSIvPgogIDxjaXJjbGUgY3g9IjExIiBjeT0iMTEiIHI9IjcuNSIgZmlsbD0icmdiYSgxMjcsIDIyNCwgMTM4LCAwLjIyKSIgc3Ryb2tlPSIjODU2NTFhIiBzdHJva2Utd2lkdGg9IjAuOCIvPgogIDxwYXRoIGQ9Ik02IDggQSA2IDYgMCAwIDEgMTIgNSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBmaWxsPSJub25lIiBvcGFjaXR5PSIwLjg1Ii8+CiAgPGxpbmUgeDE9IjExIiB5MT0iOCIgeDI9IjExIiB5Mj0iMTAiIHN0cm9rZT0iIzJjNGEzYSIgc3Ryb2tlLXdpZHRoPSIxIi8+CiAgPGxpbmUgeDE9IjExIiB5MT0iMTIiIHgyPSIxMSIgeTI9IjE0IiBzdHJva2U9IiMyYzRhM2EiIHN0cm9rZT0iMSIvPgogIDxsaW5lIHgxPSI4IiB5MT0iMTEiIHgyPSIxMCIgeTI9IjExIiBzdHJva2U9IiMyYzRhM2EiIHN0cm9rZT0iMSIvPgogIDxsaW5lIHgxPSIxMiIgeTE9IjExIiB4Mj0iMTQiIHkyPSIxMSIgc3Ryb2tlPSIjMmM0YTNhIiBzdHJva2Utd2lkdGg9IjEiLz4KICA8Y2lyY2xlIGN4PSIxMSIgY3k9IjExIiByPSIwLjgiIGZpbGw9IiNiMzI2MWUiLz4KPC9zdmc+') 11 11, zoom-in;
+
+  /* 6. Bàn tay mở kẹp giấy hồ sơ (Paper Grab) - Hotspot: 10 10 */
+  --cursor-grab: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDMyIDMyIj4KICA8ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgyLCAyKSIgb3BhY2l0eT0iMC42NSI+CiAgICA8cGF0aCBkPSJNNyAxMSBMNyA2IEM3IDQuNSA5IDQuNSA5IDYgTDkgMTEgTDEwIDUgQzEwIDMuNSAxMiAzLjUgMTIgNSBMMTIgMTEgTDEzIDYgQzEzIDQuNSAxNSA0LjUgMTUgNiBMMTUgMTEgTDE2IDggQzE2IDYuNSAxOCA2LjUgMTggOCBMMTggMTYgQzE4IDE5IDE2IDIyIDEzIDI0IEwxMyAyOCBMNyAyOCBMNyAyMiBDNSAxOSA0IDE3IDQgMTUgTDQgMTMgQzQgMTEuNSA2IDExLjUgNiAxMyBMNyAxMSBaIiBmaWxsPSIjMTExMTBlIi8+CiAgPC9nPgogIDxyZWN0IHg9IjciIHk9IjI0IiB3aWR0aD0iNyIgaGVpZ2h0PSI3IiByeD0iMSIgZmlsbD0iIzM0MzQyYiIgc3Ryb2tlPSIjMTExMTBlIiBzdHJva2Utd2lkdGg9IjEuMiIvPgogIDxsaW5lIHgxPSI3IiB5MT0iMjQiIHgyPSIxNCIgeTI9IjI0IiBzdHJva2U9IiNmNGVmZTIiIHN0cm9rZS13aWR0aD0iMS41Ii8+CiAgPHBhdGggZD0iTTYgMTAgTDYgNSBDNiAzLjggOCAzLjggOCA1IEw4IDEwIEw5IDQgQzkgMi44IDExIDIuOCAxMSA0IEwxMSAxMCBMMTIgNSBDMTIgMy44IDE0IDMuOCAxNCA1IEwxNCAxMCBMMTUgNyBDMTUgNS44IDE3IDUuOCAxNyA3IEwxNyAxNSBDMTcgMTggMTUgMjEgMTIgMjMgTDEyIDI1IEw2IDI1IEw2IDIwIEM0LjUgMTggMy41IDE2IDMuNSAxNCBMMy41IDEyIEMzLjUgMTAuOCA1LjUgMTAuOCA1LjUgMTIgTDYgMTAgWiIgZmlsbD0iI2Y0ZWZlMiIgc3Ryb2tlPSIjMTExMTBlIiBzdHJva2Utd2lkdGg9IjEuMiIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxsaW5lIHgxPSI4IiB5MT0iMTAiIHgyPSI4IiB5Mj0iMTQiIHN0cm9rZT0iI2I5YjA5MyIgc3Ryb2tlLXdpZHRoPSIwLjgiLz4KICA8bGluZSB4MT0iMTEiIHkxPSIxMCIgeDI9IjExIiB5Mj0iMTQiIHN0cm9rZT0iI2I5YjA5MyIgc3Ryb2tlLXdpZHRoPSIwLjgiLz4KICA8bGluZSB4MT0iMTQiIHkxPSIxMCIgeDI9IjE0IiB5Mj0iMTQiIHN0cm9rZT0iI2I5YjA5MyIgc3Ryb2tlLXdpZHRoPSIwLjgiLz4KPC9zdmc+') 10 10, grab;
+
+  /* 6b. Bàn tay nắm ghì giấy hồ sơ (Paper Grabbing) - Hotspot: 10 10 */
+  --cursor-grabbing: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDMyIDMyIj4KICA8ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgyLCAyKSIgb3BhY2l0eT0iMC42NSI+CiAgICA8cmVjdCB4PSI2IiB5PSI4IiB3aWR0aD0iMTMiIGhlaWdodD0iMTIiIHJ4PSI0IiBmaWxsPSIjMTExMTBlIi8+CiAgICA8cmVjdCB4PSI4IiB5PSIxOCIgd2lkdGg9IjciIGhlaWdodD0iOSIgZmlsbD0iIzExMTEwZSIvPgogIDwvZz4KICA8cmVjdCB4PSI4IiB5PSIxOCIgd2lkdGg9IjgiIGhlaWdodD0iOSIgcng9IjEiIGZpbGw9IiMzNDM0MmIiIHN0cm9rZT0iIzExMTEwZSIgc3Ryb2tlLXdpZHRoPSIxLjIiLz4KICA8bGluZSB4MT0iOCIgeTE9IjE4IiB4Mj0iMTYiIHkyPSIxOCIgc3Ryb2tlPSIjZjRlZmUyIiBzdHJva2Utd2lkdGg9IjEuNSIvPgogIDxwYXRoIGQ9Ik02IDggQzYgNiA4IDUgMTAgNSBDMTEgNSAxMiA1LjUgMTMgNSBDMTQuNSA1IDE2IDYgMTYgNy41IEMxNyA3LjUgMTggOC41IDE4IDEwIEMxOCAxMS41IDE4IDE0IDE3IDE2IEMxNiAxOCAxNCAxOSAxMiAxOSBMOCAxOSBDNiAxOCA1IDE2IDUgMTMgTDUgMTAgQzUgOC41IDYgOCA2IDggWiIgZmlsbD0iI2Y0ZWZlMiIgc3Ryb2tlPSIjMTExMTBlIiBzdHJva2Utd2lkdGg9IjEuMyIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxwYXRoIGQ9Ik01IDExIEM1IDkuNSA3IDkuNSA4IDExIEwxNCAxMiBDMTUgMTIuNSAxNSAxNCAxNCAxNSBMOSAxNSBDNyAxNSA1IDEzIDUgMTEgWiIgZmlsbD0iI2U5ZTNjZiIgc3Ryb2tlPSIjMTExMTBlIiBzdHJva2Utd2lkdGg9IjEuMSIvPgogIDxsaW5lIHgxPSIxMCIgeTE9IjUiIHgyPSIxMCIgeTI9IjkiIHN0cm9rZT0iIzFkMWQxOSIgc3Ryb2tlLXdpZHRoPSIxIi8+CiAgPGxpbmUgeDE9IjEzIiB5MT0iNSIgeDI9IjEzIiB5Mj0iOSIgc3Ryb2tlPSIjMWQxZDE5IiBzdHJva2Utd2lkdGg9IjEiLz4KICA8bGluZSB4MT0iMTYiIHkxPSI3IiB4Mj0iMTYiIHkyPSIxMCIgc3Ryb2tlPSIjMWQxZDE5IiBzdHJva2Utd2lkdGg9IjEiLz4KPC9zdmc+') 10 10, grabbing;
+
+  /* 7. Con dấu mộc cấm [✕] (Rejection Seal) - Hotspot: 16 16 */
+  --cursor-not-allowed: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDMyIDMyIj4KICA8cmVjdCB4PSI2IiB5PSI2IiB3aWR0aD0iMjIiIGhlaWdodD0iMjIiIHJ4PSIyIiB0cmFuc2Zvcm09InJvdGF0ZSgtOCAxNyAxNykiIGZpbGw9IiMxMTExMGUiIG9wYWNpdHk9IjAuNzUiLz4KICA8ZyB0cmFuc2Zvcm09InJvdGF0ZSgtOCAxNiAxNikiPgogICAgPHJlY3QgeD0iNCIgeT0iNCIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiByeD0iMi41IiBmaWxsPSIjZjRlZmUyIiBzdHJva2U9IiNiMzI2MWUiIHN0cm9rZS13aWR0aD0iMi41Ii8+CiAgICA8cmVjdCB4PSI2LjUiIHk9IjYuNSIgd2lkdGg9IjE5IiBoZWlnaHQ9IjE5IiByeD0iMS41IiBmaWxsPSJub25lIiBzdHJva2U9IiNiMzI2MWUiIHN0cm9rZS13aWR0aD0iMSIgc3Ryb2tlLWRhc2hhcnJheT0iMyAxLjUiLz4KICAgIDxsaW5lIHgxPSIxMCIgeTE9IjEwIiB4Mj0iMjIiIHkyPSIyMiIgc3Ryb2tlPSIjYjMyNjFlIiBzdHJva2Utd2lkdGg9IjMuNSIgc3Ryb2tlLWxpbmVjYXA9InNxdWFyZSIvPgogICAgPGxpbmUgeDE9IjIyIiB5MT0iMTAiIHgyPSIxMCIgeTI9IjIyIiBzdHJva2U9IiNiMzI2MWUiIHN0cm9rZS13aWR0aD0iMy41IiBzdHJva2UtbGluZWNhcD0ic3F1YXJlIi8+CiAgICA8Y2lyY2xlIGN4PSI4IiBjeT0iMTYiIHI9IjAuOCIgZmlsbD0iI2IzMjYxZSIvPgogICAgPGNpcmNsZSBjeD0iMjQiIGN5PSIxNiIgcj0iMC44IiBmaWxsPSIjYjMyNjFlIi8+CiAgPC9nPgo8L3N2Zz4=') 16 16, not-allowed;
+
+  /* 8. Thước gá máy đánh chữ (Typewriter Carriage Bar) - Hotspot: 16 15 */
+  --cursor-text: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDMyIDMyIj4KICA8cGF0aCBkPSJNMTIgNCBMMjIgNCBNMTcgNCBMMTcgMjggTTEyIDI4IEwyMiAyOCIgc3Ryb2tlPSIjMTExMTBlIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJzcXVhcmUiLz4KICA8cGF0aCBkPSJNMTEgMyBMMjEgMyBNMTYgMyBMMTYgMjcgTTExIDI3IEwyMSAyNyIgc3Ryb2tlPSIjMWQxZDE5IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJzcXVhcmUiLz4KICA8bGluZSB4MT0iMTMiIHkxPSIxIiB4Mj0iMTMiIHkyPSI0IiBzdHJva2U9IiNmNGVmZTIiIHN0cm9rZS13aWR0aD0iMSIvPgogIDxsaW5lIHgxPSIxNiIgeTE9IjEiIHgyPSIxNiIgeTI9IjQiIHN0cm9rZT0iI2Q5YTQ0MSIgc3Ryb2tlLXdpZHRoPSIxIi8+CiAgPGxpbmUgeDE9IjE5IiB5MT0iMSIgeDI9IjE5IiB5Mj0iNCIgc3Ryb2tlPSIjZjRlZmUyIiBzdHJva2Utd2lkdGg9IjEiLz4KICA8bGluZSB4MT0iMTMiIHkxPSIyNiIgeDI9IjEzIiB5Mj0iMjkiIHN0cm9rZT0iI2Y0ZWZlMiIgc3Ryb2tlLXdpZHRoPSIxIi8+CiAgPGxpbmUgeDE9IjE2IiB5MT0iMjYiIHgyPSIxNiIgeTI9IjI5IiBzdHJva2U9IiNkOWE0NDEiIHN0cm9rZS13aWR0aD0iMSIvPgogIDxsaW5lIHgxPSIxOSIgeTE9IjI2IiB4Mj0iMTkiIHkyPSIyOSIgc3Ryb2tlPSIjZjRlZmUyIiBzdHJva2Utd2lkdGg9IjEiLz4KICA8Y2lyY2xlIGN4PSIxNiIgY3k9IjE1IiByPSIxLjUiIGZpbGw9IiNkOWE0NDEiIHN0cm9rZT0iIzExMTEwZSIgc3Ryb2tlLXdpZHRoPSIwLjgiLz4KPC9zdmc+') 16 15, text;
+
+  /* 9. Tem mộc thắc mắc quy chế (?) (Regulatory Help) - Hotspot: 10 10 */
+  --cursor-help: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDMyIDMyIj4KICA8Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIxMCIgZmlsbD0iIzExMTEwZSIgb3BhY2l0eT0iMC43Ii8+CiAgPGNpcmNsZSBjeD0iMTAiIGN5PSIxMCIgcj0iOS41IiBmaWxsPSIjZjRlZmUyIiBzdHJva2U9IiMyNzUwOGEiIHN0cm9rZS13aWR0aD0iMiIvPgogIDxjaXJjbGUgY3g9IjEwIiBjeT0iMTAiIHI9IjcuNSIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMjc1MDhhIiBzdHJva2Utd2lkdGg9IjAuOCIgc3Ryb2tlLWRhc2hhcnJheT0iMiAxIi8+CiAgPHBhdGggZD0iTTcuNSA3LjUgQzcuNSA1LjUgOSA0LjUgMTAuNSA0LjUgQzEyIDQuNSAxMy41IDUuNSAxMy41IDcgQzEzLjUgOC41IDExLjUgOS41IDEwLjUgMTAuNSBMMTAuNSAxMiIgc3Ryb2tlPSIjMjc1MDhhIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgZmlsbD0ibm9uZSIvPgogIDxjaXJjbGUgY3g9IjEwLjUiIGN5PSIxNC41IiByPSIxLjIiIGZpbGw9IiMyNzUwOGEiLz4KPC9zdmc+') 10 10, help;
+}
+
+/* ==========================================================================
+   ÁP DỤNG BỘ CON TRỎ TOÀN ỨNG DỤNG (KHI CUSTOM CURSOR BẬT)
+   ========================================================================== */
+
+/* 1. Mặc định mọi nơi: Mũi tên công chức retro */
+html:not([data-custom-cursor='false']),
+html:not([data-custom-cursor='false']) body,
+html:not([data-custom-cursor='false']) #root,
+html:not([data-custom-cursor='false']) div,
+html:not([data-custom-cursor='false']) p,
+html:not([data-custom-cursor='false']) span,
+html:not([data-custom-cursor='false']) label,
+html:not([data-custom-cursor='false']) section,
+html:not([data-custom-cursor='false']) article,
+html:not([data-custom-cursor='false']) header,
+html:not([data-custom-cursor='false']) main,
+html:not([data-custom-cursor='false']) aside {
+  cursor: var(--cursor-default);
+}
+
+/* 2. Ép các khai báo inline cursor: default nhận --cursor-default */
+html:not([data-custom-cursor='false']) [style*='cursor: default'],
+html:not([data-custom-cursor='false']) [style*='cursor:default'],
+html:not([data-custom-cursor='false']) [style*="cursor: 'default'"],
+html:not([data-custom-cursor='false']) .cursor-default {
+  cursor: var(--cursor-default) !important;
+}
+
+/* 3. Mọi nút bấm, link, thẻ kịch bản, phần tử tương tác: Bàn tay Manicule ☞ */
+html:not([data-custom-cursor='false']) button,
+html:not([data-custom-cursor='false']) a,
+html:not([data-custom-cursor='false']) select,
+html:not([data-custom-cursor='false']) summary,
+html:not([data-custom-cursor='false']) [role='button'],
+html:not([data-custom-cursor='false']) [role='tab'],
+html:not([data-custom-cursor='false']) [style*='cursor: pointer'],
+html:not([data-custom-cursor='false']) [style*='cursor:pointer'],
+html:not([data-custom-cursor='false']) [style*="cursor: 'pointer'"],
+html:not([data-custom-cursor='false']) .scenario-card,
+html:not([data-custom-cursor='false']) .scenario-card *,
+html:not([data-custom-cursor='false']) .desk-btn,
+html:not([data-custom-cursor='false']) .settings-toggle,
+html:not([data-custom-cursor='false']) .settings-speed,
+html:not([data-custom-cursor='false']) .settings-close,
+html:not([data-custom-cursor='false']) .hud-tab,
+html:not([data-custom-cursor='false']) .hud-btn,
+html:not([data-custom-cursor='false']) .hud-settings-btn,
+html:not([data-custom-cursor='false']) .hud-help-btn,
+html:not([data-custom-cursor='false']) .mode-btn,
+html:not([data-custom-cursor='false']) .speed-btn,
+html:not([data-custom-cursor='false']) .ai-mode-switch,
+html:not([data-custom-cursor='false']) .app-toast[data-clickable='true'],
+html:not([data-custom-cursor='false']) .mailbox-item,
+html:not([data-custom-cursor='false']) .mailbox-tab,
+html:not([data-custom-cursor='false']) .caption-dock-pin,
+html:not([data-custom-cursor='false']) .bpmn-node-btn {
+  cursor: var(--cursor-pointer) !important;
+}
+
+/* 4. Con dấu gỗ dập mực đỏ */
+html:not([data-custom-cursor='false']) .desk-stamp-btn,
+html:not([data-custom-cursor='false']) .desk-stamp-btn *,
+html:not([data-custom-cursor='false']) .stamp-mark[data-interactive='true'],
+html:not([data-custom-cursor='false']) .desk-stamp-action,
+html:not([data-custom-cursor='false']) [data-stamp-btn='true'] {
+  cursor: var(--cursor-stamp) !important;
+}
+
+html:not([data-custom-cursor='false']) .desk-stamp-btn:active:not(:disabled),
+html:not([data-custom-cursor='false']) .stamp-mark[data-interactive='true']:active {
+  cursor: var(--cursor-stamp-active) !important;
+}
+
+/* 5. Bút máy mạ vàng Ban Giám Hiệu (Ký số & Quyết định) */
+html:not([data-custom-cursor='false']) .principal-grid .signature-box,
+html:not([data-custom-cursor='false']) .principal-grid .decision-sign-area,
+html:not([data-custom-cursor='false']) .signing-panel button:not(:disabled),
+html:not([data-custom-cursor='false']) .signing-panel .usb-token,
+html:not([data-custom-cursor='false']) .signature-canvas,
+html:not([data-custom-cursor='false']) [data-signing-area='true'] {
+  cursor: var(--cursor-pen) !important;
+}
+
+/* 6. Kính lúp soi kiểm tra hồ sơ (Phòng CTSV) */
+html:not([data-custom-cursor='false']) .evidence-field:not(:disabled),
+html:not([data-custom-cursor='false']) .evidence-field:not(:disabled) *,
+html:not([data-custom-cursor='false']) .lookup-card,
+html:not([data-custom-cursor='false']) [data-inspect='true'] {
+  cursor: var(--cursor-inspect) !important;
+}
+
+/* 7. Kéo pan bản đồ BPMN & di chuyển hồ sơ */
+html:not([data-custom-cursor='false']) .bpmn-map-container,
+html:not([data-custom-cursor='false']) .bpmn-viewport,
+html:not([data-custom-cursor='false']) .bpmn-fullscreen-overlay svg,
+html:not([data-custom-cursor='false']) .draggable-paper,
+html:not([data-custom-cursor='false']) [style*='cursor: grab'],
+html:not([data-custom-cursor='false']) [style*='cursor:grab'],
+html:not([data-custom-cursor='false']) [style*="cursor: 'grab'"] {
+  cursor: var(--cursor-grab) !important;
+}
+
+html:not([data-custom-cursor='false']) .bpmn-map-container:active,
+html:not([data-custom-cursor='false']) .bpmn-viewport:active,
+html:not([data-custom-cursor='false']) .bpmn-fullscreen-overlay svg:active,
+html:not([data-custom-cursor='false']) .draggable-paper:active,
+html:not([data-custom-cursor='false']) [style*='cursor: grabbing'],
+html:not([data-custom-cursor='false']) [style*='cursor:grabbing'],
+html:not([data-custom-cursor='false']) [style*="cursor: 'grabbing'"] {
+  cursor: var(--cursor-grabbing) !important;
+}
+
+/* 8. Trạng thái bị khóa / Không có thẩm quyền: Con dấu mộc cấm [✕] */
+html:not([data-custom-cursor='false']) button:disabled,
+html:not([data-custom-cursor='false']) .desk-btn:disabled,
+html:not([data-custom-cursor='false']) .desk-stamp-btn:disabled,
+html:not([data-custom-cursor='false']) [disabled],
+html:not([data-custom-cursor='false']) [aria-disabled='true'],
+html:not([data-custom-cursor='false']) [style*='cursor: not-allowed'],
+html:not([data-custom-cursor='false']) [style*='cursor:not-allowed'],
+html:not([data-custom-cursor='false']) [style*="cursor: 'not-allowed'"] {
+  cursor: var(--cursor-not-allowed) !important;
+}
+
+/* 9. Nhập liệu văn bản máy đánh chữ cơ học */
+html:not([data-custom-cursor='false']) input[type='text'],
+html:not([data-custom-cursor='false']) input:not([type]),
+html:not([data-custom-cursor='false']) textarea,
+html:not([data-custom-cursor='false']) .student-input:not(:disabled),
+html:not([data-custom-cursor='false']) .typewriter-input {
+  cursor: var(--cursor-text) !important;
+}
+
+/* 10. Hỏi đáp quy chế / Tra cứu AI / Chú thích */
+html:not([data-custom-cursor='false']) .ai-ask,
+html:not([data-custom-cursor='false']) .help-trigger,
+html:not([data-custom-cursor='false']) .ai-footnote,
+html:not([data-custom-cursor='false']) [data-help='true'],
+html:not([data-custom-cursor='false']) [style*='cursor: help'],
+html:not([data-custom-cursor='false']) [style*='cursor:help'],
+html:not([data-custom-cursor='false']) [style*="cursor: 'help'"] {
+  cursor: var(--cursor-help) !important;
+}

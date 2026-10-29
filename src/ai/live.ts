@@ -1,2 +1,163 @@
-// TODO: M6 - Live Gemini AI implementation
-export {};
+import { AIProvider, DocScanInput, DocScanResult, ReviewerBrief } from '../engine/types';
+import { asCaseSummary, CaseSummary, ChatMessage } from './provider';
+import {
+  PromptBundle,
+  buildChatPayload,
+  buildDocScanPayload,
+  buildDraftPayload,
+  buildReviewerPayload,
+} from './prompts';
+import { parseJsonObject, validateBrief, validateDocScan, validateDraft } from './validate';
+
+export class LiveAIError extends Error {}
+
+/** Lỗi không nên thử lại (4xx, nội dung rỗng, JSON sai) — fallback ngay. */
+class NonRetryableAIError extends LiveAIError {}
+
+const TIMEOUT_MS = 4000;
+const MAX_ATTEMPTS = 2;
+
+const LOCAL_HOSTS = ['localhost', '127.0.0.1', '::1', ''];
+
+/** Live chỉ bật khi demo trên máy local và đã khai đủ 2 biến môi trường. */
+export function isLiveAvailable(): boolean {
+  if (typeof window === 'undefined') return false;
+  if (!LOCAL_HOSTS.includes(window.location.hostname)) return false;
+
+  const env = import.meta.env;
+  const key = (env.VITE_GEMINI_API_KEY ?? '').trim();
+  const model = (env.VITE_GEMINI_MODEL ?? '').trim();
+  return key.length > 0 && model.length > 0;
+}
+
+export function createLiveAIFromEnv(): LiveAIProvider | null {
+  if (!isLiveAvailable()) return null;
+  const env = import.meta.env;
+  return new LiveAIProvider(
+    (env.VITE_GEMINI_API_KEY ?? '').trim(),
+    (env.VITE_GEMINI_MODEL ?? '').trim()
+  );
+}
+
+interface GeminiResponse {
+  candidates?: { content?: { parts?: { text?: string }[] } }[];
+}
+
+function toChatMessages(history: unknown[]): ChatMessage[] {
+  const messages: ChatMessage[] = [];
+  if (!Array.isArray(history)) return messages;
+  for (const item of history) {
+    if (!item || typeof item !== 'object') continue;
+    const candidate = item as { role?: unknown; content?: unknown };
+    if (candidate.role !== 'user' && candidate.role !== 'assistant') continue;
+    if (typeof candidate.content !== 'string') continue;
+    messages.push({ role: candidate.role, content: candidate.content });
+  }
+  return messages;
+}
+
+/**
+ * Gọi Gemini REST trực tiếp từ browser (đúng phạm vi demo offline-first).
+ * Key không bao giờ nằm trong URL/log; lỗi luôn ném ra để AIService fallback mock.
+ */
+export class LiveAIProvider implements AIProvider {
+  public mode: 'live' = 'live';
+
+  constructor(
+    private apiKey: string,
+    private model: string,
+    private timeoutMs: number = TIMEOUT_MS
+  ) {}
+
+  private endpoint(): string {
+    const model = this.model.replace(/^models\//, '');
+    return `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
+      model
+    )}:generateContent`;
+  }
+
+  private async generate(bundle: PromptBundle): Promise<string> {
+    const body = JSON.stringify({
+      systemInstruction: { parts: [{ text: bundle.system }] },
+      contents: [{ role: 'user', parts: [{ text: bundle.user }] }],
+      generationConfig: {
+        temperature: 0.2,
+        maxOutputTokens: 800,
+        responseMimeType: bundle.json ? 'application/json' : 'text/plain',
+      },
+    });
+
+    let lastError: unknown = new LiveAIError('Không gọi được Gemini');
+
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), this.timeoutMs);
+      try {
+        const response = await fetch(this.endpoint(), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': this.apiKey },
+          body,
+          signal: controller.signal,
+        });
+        clearTimeout(timer);
+
+        if (response.ok) {
+          const data = (await response.json()) as GeminiResponse;
+          const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (!text || !text.trim()) throw new NonRetryableAIError('Gemini trả về nội dung rỗng');
+          return text;
+        }
+
+        // 4xx là lỗi cấu hình/quyền → fallback ngay, không thử lại.
+        if (response.status >= 400 && response.status < 500) {
+          throw new NonRetryableAIError(`Gemini từ chối yêu cầu (${response.status})`);
+        }
+        lastError = new LiveAIError(`Gemini lỗi máy chủ (${response.status})`);
+      } catch (error) {
+        clearTimeout(timer);
+        if (error instanceof NonRetryableAIError) throw error;
+        lastError = error;
+      }
+    }
+
+    throw lastError instanceof Error ? lastError : new LiveAIError('Không gọi được Gemini');
+  }
+
+  public async analyzeDocuments(input: DocScanInput): Promise<DocScanResult> {
+    const text = await this.generate(buildDocScanPayload(input));
+    const raw = parseJsonObject(text);
+    const result = raw ? validateDocScan(raw) : null;
+    if (!result) throw new LiveAIError('Gemini trả JSON đọc hồ sơ không hợp lệ');
+    return result;
+  }
+
+  public async chat(history: unknown[], ctx: unknown): Promise<string> {
+    const text = await this.generate(buildChatPayload(toChatMessages(history), ctx));
+    const trimmed = text.trim();
+    if (!trimmed) throw new LiveAIError('Gemini trả lời rỗng');
+    return trimmed;
+  }
+
+  public async reviewerBrief(role: 'advisor' | 'ctsv', ctx: unknown): Promise<ReviewerBrief> {
+    const summary = asCaseSummary(ctx);
+    if (!summary) throw new LiveAIError('Thiếu dữ kiện ca để tóm tắt');
+    const text = await this.generate(buildReviewerPayload(role, summary));
+    const raw = parseJsonObject(text);
+    const brief = raw ? validateBrief(raw, role) : null;
+    if (!brief) throw new LiveAIError('Gemini trả JSON tóm tắt không hợp lệ');
+    return brief;
+  }
+
+  public async draftText(
+    kind: 'return' | 'reject' | 'decisionBasis',
+    ctx: unknown
+  ): Promise<string> {
+    const summary: CaseSummary | null = asCaseSummary(ctx);
+    if (!summary) throw new LiveAIError('Thiếu dữ kiện ca để soạn văn bản');
+    const text = await this.generate(buildDraftPayload(kind, summary));
+    const raw = parseJsonObject(text);
+    const draft = validateDraft(raw ?? text);
+    if (!draft) throw new LiveAIError('Gemini soạn văn bản không hợp lệ');
+    return draft;
+  }
+}

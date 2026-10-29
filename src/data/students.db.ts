@@ -21,11 +21,11 @@ export const INITIAL_STUDENTS: StudentRecord[] = [
   },
   {
     mssv: '3121102003',
-    name: 'Lê Quốc Bảo',
+    name: 'Lê Tuấn Kiệt',
     className: '47K08.1',
     faculty: 'Khoa Tài chính - Ngân hàng',
     phone: '0905345678',
-    email: 'bao.lq@due.edu.vn',
+    email: 'kiet.lt@due.edu.vn',
     status: 'Đang học',
   },
   {
@@ -39,11 +39,11 @@ export const INITIAL_STUDENTS: StudentRecord[] = [
   },
   {
     mssv: '3121102005',
-    name: 'Hoàng Đức Thịnh',
+    name: 'Hoàng Khánh Linh',
     className: '47K15.2',
     faculty: 'Khoa Thương mại điện tử',
     phone: '0905567890',
-    email: 'thinh.hd@due.edu.vn',
+    email: 'linh.hk@due.edu.vn',
     status: 'Đang học',
   },
   {
@@ -80,16 +80,24 @@ export class InMemoryStudentsDB implements StudentsDB {
 
   constructor(initialList: StudentRecord[] = INITIAL_STUDENTS) {
     this.data = new Map();
-    initialList.forEach((s) => this.data.set(s.mssv, { ...s }));
+    initialList.forEach((s) => {
+      const mssv = s.mssv.trim();
+      this.data.set(mssv, { ...s, mssv });
+    });
   }
 
   public get(mssv: string): StudentRecord | undefined {
-    const record = this.data.get(mssv);
+    const record = this.data.get(mssv.trim());
     return record ? { ...record } : undefined;
   }
 
+  public upsert(record: StudentRecord): void {
+    const mssv = record.mssv.trim();
+    this.data.set(mssv, { ...record, mssv });
+  }
+
   public updateStudentStatus(mssv: string, status: 'Đang học' | 'Bảo lưu'): void {
-    const record = this.data.get(mssv);
+    const record = this.data.get(mssv.trim());
     if (record) {
       record.status = status;
     }
@@ -97,7 +105,10 @@ export class InMemoryStudentsDB implements StudentsDB {
 
   public reset(initialList: StudentRecord[] = INITIAL_STUDENTS): void {
     this.data.clear();
-    initialList.forEach((s) => this.data.set(s.mssv, { ...s }));
+    initialList.forEach((s) => {
+      const mssv = s.mssv.trim();
+      this.data.set(mssv, { ...s, mssv });
+    });
   }
 }
 

@@ -11,6 +11,7 @@ describe('useAppStore', () => {
       muted: true,
       day: 0,
       scenarioId: null,
+      customCursor: true,
     });
   });
 
@@ -44,5 +45,21 @@ describe('useAppStore', () => {
     setScenario('s1');
     expect(useAppStore.getState().scenarioId).toBe('s1');
     expect(useAppStore.getState().screen).toBe('desk');
+  });
+
+  it('toggles and sets customCursor correctly', () => {
+    const { toggleCustomCursor, setCustomCursor } = useAppStore.getState();
+    expect(useAppStore.getState().customCursor).toBe(true);
+    toggleCustomCursor();
+    expect(useAppStore.getState().customCursor).toBe(false);
+    setCustomCursor(true);
+    expect(useAppStore.getState().customCursor).toBe(true);
+  });
+
+  it('provides valid short labels for all 5 roles for compact responsive HUD', async () => {
+    const { ROLES } = await import('./useApp');
+    expect(ROLES).toHaveLength(5);
+    const shortLabels = ROLES.map((r) => r.shortLabel);
+    expect(shortLabels).toEqual(['SV', 'HT', 'CV', 'CTSV', 'BGH']);
   });
 });

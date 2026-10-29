@@ -1,0 +1,159 @@
+/* M5 · Phòng điều khiển, caption dock và báo cáo cuối ca */
+
+/* Caption gắn đáy khung (không overlay) */
+.caption-bar-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 2px 18px;
+}
+
+@media (max-width: 900px) {
+  .caption-bar-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ---------- Phòng điều khiển ---------- */
+.control-page {
+  width: min(1320px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-family: var(--font-read);
+  color: var(--paper);
+}
+
+.control-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  background: var(--desk-700);
+  border: 1px solid var(--desk-500);
+  border-left: 5px solid var(--crt-fg);
+  font-family: var(--font-hud);
+  font-size: 17px;
+}
+
+.control-status strong { color: var(--amber); }
+.control-status .control-sim {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--amber);
+  border: 1px solid var(--amber);
+  padding: 1px 6px;
+  font-family: var(--font-paper);
+}
+
+.control-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(300px, 1fr);
+  grid-template-areas:
+    'terminal stores'
+    'terminal docs'
+    'rules docs';
+  gap: 12px;
+  align-items: stretch;
+}
+
+.control-terminal { grid-area: terminal; }
+.control-stores { grid-area: stores; }
+.control-docs { grid-area: docs; }
+.control-rules { grid-area: rules; }
+
+.control-panel {
+  background: var(--desk-700);
+  border: 2px solid var(--desk-500);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.control-panel-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  border-bottom: 1px solid var(--desk-500);
+  padding-bottom: 5px;
+}
+
+.control-panel-title {
+  margin: 0;
+  font-family: var(--font-paper);
+  font-size: 14px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--paper);
+}
+
+.control-panel-note {
+  font-size: 11px;
+  color: var(--paper-dim);
+  font-family: var(--font-paper);
+}
+
+/* Bảng rule T3 */
+.rules-table {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-family: var(--font-paper);
+  font-size: 13px;
+}
+
+.rule-row {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) 26px;
+  gap: 8px;
+  align-items: baseline;
+  padding: 4px 6px;
+  border-bottom: 1px dotted var(--desk-500);
+}
+
+.rule-row[data-passed='false'] {
+  background: var(--wash-red);
+  color: var(--crt-fail-soft);
+}
+
+.rule-row[data-passed='false'] .rule-mark { color: var(--crt-fail); }
+.rule-row[data-passed='true'] .rule-mark { color: var(--crt-fg); }
+
+.rule-id { font-family: var(--font-hud); font-size: 16px; color: var(--amber); }
+.rule-detail { display: block; color: var(--paper-dim); font-size: 11.5px; }
+.rule-row[data-passed='false'] .rule-detail { color: var(--crt-fail-soft); }
+.rule-mark { text-align: right; font-weight: 700; }
+
+.rules-empty {
+  font-family: var(--font-paper);
+  font-size: 13px;
+  color: var(--paper-dim);
+  padding: 6px;
+}
+
+@media (max-width: 1100px) {
+  .control-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      'terminal'
+      'rules'
+      'stores'
+      'docs';
+  }
+  .crt-terminal { max-height: 42vh; }
+}
+
+/* Màn hình thấp (1366×768): thu gọn để cả bảng rule nằm trong khung nhìn */
+@media (max-height: 820px) {
+  .control-page { gap: 8px; }
+  .control-status { padding: 6px 10px; font-size: 15px; }
+  .control-panel { padding: 8px 10px; gap: 6px; }
+  .crt-terminal { max-height: 34vh; min-height: 220px; }
+  .rules-table { font-size: 12px; gap: 2px; }
+  .rule-row { padding: 2px 6px; }
+  .rule-detail { font-size: 11px; }
+}

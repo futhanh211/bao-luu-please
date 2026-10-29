@@ -1,0 +1,827 @@
+/* ==========================================================================
+   M7 · Mô phỏng quy trình As-Is (Hồ sơ giấy 22 ngày) — Vintage Bureaucracy UI
+   ========================================================================== */
+
+.asis-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background-color: rgba(8, 8, 6, 0.86);
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: asis-fade-in 0.2s ease-out;
+}
+
+@keyframes asis-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.asis-card {
+  width: 100%;
+  max-width: 1060px;
+  max-height: calc(100vh - 32px);
+  background-color: var(--paper);
+  background-image: var(--paper-texture);
+  color: var(--ink);
+  border: 2px solid var(--desk-900);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-paper-lift);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ---------- Header ---------- */
+.asis-header {
+  padding: 12px 20px;
+  background-color: var(--desk-900);
+  background-image: var(--desk-texture);
+  color: var(--paper);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 3px solid var(--stamp-red);
+  position: relative;
+  flex-shrink: 0;
+}
+
+.asis-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--stamp-red), var(--amber), var(--stamp-red));
+  opacity: 0.8;
+}
+
+.asis-header-titles {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.asis-eyebrow {
+  font-family: var(--font-paper);
+  font-size: 11px;
+  color: var(--amber);
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.asis-eyebrow-badge {
+  background: rgba(217, 164, 65, 0.2);
+  border: 1px solid var(--amber);
+  color: var(--amber);
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.asis-title {
+  margin: 0;
+  font-family: var(--font-paper);
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.asis-title-icon {
+  font-size: 20px;
+}
+
+.asis-header-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+/* Đồng hồ ngày kiểu cơ học */
+.asis-odometer {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  background: var(--desk-700);
+  padding: 6px 14px;
+  border: 1px solid var(--amber);
+  border-radius: var(--radius-sm);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.asis-odometer-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-family: var(--font-hud);
+  font-size: 21px;
+  line-height: 1;
+  color: var(--amber);
+}
+
+.asis-odometer-label {
+  font-family: var(--font-paper);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--paper-dim);
+  letter-spacing: 0.8px;
+}
+
+.asis-odometer-num {
+  color: #ffffff;
+  font-size: 24px;
+  font-weight: 700;
+  text-shadow: 0 0 6px rgba(255, 255, 255, 0.35);
+}
+
+.asis-odometer-bar {
+  width: 100%;
+  height: 4px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.asis-odometer-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #52c41a, var(--amber), var(--stamp-red));
+  transition: width 0.3s ease;
+}
+
+.asis-close-btn {
+  background: transparent;
+  border: 1px solid var(--desk-500);
+  color: var(--paper);
+  font-size: 16px;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.asis-close-btn:hover {
+  background: var(--stamp-red);
+  border-color: var(--stamp-red);
+  color: #ffffff;
+  transform: scale(1.05);
+}
+
+/* ---------- Body ---------- */
+.asis-body {
+  padding: 16px 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  flex: 1;
+}
+
+/* Custom retro scrollbar */
+.asis-body::-webkit-scrollbar {
+  width: 7px;
+}
+.asis-body::-webkit-scrollbar-track {
+  background: var(--paper-dim);
+}
+.asis-body::-webkit-scrollbar-thumb {
+  background: var(--desk-500);
+  border-radius: 2px;
+}
+.asis-body::-webkit-scrollbar-thumb:hover {
+  background: var(--desk-700);
+}
+
+/* ---------- Active Station Spotlight (Phiếu luân chuyển) ---------- */
+.asis-spotlight {
+  background: #fffdf5;
+  border: 2px solid var(--desk-700);
+  border-radius: var(--radius-sm);
+  padding: 14px 18px;
+  box-shadow: var(--shadow-paper);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: relative;
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent 0 23px,
+    rgba(185, 176, 147, 0.15) 23px 24px
+  );
+}
+
+.asis-spotlight-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px dashed var(--paper-line);
+  padding-bottom: 8px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.asis-spotlight-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.asis-station-badge {
+  background: var(--stamp-red);
+  color: #ffffff;
+  font-family: var(--font-paper);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-stamp);
+  flex-shrink: 0;
+}
+
+.asis-station-name {
+  margin: 0;
+  font-family: var(--font-paper);
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--ink);
+  line-height: 1.2;
+}
+
+.asis-station-role {
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+
+.asis-location-pill {
+  font-family: var(--font-paper);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--paper-dim);
+  border: 1px solid var(--paper-line);
+  padding: 3px 10px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.asis-spotlight-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.25fr;
+  gap: 14px;
+  align-items: stretch;
+}
+
+@media (max-width: 820px) {
+  .asis-spotlight-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Thao tác nghiệp vụ bên trái */
+.asis-action-card {
+  background: var(--paper);
+  border: 1px solid var(--paper-line);
+  border-left: 4px solid var(--amber);
+  padding: 10px 14px;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.asis-action-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.asis-delay-stamp {
+  font-family: var(--font-hud);
+  font-size: 16px;
+  background: var(--desk-900);
+  color: var(--amber);
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.asis-action-detail {
+  font-family: var(--font-read);
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--ink);
+}
+
+.asis-action-detail strong {
+  font-family: var(--font-paper);
+  font-size: 12px;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 2px;
+}
+
+.asis-action-legwork {
+  font-size: 11.5px;
+  font-family: var(--font-paper);
+  color: var(--ink-soft);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-top: 1px dotted var(--paper-line);
+  padding-top: 6px;
+}
+
+/* Giấy note vàng ghi điểm nghẽn thực tế bên phải */
+.asis-sticky-note {
+  background: #fff9c4;
+  border: 1px solid #e6d366;
+  border-left: 4px solid var(--stamp-red);
+  padding: 10px 14px;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+}
+
+.asis-sticky-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--font-paper);
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--stamp-red);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.asis-sticky-body {
+  font-family: var(--font-read);
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: #791e17;
+  font-style: italic;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.asis-sticky-quote-icon {
+  font-size: 18px;
+  line-height: 1;
+  font-style: normal;
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
+/* ---------- Pipeline Conveyor Section (8 Trạm kết nối) ---------- */
+.asis-pipeline-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.asis-pipeline-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.asis-pipeline-title {
+  font-family: var(--font-paper);
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.asis-pipeline-hint {
+  font-family: var(--font-paper);
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+
+.asis-pipeline-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+@media (max-width: 768px) {
+  .asis-pipeline-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.asis-station-card {
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--paper-dim);
+  border: 1px solid var(--paper-line);
+  cursor: pointer;
+  transition: all 0.18s ease;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-height: 68px;
+}
+
+.asis-station-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-paper);
+  border-color: var(--desk-700);
+}
+
+/* Trạng thái đã qua */
+.asis-station-card[data-status='passed'] {
+  background: #f4faed;
+  border-color: #8bc34a;
+}
+
+.asis-station-card[data-status='passed'] .asis-card-status {
+  color: #43a047;
+}
+
+/* Trạng thái đang xử lý */
+.asis-station-card[data-status='active'] {
+  background: #fffdf0;
+  border: 2px solid var(--amber);
+  box-shadow: 0 3px 10px rgba(217, 164, 65, 0.28), var(--shadow-paper);
+  transform: translateY(-2px);
+}
+
+.asis-station-card[data-status='active'] .asis-card-status {
+  color: #b27b16;
+  font-weight: 800;
+}
+
+/* Trạng thái sắp tới */
+.asis-station-card[data-status='future'] {
+  opacity: 0.85;
+}
+
+.asis-card-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.asis-card-status {
+  font-family: var(--font-paper);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.asis-card-delay {
+  font-family: var(--font-hud);
+  font-size: 12px;
+  color: var(--ink);
+  font-weight: 700;
+  background: rgba(0, 0, 0, 0.05);
+  padding: 1px 5px;
+  border-radius: 2px;
+}
+
+.asis-card-name {
+  font-family: var(--font-paper);
+  font-weight: 800;
+  font-size: 12.5px;
+  color: var(--ink);
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.asis-card-role {
+  font-family: var(--font-read);
+  font-size: 11px;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.asis-active-folder-badge {
+  position: absolute;
+  top: -8px;
+  right: -6px;
+  background: var(--amber);
+  color: var(--desk-900);
+  font-family: var(--font-paper);
+  font-size: 10px;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 2px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  z-index: 2;
+}
+
+/* Connector indicator giữa các card */
+.asis-pipeline-row-connector {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 2px 0;
+  font-family: var(--font-paper);
+  font-size: 11px;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* ---------- Bảng so sánh As-Is vs To-Be ---------- */
+.asis-comparison-board {
+  background: var(--desk-900);
+  background-image: var(--desk-texture);
+  color: var(--paper);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  border: 1px solid var(--desk-700);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.asis-comparison-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px dashed var(--desk-700);
+  padding-bottom: 6px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.asis-comparison-title {
+  font-family: var(--font-paper);
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--amber);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Băng chỉ số nhanh 3 mục tiêu */
+.asis-metric-pills {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.asis-metric-pill {
+  font-family: var(--font-paper);
+  font-size: 10.5px;
+  background: var(--desk-700);
+  border: 1px solid var(--desk-500);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.asis-metric-pill strong {
+  color: #52c41a;
+}
+
+.asis-comparison-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 768px) {
+  .asis-comparison-cols {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Cột As-Is */
+.asis-col-asis {
+  background: rgba(179, 38, 30, 0.14);
+  border-left: 3px solid var(--stamp-red);
+  padding: 10px 12px;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.asis-col-title-asis {
+  font-family: var(--font-paper);
+  font-weight: 800;
+  font-size: 12.5px;
+  color: #ff7875;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 3px;
+}
+
+/* Cột To-Be */
+.asis-col-tobe {
+  background: rgba(46, 107, 58, 0.22);
+  border-left: 3px solid #52c41a;
+  padding: 10px 12px;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.asis-col-title-tobe {
+  font-family: var(--font-paper);
+  font-weight: 800;
+  font-size: 12.5px;
+  color: #95de64;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 3px;
+}
+
+.asis-bullet-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-family: var(--font-read);
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--paper-dim);
+}
+
+.asis-bullet-row strong {
+  font-family: var(--font-paper);
+  font-size: 11.5px;
+  color: #ffffff;
+}
+
+.asis-bullet-icon {
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+/* ---------- Footer Controls ---------- */
+.asis-footer {
+  padding: 10px 20px;
+  background-color: var(--paper-dim);
+  border-top: 1px solid var(--paper-line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.asis-controls-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.asis-btn-primary {
+  padding: 6px 14px;
+  font-family: var(--font-paper);
+  font-size: 12px;
+  font-weight: 800;
+  background: var(--desk-900);
+  color: var(--paper);
+  border: 1px solid var(--desk-700);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.asis-btn-primary[data-playing='true'] {
+  background: var(--amber);
+  color: var(--desk-900);
+  border-color: #b27b16;
+}
+
+.asis-btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-stamp);
+}
+
+.asis-btn-step {
+  padding: 6px 12px;
+  font-family: var(--font-paper);
+  font-size: 12px;
+  font-weight: 700;
+  background: var(--paper);
+  color: var(--ink);
+  border: 1px solid var(--paper-line);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.asis-btn-step:hover:not(:disabled) {
+  background: #ffffff;
+  border-color: var(--ink);
+  transform: translateY(-1px);
+}
+
+.asis-btn-step:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  border-color: var(--paper-line);
+}
+
+.asis-btn-replay {
+  padding: 6px 10px;
+  font-family: var(--font-paper);
+  font-size: 12px;
+  color: var(--ink-soft);
+  background: transparent;
+  border: 1px dashed var(--paper-line);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.asis-btn-replay:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.asis-keyboard-hint {
+  font-family: var(--font-paper);
+  font-size: 11px;
+  color: var(--ink-soft);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.asis-btn-close {
+  padding: 6px 18px;
+  font-family: var(--font-paper);
+  font-size: 12px;
+  font-weight: 800;
+  background: var(--desk-900);
+  color: var(--paper);
+  border: 1px solid var(--desk-700);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.asis-btn-close:hover {
+  background: var(--stamp-red);
+  border-color: var(--stamp-red);
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-stamp);
+}

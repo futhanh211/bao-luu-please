@@ -1,0 +1,282 @@
+/* M4 · kit animations: con dấu, rung bàn, toast, chấm việc, chuông SLA, chữ ký */
+
+@keyframes desk-shake {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(-5px, 2px); }
+  40% { transform: translate(5px, -2px); }
+  60% { transform: translate(-3px, 1px); }
+  80% { transform: translate(3px, -1px); }
+}
+
+.desk-shake {
+  animation: desk-shake var(--stamp-shake-ms, 150ms) linear;
+}
+
+/* Rung bàn cơ học mạnh mẽ (Heavy impact shake) khi dập dấu gỗ dứt khoát */
+@keyframes desk-shake-heavy {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  15% { transform: translate(-8px, 6px) rotate(-0.55deg); }
+  30% { transform: translate(8px, -5px) rotate(0.45deg); }
+  48% { transform: translate(-5px, 3px) rotate(-0.3deg); }
+  66% { transform: translate(4px, -3px) rotate(0.18deg); }
+  82% { transform: translate(-2px, 1px) rotate(-0.08deg); }
+  100% { transform: translate(0, 0) rotate(0deg); }
+}
+
+.desk-shake-heavy {
+  animation: desk-shake-heavy var(--stamp-shake-ms, 180ms) cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+/* Đồ vật giấy tờ trên mặt bàn nảy nhẹ theo lực dập con dấu */
+.desk-shake-heavy .paper-sheet,
+.desk-shake-heavy .card,
+.desk-shake-heavy .plastic-evidence-bag,
+.desk-shake-heavy .evidence-paper,
+.desk-shake-heavy .advisor-tablet,
+.desk-shake-heavy .application-card {
+  animation: paper-rebound var(--stamp-shake-ms, 180ms) ease-out both;
+}
+
+@keyframes paper-rebound {
+  0% { transform: translateY(0); }
+  25% { transform: translateY(-4px) rotate(0.18deg); }
+  55% { transform: translateY(1.5px); }
+  100% { transform: translateY(0); }
+}
+
+@keyframes stamp-drop {
+  0% {
+    transform: rotate(var(--stamp-angle, -4deg)) scale(1.8) translateY(-12px);
+    opacity: 0.2;
+    filter: blur(1px);
+  }
+  100% {
+    transform: rotate(var(--stamp-angle, -4deg)) scale(1) translateY(0);
+    opacity: 0.94;
+    filter: blur(0);
+  }
+}
+
+@keyframes stamp-spread {
+  0% {
+    opacity: 0.65;
+    transform: scale(0.4);
+    box-shadow: 0 0 0 0 currentColor;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.22);
+    box-shadow: 0 0 8px 4px transparent;
+  }
+}
+
+.stamp-mark {
+  position: relative;
+  display: inline-block;
+  font-family: var(--font-paper);
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--stamp-red);
+  background: rgba(255, 255, 255, 0.03);
+  border: 3.5px solid currentColor;
+  outline: 1.5px solid currentColor;
+  outline-offset: 2.5px;
+  border-radius: var(--radius-sm);
+  padding: 6px 14px;
+  box-shadow: var(--shadow-stamp), inset 0 0 3px currentColor;
+  transform: rotate(var(--stamp-angle, -4deg));
+  opacity: 0.94;
+  user-select: none;
+  cursor: default;
+  text-shadow: 0 0 1px currentColor;
+  transition: transform 120ms ease;
+}
+
+.stamp-mark[data-interactive='true'] { cursor: pointer; }
+.stamp-mark:disabled { opacity: 0.94; }
+
+/* Bụi mực văng tí tách ở góc con dấu */
+.stamp-mark::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  pointer-events: none;
+  border-radius: 4px;
+  background: radial-gradient(circle at 10% 20%, currentColor 0.6px, transparent 1px),
+              radial-gradient(circle at 90% 80%, currentColor 0.7px, transparent 1.2px),
+              radial-gradient(circle at 85% 15%, currentColor 0.5px, transparent 1px),
+              radial-gradient(circle at 15% 85%, currentColor 0.6px, transparent 1.2px);
+  opacity: 0.45;
+}
+
+.stamp-mark::after {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.stamp-mark[data-phase='drop'] {
+  animation: stamp-drop var(--stamp-drop-ms, 120ms) ease-in forwards;
+}
+
+.stamp-mark[data-phase='spread']::after,
+.stamp-mark[data-phase='rest']::after {
+  animation: stamp-spread var(--stamp-spread-ms, 300ms) ease-out forwards;
+}
+
+.stamp-mark[data-reduced='true'] {
+  animation: none;
+}
+
+.stamp-red { color: var(--stamp-red); }
+.stamp-green { color: var(--stamp-green); }
+.stamp-blue { color: var(--stamp-blue); }
+
+.stamp-size-sm { font-size: 13px; padding: 4px 9px; border-width: 2px; letter-spacing: 1px; }
+.stamp-size-md { font-size: 18px; }
+.stamp-size-lg { font-size: 28px; padding: 10px 22px; border-width: 5px; letter-spacing: 4px; }
+
+.stamp-landing {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 20;
+}
+
+/* Toast "có việc mới" — trên cùng, không đè mini-map góc phải dưới */
+@keyframes toast-in {
+  from { opacity: 0; transform: translate(-50%, -8px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+.app-toast {
+  position: fixed;
+  top: 76px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 18px;
+  background: var(--amber);
+  color: var(--ink);
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-paper-lg);
+  font-family: var(--font-paper);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: default;
+  animation: toast-in 180ms ease-out;
+}
+
+.app-toast[data-clickable='true'] { cursor: pointer; }
+.app-toast[data-clickable='true']:hover { background: var(--paper); }
+
+.app-toast.toast-blue {
+  background: var(--stamp-blue);
+  color: var(--text-on-stamp);
+  border-color: var(--paper-line);
+}
+
+.app-toast-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--stamp-red);
+  animation: work-dot 900ms ease-in-out infinite;
+}
+
+.app-toast-hint {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  opacity: 0.75;
+}
+
+@keyframes work-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(0.7); }
+}
+
+.role-work-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-left: 4px;
+  border-radius: 50%;
+  background: var(--amber);
+  box-shadow: 0 0 0 2px var(--wash-amber);
+  animation: work-dot 900ms ease-in-out infinite;
+}
+
+.role-work-dot[data-reduced='true'] { animation: none; }
+
+@keyframes bell-ring {
+  0%, 100% { transform: rotate(0); }
+  20% { transform: rotate(-18deg); }
+  40% { transform: rotate(16deg); }
+  60% { transform: rotate(-10deg); }
+  80% { transform: rotate(8deg); }
+}
+
+.sla-bell {
+  display: inline-block;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.sla-bell[data-ring='true'] {
+  animation: bell-ring var(--bell-ms, 600ms) ease-in-out;
+}
+
+@keyframes sign-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+/* Hạt bụi lơ lửng trong nắng */
+@keyframes dust-float {
+  0% { transform: translate(0, 0) scale(1); opacity: 0.2; }
+  50% { transform: translate(10px, -14px) scale(1.15); opacity: 0.55; }
+  100% { transform: translate(-8px, -28px) scale(0.85); opacity: 0.1; }
+}
+
+@keyframes dust-float-1 {
+  0% { transform: translate(0, 0) scale(1); opacity: 0.2; }
+  50% { transform: translate(12px, -16px) scale(1.15); opacity: 0.55; }
+  100% { transform: translate(-8px, -30px) scale(0.85); opacity: 0.1; }
+}
+
+@keyframes dust-float-2 {
+  0% { transform: translate(0, 0) scale(0.9); opacity: 0.15; }
+  45% { transform: translate(-14px, -12px) scale(1.2); opacity: 0.6; }
+  100% { transform: translate(10px, -28px) scale(0.8); opacity: 0.2; }
+}
+
+@keyframes dust-float-3 {
+  0% { transform: translate(0, 0) scale(1); opacity: 0.25; }
+  35% { transform: translate(8px, -8px) scale(1.1); opacity: 0.5; }
+  70% { transform: translate(-6px, -22px) scale(0.95); opacity: 0.45; }
+  100% { transform: translate(6px, -34px) scale(1.05); opacity: 0.12; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .desk-shake,
+  .stamp-mark,
+  .stamp-mark::after,
+  .app-toast,
+  .app-toast-dot,
+  .role-work-dot,
+  .sla-bell {
+    animation: none !important;
+  }
+}

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { sfx } from '../audio/sfx';
 
 interface TypewriterProps {
   text: string;
@@ -24,6 +25,7 @@ export const Typewriter: React.FC<TypewriterProps> = ({
       index++;
       if (index <= text.length) {
         setDisplayed(text.slice(0, index));
+        sfx.playTypewriter();
       } else {
         clearInterval(timer);
         onComplete?.();

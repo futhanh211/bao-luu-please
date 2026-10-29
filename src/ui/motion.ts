@@ -2,7 +2,8 @@
 // All timing should be scaled according to app speed store (0.5x, 1x, 2x)
 
 export const MOTION = {
-  screenTransitionMs: 400,
+  /** Vệt giấy chuyển màn: đủ chậm để mắt bắt kịp, không "vèo" một cái. */
+  screenTransitionMs: 700,
   paperSlideMs: 450,
   stampDropMs: 120,
   stampShakeMs: 150,
@@ -13,10 +14,12 @@ export const MOTION = {
   envelopeFlyMs: 800,
   signatureDrawMs: 1200,
   typewriterCharMs: 30,
+  aiTypewriterCharMs: 25,
+  letterSlideMs: 350,
 };
 
 export const screenVariants = {
   initial: { opacity: 0, y: 12 },
-  animate: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' } },
-  exit: { opacity: 0, y: -12, transition: { duration: 0.3, ease: 'easeIn' } },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.55, ease: 'easeOut' } },
+  exit: { opacity: 0, y: -12, transition: { duration: 0.4, ease: 'easeIn' } },
 };

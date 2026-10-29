@@ -21,10 +21,22 @@
   /* Nhấn vàng (điền tự động / cảnh báo) */
   --amber: #d9a441;
 
+  /* Nền nhạt cho trạng thái (không hardcode màu trong component) */
+  --wash-red: rgba(179, 38, 30, 0.07);
+  --wash-green: rgba(46, 107, 58, 0.12);
+  --wash-amber: rgba(217, 164, 65, 0.16);
+  --text-on-stamp: #f4efe2;
+  --overlay-scrim: rgba(10, 10, 8, 0.72);
+
   /* CRT hệ thống */
   --crt-bg: #0c1a10;
   --crt-fg: #7fe08a;
   --crt-dim: #3d7a46;
+  --crt-fail: #ff8b7d;
+  --crt-fail-soft: #ffb3aa;
+  --wash-crt: rgba(127, 224, 138, 0.08);
+  --crt-glow: rgba(0, 0, 0, 0.55);
+  --crt-scanline: rgba(0, 0, 0, 0.16);
 
   /* Màu lane (dùng trên bản đồ) */
   --lane-l1-sys: #2c4a3a;
@@ -37,11 +49,29 @@
   --radius-sm: 2px;
   --radius-md: 4px;
 
-  /* Bóng đổ cứng (offset, không blur) */
+  /* Bóng đổ cứng & Chiều sâu vật lý */
   --shadow-paper: 3px 3px 0px rgba(10, 10, 8, 0.7);
   --shadow-paper-lg: 5px 5px 0px rgba(10, 10, 8, 0.85);
+  --shadow-paper-lift: 6px 10px 0px rgba(10, 10, 8, 0.55), 0 14px 20px rgba(0, 0, 0, 0.35);
   --shadow-stamp: 2px 2px 0px rgba(0, 0, 0, 0.4);
   --shadow-hard: 2px 2px 0px #11110e;
+
+  /* Chiều sâu ánh sáng & Bàn làm việc (VFX/Graphic 2.0) */
+  --desk-lamp-glow: radial-gradient(circle at 50% 25%, rgba(255, 240, 190, 0.20) 0%, rgba(255, 230, 150, 0.07) 50%, transparent 78%);
+  --desk-vignette: radial-gradient(circle at 50% 50%, transparent 58%, rgba(8, 8, 6, 0.52) 100%);
+  --desk-texture: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='wood'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.02 0.35' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0.8 0 0 0 0 0.75 0 0 0 0 0.65 0 0 0 0.06 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23wood)'/%3E%3C/svg%3E");
+  --desk-blotter-bg: #292820;
+  --desk-blotter-stitch: #6e654c;
+  --desk-blotter-texture: url("data:image/svg+xml,%3Csvg viewBox='0 0 160 160' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='leather'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.065 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23leather)'/%3E%3C/svg%3E");
+  --desk-brass-corner: #a68b44;
+
+  /* Giấy tờ & Văn bản 2.0 */
+  --paper-texture: url("data:image/svg+xml,%3Csvg viewBox='0 0 240 240' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='fiber'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0.2 0 0 0 0 0.16 0 0 0 0 0.1 0 0 0 0.045 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23fiber)'/%3E%3C/svg%3E");
+  --paper-watermark: rgba(46, 107, 58, 0.045);
+  --paperclip-steel: #b0b7be;
+  --paperclip-shadow: rgba(0, 0, 0, 0.38);
+  --ink-wet: #12192c;
+  --seal-gold: #c99e32;
 
   /* Fonts offline (Courier Prime thiếu subset Vietnamese -> dùng IBM Plex Mono) */
   --font-paper: 'IBM Plex Mono', monospace;

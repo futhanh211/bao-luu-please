@@ -14,6 +14,7 @@ export const ScenarioPicker: React.FC = () => {
       initial="initial"
       animate="animate"
       exit="exit"
+      className="scenario-picker student-scroll"
       style={{
         flex: 1,
         padding: '36px 40px',
@@ -71,6 +72,7 @@ export const ScenarioPicker: React.FC = () => {
         {SCENARIOS.map((sc, idx) => (
           <div
             key={sc.id}
+            className="scenario-card"
             onClick={() => setScenario(sc.id)}
             style={{
               backgroundColor: 'var(--paper)',
@@ -78,7 +80,7 @@ export const ScenarioPicker: React.FC = () => {
               borderRadius: 'var(--radius-sm)',
               boxShadow: 'var(--shadow-paper)',
               padding: '24px',
-              cursor: 'pointer',
+              cursor: 'var(--cursor-pointer)',
               border: '1px solid var(--paper-line)',
               display: 'flex',
               flexDirection: 'column',

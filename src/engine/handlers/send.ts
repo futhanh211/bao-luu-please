@@ -26,10 +26,15 @@ export async function handleSendTask(
         title: 'Thông báo trả hồ sơ / Yêu cầu bổ sung minh chứng',
         content: returnMsg,
         day: currentDay,
+        aiGenerated: true,
       };
 
       state.messages.push(sentMsg);
-      emit({ type: 'message.sent', flowId: 'MF2', payload: sentMsg });
+      emit({
+        type: 'message.sent',
+        flowId: 'MF2',
+        payload: { ...sentMsg, validity: { ...state.validity, missing: [...state.validity.missing] } },
+      });
       break;
     }
 
@@ -52,10 +57,23 @@ export async function handleSendTask(
         title: 'Thông báo không đủ điều kiện giải quyết bảo lưu kết quả học tập',
         content: rejectMsg,
         day: currentDay,
+        aiGenerated: true,
       };
 
       state.messages.push(sentMsg);
-      emit({ type: 'message.sent', flowId: 'MF3', payload: sentMsg });
+      emit({
+        type: 'message.sent',
+        flowId: 'MF3',
+        payload: {
+          ...sentMsg,
+          ruleResult: {
+            pass: state.ruleResult.pass,
+            violations: [...state.ruleResult.violations],
+          },
+          advisorStatus: state.advisor.status,
+          ctsvStatus: state.ctsv.status,
+        },
+      });
       break;
     }
 
@@ -75,7 +93,11 @@ export async function handleSendTask(
       };
 
       state.messages.push(sentMsg);
-      emit({ type: 'message.sent', flowId: 'MF4', payload: sentMsg });
+      emit({
+        type: 'message.sent',
+        flowId: 'MF4',
+        payload: { ...sentMsg, decisionDoc: state.decisionDoc ? { ...state.decisionDoc } : undefined },
+      });
       break;
     }
 
