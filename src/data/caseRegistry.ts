@@ -90,9 +90,12 @@ function createInitialCases(force = false): SubmittedCase[] {
     attachedEvidenceIds: ev1.map((e) => e.id),
     submittedAt: '29/10/2026 21:55',
     day: 0,
-    status: 'pending_ctsv',
+    status: 'pending_principal',
     advisorDecision: 'confirmed',
     advisorDecisionAt: '29/10/2026 22:00',
+    ctsvDecision: 'valid',
+    ctsvDecisionAt: '29/10/2026 22:10',
+    ctsvMarks: ['bv_da_khoa_da_nang'],
   });
 
   // Hồ sơ 2: Khai (MSSV: 251121536114)
@@ -154,6 +157,50 @@ export function getAllSubmittedCases(): SubmittedCase[] {
 
     // Đảm bảo cả hai hồ sơ Phạm Minh Khôi và Khai luôn có trong danh sách nếu chưa có
     let modified = false;
+
+    // Tự động làm sạch trạng thái không hợp lệ do các phiên chạy cũ (Sanitize invalid states):
+    // 1. Nếu Cố vấn đã từ chối (advisorDecision === 'declined'): hồ sơ dừng hoàn toàn, không thể có thẩm định CTSV hay chữ ký BGH
+    // 2. Nếu CTSV kết luận không hợp lệ (ctsvDecision === 'invalid'): hồ sơ dừng, không thể có chữ ký BGH
+    for (const c of parsed) {
+      if (c.advisorDecision === 'declined') {
+        if (c.status !== 'rejected') {
+          c.status = 'rejected';
+          modified = true;
+        }
+        if (c.ctsvDecision) {
+          delete c.ctsvDecision;
+          delete c.ctsvDecisionAt;
+          delete c.ctsvMarks;
+          delete c.ctsvNotes;
+          modified = true;
+        }
+        if (c.principalSigned || c.decisionDoc) {
+          c.principalSigned = false;
+          delete c.principalSignedAt;
+          delete c.principalSignerName;
+          delete c.decisionDoc;
+          modified = true;
+        }
+      } else if (c.ctsvDecision === 'invalid') {
+        if (c.status !== 'rejected') {
+          c.status = 'rejected';
+          modified = true;
+        }
+        if (c.principalSigned || c.decisionDoc) {
+          c.principalSigned = false;
+          delete c.principalSignedAt;
+          delete c.principalSignerName;
+          delete c.decisionDoc;
+          modified = true;
+        }
+      }
+    }
+
+    if (modified) {
+      saveAllSubmittedCases(parsed);
+      modified = false;
+    }
+
     const hasKhoi = parsed.some((c) => c.studentMssv === '251121536115');
     const hasKhai = parsed.some((c) => c.studentMssv === '251121536114');
 
@@ -241,6 +288,12 @@ export function updateCaseCtsvDecision(
   const target = all.find((c) => c.id === caseId || c.caseCode === caseId);
   if (!target) return null;
 
+  // CHẶN BẢO VỆ: Nếu Cố vấn chưa xác nhận hoặc đã từ chối ở bước 1, CTSV không thể thẩm định
+  if (target.advisorDecision !== 'confirmed') {
+    console.warn(`Hồ sơ ${caseId} không thể thẩm định tại CTSV vì Cố vấn chưa phê duyệt.`);
+    return null;
+  }
+
   target.ctsvDecision = decision;
   target.ctsvDecisionAt =
     new Date().toLocaleDateString('vi-VN') +
@@ -281,6 +334,14 @@ export function updateCasePrincipalSign(
   const target = all.find((c) => c.id === caseId || c.caseCode === caseId);
   if (!target) return null;
 
+  // CHẶN BẢO VỆ: BGH CHỈ KÝ KHI CẢ CỐ VẤN ĐÃ XÁC NHẬN VÀ CTSV ĐÃ THẨM ĐỊNH HỢP LỆ!
+  if (target.advisorDecision !== 'confirmed' || target.ctsvDecision !== 'valid') {
+    console.warn(
+      `Hồ sơ ${caseId} KHÔNG ĐỦ ĐIỀU KIỆN KÝ SỐ BGH! (Cố vấn: ${target.advisorDecision}, CTSV: ${target.ctsvDecision})`
+    );
+    return null;
+  }
+
   target.principalSigned = true;
   target.principalSignedAt =
     new Date().toLocaleDateString('vi-VN') +
@@ -291,6 +352,59 @@ export function updateCasePrincipalSign(
 
   saveAllSubmittedCases(all);
   return target;
+}
+
+/**
+ * Danh sách hồ sơ dành cho Bàn Cố vấn học tập (Lane L2 / T4):
+ * - Hiển thị tất cả hồ sơ nộp tới Cố vấn.
+ * - Ưu tiên ca đang chờ duyệt (chưa có advisorDecision) lên trước.
+ */
+export function getAdvisorCases(): SubmittedCase[] {
+  const all = getAllSubmittedCases();
+  return all
+    .filter((c) => c.status !== 'returned')
+    .sort((a, b) => {
+      const aPending = !a.advisorDecision ? 0 : 1;
+      const bPending = !b.advisorDecision ? 0 : 1;
+      return aPending - bPending;
+    });
+}
+
+/**
+ * Danh sách hồ sơ chuyển sang Bàn CTSV (Lane L3 / T5):
+ * - CHỈ NHỮNG HỒ SƠ ĐÃ ĐƯỢC CỐ VẤN DUYỆT (advisorDecision === 'confirmed') mới xuất hiện!
+ * - Hồ sơ bị Cố vấn từ chối (advisorDecision === 'declined') BỊ DỪNG HOÀN TOÀN ("bay luôn"),
+ *   không bao giờ xuất hiện ở Bàn CTSV.
+ */
+export function getCtsvCases(): SubmittedCase[] {
+  const all = getAllSubmittedCases();
+  return all
+    .filter((c) => c.advisorDecision === 'confirmed')
+    .sort((a, b) => {
+      const aPending = !a.ctsvDecision ? 0 : 1;
+      const bPending = !b.ctsvDecision ? 0 : 1;
+      return aPending - bPending;
+    });
+}
+
+/**
+ * Danh sách hồ sơ trình Ban Giám hiệu ký số (Lane L4 / T9):
+ * - CHỈ NHỮNG HỒ SƠ ĐÃ ĐẠT CẢ 2 BƯỚC:
+ *   1. Cố vấn xác nhận (advisorDecision === 'confirmed')
+ *   2. CTSV thẩm định hợp lệ (ctsvDecision === 'valid')
+ *   mới đủ điều kiện xuất hiện trên bàn BGH để ký số!
+ * - Hồ sơ bị từ chối từ bất kỳ bước nào phía trước BỊ DỪNG HOÀN TOÀN ("bay luôn"),
+ *   tuyệt đối không bao giờ xuất hiện trên bàn BGH.
+ */
+export function getPrincipalCases(): SubmittedCase[] {
+  const all = getAllSubmittedCases();
+  return all
+    .filter((c) => c.advisorDecision === 'confirmed' && c.ctsvDecision === 'valid')
+    .sort((a, b) => {
+      const aPending = !a.principalSigned ? 0 : 1;
+      const bPending = !b.principalSigned ? 0 : 1;
+      return aPending - bPending;
+    });
 }
 
 export function getNextCaseCode(): string {

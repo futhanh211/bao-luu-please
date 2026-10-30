@@ -31,6 +31,7 @@ import { getStudentFormData } from '../../data/studentFormData';
 import {
   saveSubmittedCase,
   getSubmittedCaseByMssv,
+  getSubmittedCaseById,
   getNextCaseCode,
 } from '../../data/caseRegistry';
 
@@ -362,6 +363,19 @@ export const usePlaybackStore = create<PlaybackStoreState>((set, get) => ({
     });
 
     await processQueue(get, set);
+
+    // Nếu hồ sơ bị từ chối/trả lại sớm ngay tại cổng Một cửa tự động (T1 -> G1=Không -> T2 -> E_END_RETURNED)
+    const isReturnedEarly = get().currentEventLog.some(
+      (e) => e.type === 'case.ended' && e.endEventId === 'E_END_RETURNED'
+    );
+    if (isReturnedEarly) {
+      const reg = getSubmittedCaseById(currentCode);
+      if (reg) {
+        reg.status = 'returned';
+        saveSubmittedCase(reg);
+      }
+    }
+
     mark('submit:queue-blocked');
     measure('submit:start->engine-start', 'submit:start', 'submit:engine-start-done');
     measure('submit:engine-start->queue', 'submit:engine-start-done', 'submit:queue-blocked');

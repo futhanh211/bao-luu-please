@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { DecisionDoc } from '../../../engine/types';
 import { DecisionDraft } from './DecisionDraft';
 import { Paper } from '../../kit/Paper';
+import { DocumentIcon, CollapseIcon, PrintIcon, LogoutIcon } from '../../kit/PortalIcons';
 import { useAuthStore } from '../../../store/useAuth';
 import { useAppStore } from '../../../store/useApp';
 import { sfx } from '../../audio/sfx';
@@ -129,11 +130,14 @@ export const PrincipalPortalResult: React.FC<PrincipalPortalResultProps> = ({
         <div className="portal-actions-row">
           <button
             type="button"
-            className={`portal-btn-secondary ${showDocument ? 'active' : ''}`}
-            onClick={() => setShowDocument(!showDocument)}
+            className={`portal-btn-primary ${showDocument ? 'active' : ''}`}
+            onClick={() => {
+              sfx.playPaper();
+              setShowDocument(!showDocument);
+            }}
           >
-            <span>📄</span>
-            <span>{showDocument ? 'Ẩn văn bản Quyết định' : 'Xem toàn văn Quyết định ban hành'}</span>
+            {showDocument ? <CollapseIcon size={16} /> : <DocumentIcon size={16} />}
+            <span>{showDocument ? 'Thu gọn văn bản Quyết định' : 'Xem toàn văn Quyết định ban hành'}</span>
           </button>
 
           <button
@@ -141,17 +145,17 @@ export const PrincipalPortalResult: React.FC<PrincipalPortalResultProps> = ({
             className="portal-btn-secondary"
             onClick={handlePrint}
           >
-            <span>🖨️</span>
+            <PrintIcon size={16} />
             <span>In / Lưu file Quyết định</span>
           </button>
 
           <button
             type="button"
-            className="portal-btn-secondary"
+            className="portal-btn-logout"
             onClick={handleLogout}
             title="Đăng xuất khỏi Cổng Ban Giám hiệu"
           >
-            <span>🚪</span>
+            <LogoutIcon size={16} />
             <span>Đăng xuất Ban Giám hiệu</span>
           </button>
         </div>

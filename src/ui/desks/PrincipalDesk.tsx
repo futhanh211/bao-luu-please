@@ -11,7 +11,7 @@ import { SigningAction, SigningState, nextSigningState } from './principal/signi
 import { PrincipalPortalResult } from './principal/PrincipalPortalResult';
 import { Paper } from '../kit/Paper';
 import {
-  getAllSubmittedCases,
+  getPrincipalCases,
   updateCasePrincipalSign,
   SubmittedCase,
 } from '../../data/caseRegistry';
@@ -219,14 +219,14 @@ export const PrincipalDesk: React.FC = () => {
   const sessionMode = useAppStore((s) => s.sessionMode);
 
   const [submittedCases, setSubmittedCases] = useState<SubmittedCase[]>(() =>
-    getAllSubmittedCases()
+    getPrincipalCases()
   );
   const [selectedCaseId, setSelectedCaseId] = useState<string>(() => {
-    const all = getAllSubmittedCases();
-    // Ưu tiên chọn hồ sơ đã được CTSV duyệt và đang chờ BGH ký số
-    const pendingBgh = all.find((c) => c.ctsvDecision === 'valid' && !c.principalSigned);
+    const cases = getPrincipalCases();
+    // Ưu tiên chọn hồ sơ đang chờ BGH ký số
+    const pendingBgh = cases.find((c) => !c.principalSigned);
     if (pendingBgh) return pendingBgh.id;
-    return all[0]?.id || '';
+    return cases[0]?.id || '';
   });
 
   const signerName = view.scenario?.directorPlan.principalSigner ?? DEFAULT_SIGNER;
@@ -235,16 +235,18 @@ export const PrincipalDesk: React.FC = () => {
   const resolved = useRef(false);
 
   useEffect(() => {
-    const all = getAllSubmittedCases();
-    setSubmittedCases(all);
-    if (all.length > 0) {
-      if (!selectedCaseId || !all.some((c) => c.id === selectedCaseId)) {
-        const pendingBgh = all.find((c) => c.ctsvDecision === 'valid' && !c.principalSigned);
-        const targetId = pendingBgh ? pendingBgh.id : all[0].id;
+    const cases = getPrincipalCases();
+    setSubmittedCases(cases);
+    if (cases.length > 0) {
+      if (!selectedCaseId || !cases.some((c) => c.id === selectedCaseId)) {
+        const pendingBgh = cases.find((c) => !c.principalSigned);
+        const targetId = pendingBgh ? pendingBgh.id : cases[0].id;
         setSelectedCaseId(targetId);
-        const target = all.find((c) => c.id === targetId);
+        const target = cases.find((c) => c.id === targetId);
         if (target) useAppStore.getState().setCaseCode(target.caseCode);
       }
+    } else {
+      setSelectedCaseId('');
     }
   }, [view]);
 
@@ -290,7 +292,7 @@ export const PrincipalDesk: React.FC = () => {
   };
 
   if (submittedCases.length === 0) {
-    return <DeskEmpty deskName="Bàn Ban Giám hiệu" reason="not-submitted" />;
+    return <DeskEmpty deskName="Bàn Ban Giám hiệu" reason="upcoming" />;
   }
 
   const selectedCase =
@@ -316,7 +318,7 @@ export const PrincipalDesk: React.FC = () => {
 
     const updated = updateCasePrincipalSign(selectedCase.id, signerName);
     if (updated) {
-      setSubmittedCases(getAllSubmittedCases());
+      setSubmittedCases(getPrincipalCases());
     }
     sfx.playStamp();
 
@@ -326,13 +328,12 @@ export const PrincipalDesk: React.FC = () => {
   };
 
   const isCaseSigned = Boolean(selectedCase.principalSigned);
-  const isDeclined =
-    selectedCase.advisorDecision === 'declined' ||
-    selectedCase.ctsvDecision === 'invalid' ||
-    selectedCase.status === 'rejected';
+  const isEligibleForBgh =
+    selectedCase.advisorDecision === 'confirmed' &&
+    selectedCase.ctsvDecision === 'valid';
 
-  // Nếu hồ sơ đã bị từ chối ở bước trước thì không trình ký
-  if (isDeclined && !isCaseSigned) {
+  // Khóa cứng: Nếu hồ sơ không đủ điều kiện (hoặc bị từ chối ở bước trước) thì tuyệt đối không cho ký
+  if (!isEligibleForBgh) {
     return (
       <div
         className="desk-page principal-portal-page"
@@ -355,11 +356,11 @@ export const PrincipalDesk: React.FC = () => {
             <div style={{ fontSize: 28 }}>🛑</div>
             <div>
               <h3 style={{ margin: 0, fontFamily: 'var(--font-paper)', fontSize: 18, color: 'var(--stamp-red)' }}>
-                Hồ sơ không đủ điều kiện trình ký (Đã từ chối)
+                Hồ sơ không đủ điều kiện trình ký (Đã từ chối hoặc chưa thẩm định)
               </h3>
               <p style={{ margin: '6px 0 0 0', fontSize: 13.5, color: 'var(--ink-soft)', lineHeight: 1.5 }}>
-                Hồ sơ <strong>{selectedCase.caseCode}</strong> của sinh viên {selectedCase.studentName} đã bị từ chối ở bước trước{' '}
-                ({selectedCase.advisorDecision === 'declined' ? 'Cố vấn học tập không xác nhận' : 'Phòng CTSV thẩm định minh chứng không hợp lệ'}). Không khởi tạo dự thảo quyết định và không trình Ban Giám hiệu ký số.
+                Hồ sơ <strong>{selectedCase.caseCode}</strong> của sinh viên {selectedCase.studentName} chưa hoàn tất hoặc đã bị từ chối ở bước trước{' '}
+                ({selectedCase.advisorDecision !== 'confirmed' ? 'Cố vấn học tập không xác nhận' : 'Phòng CTSV chưa thẩm định hợp lệ'}). Ban Giám hiệu không thể phê duyệt hay ký số văn bản này.
               </p>
             </div>
           </div>

@@ -15,7 +15,7 @@ import { SLA_DAY_LIMIT, isSlaOverdue } from './deskState';
 import { AdvisorFile } from './advisor/AdvisorFile';
 import { AdvisorPortalResult } from './advisor/AdvisorPortalResult';
 import {
-  getAllSubmittedCases,
+  getAdvisorCases,
   updateCaseAdvisorDecision,
   SubmittedCase,
 } from '../../data/caseRegistry';
@@ -223,12 +223,12 @@ export const AdvisorDesk: React.FC = () => {
   const isCustomFlow = isCustomCase || sessionMode === 'portal';
 
   const [submittedCases, setSubmittedCases] = useState<SubmittedCase[]>(() =>
-    getAllSubmittedCases()
+    getAdvisorCases()
   );
   const [selectedCaseId, setSelectedCaseId] = useState<string>(() => {
-    const all = getAllSubmittedCases();
-    const pending = all.find((c) => !c.advisorDecision);
-    return pending ? pending.id : all[0]?.id || '';
+    const cases = getAdvisorCases();
+    const pending = cases.find((c) => !c.advisorDecision);
+    return pending ? pending.id : cases[0]?.id || '';
   });
 
   const [brief, setBrief] = useState<ReviewerBrief | null>(null);
@@ -244,14 +244,14 @@ export const AdvisorDesk: React.FC = () => {
   const reminder = engine?.state.messages.filter((m) => m.recipient === 'advisor').slice(-1)[0];
 
   useEffect(() => {
-    const all = getAllSubmittedCases();
-    setSubmittedCases(all);
-    if (all.length > 0) {
-      if (!selectedCaseId || !all.some((c) => c.id === selectedCaseId)) {
-        const pending = all.find((c) => !c.advisorDecision);
-        const targetId = pending ? pending.id : all[0].id;
+    const cases = getAdvisorCases();
+    setSubmittedCases(cases);
+    if (cases.length > 0) {
+      if (!selectedCaseId || !cases.some((c) => c.id === selectedCaseId)) {
+        const pending = cases.find((c) => !c.advisorDecision);
+        const targetId = pending ? pending.id : cases[0].id;
         setSelectedCaseId(targetId);
-        const target = all.find((c) => c.id === targetId);
+        const target = cases.find((c) => c.id === targetId);
         if (target) useAppStore.getState().setCaseCode(target.caseCode);
       }
     }
@@ -333,7 +333,7 @@ export const AdvisorDesk: React.FC = () => {
       stamp.outcome as 'confirmed' | 'declined'
     );
     if (updated) {
-      setSubmittedCases(getAllSubmittedCases());
+      setSubmittedCases(getAdvisorCases());
     }
 
     // Nếu ca này là ca đang chạy trong BPMN engine thì hoàn tất task T4

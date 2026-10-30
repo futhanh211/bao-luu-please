@@ -174,7 +174,7 @@
   color: var(--stamp-green);
 }
 
-/* Thanh nút bấm hành động (Action Bar) */
+/* Thanh nút bấm hành động (Action Bar phong cách Paper Please) */
 .portal-actions-row {
   display: flex;
   align-items: center;
@@ -185,8 +185,19 @@
 }
 
 .portal-actions-row button {
-  font-family: var(--font-paper);
-  letter-spacing: 0.3px;
+  font-family: var(--font-paper) !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.5px !important;
+  text-transform: uppercase !important;
+  border-radius: var(--radius-sm) !important;
+  cursor: var(--cursor-pointer) !important;
+  user-select: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px !important;
+  transition: transform 120ms ease, box-shadow 120ms ease, background-color 120ms ease, color 120ms ease;
 }
 
 .portal-actions-row button:focus-visible {
@@ -194,85 +205,78 @@
   outline-offset: 2px;
 }
 
+/* Nút chính (Xem chi tiết hồ sơ / Quyết định): Phong cách phím tem hổ phách đặc trưng */
 .portal-btn-primary {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 11px 22px;
-  font-family: var(--font-paper);
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  background-color: var(--amber);
+  background-color: var(--amber) !important;
   color: var(--desk-900) !important;
-  border: 2px solid var(--desk-900);
-  border-radius: var(--radius-sm);
-  box-shadow: var(--shadow-hard);
-  cursor: var(--cursor-pointer);
-  transition: transform 120ms ease, box-shadow 120ms ease;
-  user-select: none;
+  border: 2px solid var(--desk-900) !important;
+  box-shadow: 2px 2px 0px #11110e !important;
 }
 
 .portal-btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+  background-color: #e5b252 !important;
+  transform: translateY(-1px);
+  box-shadow: 3px 3px 0px #11110e !important;
 }
 
 .portal-btn-primary:active {
-  transform: translate(1px, 1px);
-  box-shadow: 1px 1px 0 #111;
+  transform: translate(1px, 1px) !important;
+  box-shadow: 1px 1px 0px #11110e !important;
 }
 
+/* Nút chính khi đang active (đang mở xem -> bấm để Thu gọn) */
+.portal-btn-primary.active,
+.portal-btn-secondary.active {
+  background-color: var(--desk-900) !important;
+  color: var(--amber) !important;
+  border: 2px solid var(--amber) !important;
+  box-shadow: 2px 2px 0px #11110e !important;
+}
+
+.portal-btn-primary.active:hover,
+.portal-btn-secondary.active:hover {
+  background-color: var(--desk-700) !important;
+}
+
+/* Nút phụ / tác vụ bổ sung (In ấn, tải file) */
 .portal-btn-secondary {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 18px;
-  font-family: var(--font-paper);
-  font-size: 14px;
-  font-weight: 700;
-  background-color: #1e293b !important;
-  color: #fbbf24 !important;
-  border: 2px solid #0f172a;
-  border-radius: var(--radius-sm);
-  cursor: var(--cursor-pointer);
-  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
-  transition: all 120ms ease;
-  user-select: none;
+  background-color: var(--desk-700) !important;
+  color: var(--paper) !important;
+  border: 1.5px solid var(--desk-500) !important;
+  box-shadow: 2px 2px 0px #11110e !important;
 }
 
 .portal-btn-secondary:hover {
-  background-color: #334155 !important;
-  color: #fde047 !important;
+  background-color: var(--desk-500) !important;
+  border-color: var(--amber) !important;
+  color: var(--amber) !important;
+  transform: translateY(-1px);
 }
 
-.portal-btn-secondary.active {
-  background-color: #f59e0b !important;
-  color: #0f172a !important;
-  border-color: #b45309;
+.portal-btn-secondary:active {
+  transform: translate(1px, 1px) !important;
+  box-shadow: 1px 1px 0px #11110e !important;
 }
 
+/* Nút đăng xuất tài khoản: Tông gỗ olive tối, hover cảnh báo đỏ con dấu */
 .portal-btn-logout {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 18px;
-  font-family: var(--font-paper);
-  font-size: 14px;
-  font-weight: 700;
-  background-color: #334155 !important;
-  color: #ffffff !important;
-  border: 2px solid #1e293b;
-  border-radius: var(--radius-sm);
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-  cursor: var(--cursor-pointer);
+  background-color: var(--desk-700) !important;
+  color: var(--paper) !important;
+  border: 1.5px solid var(--desk-500) !important;
+  box-shadow: 2px 2px 0px #11110e !important;
   margin-left: auto;
-  transition: all 120ms ease;
 }
 
 .portal-btn-logout:hover {
-  background-color: #475569 !important;
-  color: #ffffff !important;
+  background-color: var(--desk-900) !important;
+  border-color: var(--stamp-red) !important;
+  color: #ff8b7d !important;
+  transform: translateY(-1px);
+}
+
+.portal-btn-logout:active {
+  transform: translate(1px, 1px) !important;
+  box-shadow: 1px 1px 0px #11110e !important;
 }
 
 /* Khay công văn đã bàn giao (Dispatched Outbox Tray) */

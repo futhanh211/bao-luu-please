@@ -11,6 +11,50 @@ Mỗi session thêm một mục theo mẫu:
 
 ---
 
+## 2026-10-30 · Khắc phục Triệt để Lỗi Logic Pipeline Phân quyền Giữa Các Vai (Multi-Role Pipeline Gating & Access Control)
+- Đã làm:
+  - **Phân tích và sửa triệt để nguyên nhân gốc rễ lỗi không đồng bộ giữa các vai:**
+    - Người dùng phản ánh: Hồ sơ bị Cố vấn học tập từ chối ở bước 1, nhưng khi chuyển qua Ban Giám hiệu (`canbo3`) vẫn xuất hiện và vẫn ký số được; đồng thời trên Cổng Sinh viên hiển thị lẫn lộn giữa "Phiếu hướng dẫn bổ sung hồ sơ (Trả hồ sơ)" và "Cố vấn đã duyệt".
+    - **Thiết lập cơ chế Chặn Cổng (Pipeline Gating) chuẩn xác:**
+      1. *Khâu Cố vấn (T4 - L2):* Khi Cố vấn đóng dấu **KHÔNG XÁC NHẬN** (`advisorDecision = 'declined'`), hồ sơ kết thúc với trạng thái `rejected`. Hồ sơ **DỪNG HOÀN TOÀN TẠI ĐÂY ("BAY LUÔN")**, tuyệt đối không bao giờ được phép xuất hiện trong danh sách xử lý của các khâu sau.
+      2. *Khâu CTSV (T5 - L3):* `getCtsvCases()` chỉ lọc và trả về các hồ sơ đã có `advisorDecision === 'confirmed'`. Hồ sơ bị từ chối từ bước 1 bị loại bỏ 100%. Nếu không có hồ sơ nào thì hiển thị `<DeskEmpty reason="upcoming" />`.
+      3. *Khâu Ban Giám hiệu (T9 - L4):* `getPrincipalCases()` chỉ lọc và trả về hồ sơ đạt ĐỦ CẢ 2 ĐIỀU KIỆN TIÊN QUYẾT: `advisorDecision === 'confirmed' && ctsvDecision === 'valid'`. Bất kỳ hồ sơ nào bị Cố vấn từ chối hoặc CTSV thẩm định không hợp lệ đều bị loại bỏ 100%, không xuất hiện trên thanh chọn hồ sơ.
+    - **Chốt chặn an toàn tầng dữ liệu (Data Gatekeeper):**
+      - `updateCaseCtsvDecision`: Trả về `null` ngay lập tức nếu `advisorDecision !== 'confirmed'`.
+      - `updateCasePrincipalSign`: Trả về `null` ngay lập tức nếu chưa đạt đủ cả 2 điều kiện `advisorDecision === 'confirmed' && ctsvDecision === 'valid'`.
+    - **Cơ chế Tự động Làm sạch Dữ liệu Lỗi (Auto-Sanitizer) cho `localStorage`:**
+      - Phát hiện tự động các hồ sơ bị dính lỗi từ phiên chạy cũ (đã có quyết định từ chối nhưng vẫn bị ghi đè `principalSigned = true`).
+      - Tự động xóa sạch chữ ký BGH không hợp lệ (`principalSigned = false`, xóa `decisionDoc`), khôi phục đúng trạng thái `rejected` và lưu ngay vào `localStorage`.
+    - **Sửa phân luồng nộp đơn tại `playback/store.ts`:**
+      - Khi sinh viên nộp đơn, nếu hồ sơ bị từ chối/trả lại sớm ngay tại bước kiểm tra tự động G1 (`E_END_RETURNED`), hệ thống cập nhật `status: 'returned'` để không bị chuyển nhầm sang hàng đợi của Cố vấn.
+    - **Chuẩn hóa hiển thị Cổng Sinh viên (`StudentPortalTracker.tsx`):**
+      - Nếu Cố vấn từ chối: Bước 2 hiển thị `✗ Từ chối` (đỏ), Bước 3-4 `Đã dừng` (xám), Bước 5 `✗ Từ chối` (đỏ). Văn bản bên dưới là **THÔNG BÁO TỪ CHỐI GIẢI QUYẾT HỒ SƠ** có con dấu đỏ **TỪ CHỐI** và người ký là Cố vấn học tập.
+      - Nếu CTSV từ chối: Bước 2 `✓ Đã duyệt` (xanh), Bước 3 `✗ Từ chối` (đỏ), Bước 4 `Đã dừng`, Bước 5 `✗ Từ chối`. Văn bản là Thông báo từ chối có con dấu đỏ và người ký là Bộ phận CTSV.
+      - Nếu BGH ký số: Cả 5 bước hoàn tất màu xanh, hiển thị Quyết định nghỉ học tạm thời đã ký số PKI.
+      - Nếu bị trả ở G1: Bước 5 `⚠️ Trả hồ sơ`, hiển thị Phiếu hướng dẫn bổ sung hồ sơ con dấu xanh.
+  - **Kiểm thử tự động:**
+    - Viết mới test suite `src/data/pipelineGating.test.ts` (6 tests) kiểm tra toàn bộ luồng gating và auto-sanitizer.
+    - Mở rộng `src/ui/desks/student/studentPortalTracker.test.tsx` (4 tests) kiểm tra hiển thị trên Cổng Sinh viên cho cả 4 nhánh kết quả.
+- File chính:
+  - `src/data/caseRegistry.ts`
+  - `src/store/playback/store.ts`
+  - `src/ui/desks/AdvisorDesk.tsx`
+  - `src/ui/desks/CtsvDesk.tsx`
+  - `src/ui/desks/PrincipalDesk.tsx`
+  - `src/ui/desks/student/StudentPortalTracker.tsx`
+  - `src/data/pipelineGating.test.ts`
+  - `src/ui/desks/student/studentPortalTracker.test.tsx`
+  - `docs/PROGRESS.md`
+- ASSUMPTION:
+  - Dữ liệu lỗi cũ đã lưu trong `localStorage` của trình duyệt người dùng được bộ Auto-Sanitizer tự động quét và chuẩn hóa ngay khi mở app, không yêu cầu người dùng phải tự xóa cache trình duyệt.
+- Nợ / việc dở:
+  - Không có.
+- Đã chạy:
+  - `npm test`: PASS (216/216 tests trong 37 test suites).
+  - `npm run build`: PASS (TypeScript tsc & Vite build thành công).
+
+---
+
 ## 2026-10-30 · Nâng cấp Toàn diện Giao diện Cài đặt & Hạ tầng (Settings & StorageManager UI Overhaul)
 - Đã làm:
   - **Tái thiết kế toàn bộ giao diện Bảng điều khiển Cài đặt & Hạ tầng (`Settings.tsx` & `StorageManager.tsx`):**

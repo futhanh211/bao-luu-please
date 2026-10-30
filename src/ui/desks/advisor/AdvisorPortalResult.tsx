@@ -4,6 +4,7 @@ import { Paper } from '../../kit/Paper';
 import { Stamp } from '../../kit/Stamp';
 import { ArchivedCaseDocument } from '../ArchivedCaseDocument';
 import { DispatchedTray } from '../DispatchedTray';
+import { DocumentIcon, CollapseIcon, LogoutIcon } from '../../kit/PortalIcons';
 import { useAuthStore } from '../../../store/useAuth';
 import { useAppStore } from '../../../store/useApp';
 import { sfx } from '../../audio/sfx';
@@ -133,29 +134,14 @@ export const AdvisorPortalResult: React.FC<AdvisorPortalResultProps> = ({
         <div className="portal-actions-row">
           <button
             type="button"
-            className={`portal-btn-secondary ${showDocument ? 'active' : ''}`}
+            className={`portal-btn-primary ${showDocument ? 'active' : ''}`}
             onClick={() => {
               sfx.playPaper();
               setShowDocument(!showDocument);
             }}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '10px 20px',
-              fontSize: '14px',
-              fontWeight: 700,
-              cursor: 'pointer',
-              backgroundColor: showDocument ? '#f59e0b' : '#1e293b',
-              color: showDocument ? '#0f172a' : '#fbbf24',
-              border: showDocument ? '2px solid #b45309' : '2px solid #0f172a',
-              borderRadius: '5px',
-              boxShadow: '0 2px 6px rgba(0,0,0,0.25)',
-              transition: 'all 0.15s ease',
-            }}
           >
-            <span>{showDocument ? '📂' : '📄'}</span>
-            <span style={{ color: showDocument ? '#0f172a' : '#fbbf24' }}>
+            {showDocument ? <CollapseIcon size={16} /> : <DocumentIcon size={16} />}
+            <span>
               {showDocument ? 'Thu gọn hồ sơ lưu trữ' : 'Xem chi tiết hồ sơ gốc đã đóng dấu'}
             </span>
           </button>
@@ -165,24 +151,9 @@ export const AdvisorPortalResult: React.FC<AdvisorPortalResultProps> = ({
             className="portal-btn-logout"
             onClick={handleLogout}
             title="Đăng xuất khỏi Cổng Cán bộ / Cố vấn học tập"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '10px 20px',
-              fontSize: '14px',
-              fontWeight: 700,
-              cursor: 'pointer',
-              backgroundColor: '#334155',
-              color: '#ffffff',
-              border: '2px solid #1e293b',
-              borderRadius: '5px',
-              boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
-              transition: 'all 0.15s ease',
-            }}
           >
-            <span>🚪</span>
-            <span style={{ color: '#ffffff' }}>Đăng xuất tài khoản</span>
+            <LogoutIcon size={16} />
+            <span>Đăng xuất tài khoản</span>
           </button>
         </div>
       </Paper>

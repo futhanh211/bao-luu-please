@@ -81,8 +81,14 @@ export const StudentPortalTracker: React.FC<StudentPortalTrackerProps> = ({
     Boolean(regCase?.principalSigned);
 
   // 4. Trạng thái kết quả tổng thể
+  // Trạng thái Trả hồ sơ yêu cầu bổ sung (chỉ khi bị trả ở cổng tự động T1/G1, chưa qua các bước sau)
   const isReturned =
-    endEvent?.endEventId === 'E_END_RETURNED' || regCase?.status === 'returned';
+    !advisorDeclined &&
+    !ctsvInvalid &&
+    !regCase?.principalSigned &&
+    !t9Done &&
+    (regCase?.status === 'returned' ||
+      (endEvent?.endEventId === 'E_END_RETURNED' && !regCase?.advisorDecision));
 
   const isRejected =
     advisorDeclined ||

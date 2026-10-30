@@ -6,6 +6,7 @@ import { Paper } from '../../kit/Paper';
 import { Stamp } from '../../kit/Stamp';
 import { ArchivedCaseDocument } from '../ArchivedCaseDocument';
 import { DispatchedTray } from '../DispatchedTray';
+import { InspectIcon, CollapseIcon, LogoutIcon } from '../../kit/PortalIcons';
 import { useAuthStore } from '../../../store/useAuth';
 import { useAppStore } from '../../../store/useApp';
 import { sfx } from '../../audio/sfx';
@@ -29,7 +30,7 @@ export const CtsvPortalResult: React.FC<CtsvPortalResultProps> = ({
   const logout = useAuthStore((s) => s.logout);
   const setScreen = useAppStore((s) => s.setScreen);
 
-  const isValid = result?.outcome === 'valid' || !result?.outcome.includes('invalid');
+  const isValid = result?.outcome === 'valid';
 
   const handleLogout = () => {
     sfx.play('paper');
@@ -68,18 +69,29 @@ export const CtsvPortalResult: React.FC<CtsvPortalResultProps> = ({
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
           <div style={{ flex: 1, minWidth: '280px' }}>
             <div className={`portal-status-kicker ${isValid ? 'valid' : 'invalid'}`}>
-              <span>{isValid ? '🛡️ ĐÃ HOÀN TẤT THẨM ĐỊNH MINH CHỨNG HỢP LỆ' : '✗ MINH CHỨNG KHÔNG HỢP LỆ'}</span>
+              <span>{isValid ? '✓ ĐÃ HOÀN TẤT THẨM ĐỊNH MINH CHỨNG HỢP LỆ' : '✗ MINH CHỨNG KHÔNG HỢP LỆ'}</span>
               <span>· TÁC VỤ T5 HOÀN TẤT</span>
             </div>
 
             <h2 className="portal-main-heading">
-              Hồ sơ đã được phê chuẩn tại Phòng Công tác sinh viên
+              {isValid
+                ? 'Hồ sơ đã được phê chuẩn tại Phòng Công tác sinh viên'
+                : 'Chuyên viên CTSV kết luận minh chứng không hợp lệ'}
             </h2>
 
             <p className="portal-main-desc">
-              Chuyên viên đã kiểm tra tính pháp lý của toàn bộ minh chứng y tế/gia đình và đối chiếu CSDL Đào tạo.
-              Hệ thống Một cửa số đã tự động khởi tạo <strong>Dự thảo Quyết định</strong> và trình lên{' '}
-              <strong>Ban Giám hiệu nhà trường</strong> để ký số.
+              {isValid ? (
+                <>
+                  Chuyên viên đã kiểm tra tính pháp lý của toàn bộ minh chứng y tế/gia đình và đối chiếu CSDL Đào tạo.
+                  Hệ thống Một cửa số đã tự động khởi tạo <strong>Dự thảo Quyết định</strong> và trình lên{' '}
+                  <strong>Ban Giám hiệu nhà trường</strong> để ký số.
+                </>
+              ) : (
+                <>
+                  Chuyên viên đã kiểm tra tính pháp lý của minh chứng và kết luận tài liệu không đáp ứng quy định tiếp nhận.
+                  Hệ thống Một cửa số đã gửi thông báo từ chối hồ sơ (MF3) tới Cổng Sinh viên; quy trình kết thúc tại bước này.
+                </>
+              )}
             </p>
           </div>
 
@@ -107,14 +119,21 @@ export const CtsvPortalResult: React.FC<CtsvPortalResultProps> = ({
 
           <div className="portal-docket-cell">
             <span className="portal-docket-label">Số minh chứng đã kiểm tra:</span>
-            <span className="portal-docket-value">{evidence.length} tài liệu hợp lệ</span>
+            <span className="portal-docket-value">{evidence.length} tài liệu</span>
           </div>
 
           <div className="portal-docket-cell">
             <span className="portal-docket-label">Bước tiếp theo trong BPMN:</span>
-            <span className="portal-next-hop-badge">
-              <span>➔</span>
-              <span>Lane L4: Ban Giám hiệu ký số (T9)</span>
+            <span
+              className="portal-next-hop-badge"
+              style={{
+                backgroundColor: isValid ? undefined : 'var(--wash-red)',
+                color: isValid ? undefined : 'var(--stamp-red)',
+                borderColor: isValid ? undefined : 'rgba(179,38,30,0.3)',
+              }}
+            >
+              <span>{isValid ? '➔' : '🛑'}</span>
+              <span>{isValid ? 'Lane L4: Ban Giám hiệu ký số (T9)' : 'Hệ thống: Từ chối hồ sơ (T7 / MF3)'}</span>
             </span>
           </div>
         </div>
@@ -123,29 +142,14 @@ export const CtsvPortalResult: React.FC<CtsvPortalResultProps> = ({
         <div className="portal-actions-row">
           <button
             type="button"
-            className={`portal-btn-secondary ${showEvidence ? 'active' : ''}`}
+            className={`portal-btn-primary ${showEvidence ? 'active' : ''}`}
             onClick={() => {
               sfx.playPaper();
               setShowEvidence(!showEvidence);
             }}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '10px 20px',
-              fontSize: '14px',
-              fontWeight: 700,
-              cursor: 'pointer',
-              backgroundColor: showEvidence ? '#f59e0b' : '#1e293b',
-              color: showEvidence ? '#0f172a' : '#fbbf24',
-              border: showEvidence ? '2px solid #b45309' : '2px solid #0f172a',
-              borderRadius: '5px',
-              boxShadow: '0 2px 6px rgba(0,0,0,0.25)',
-              transition: 'all 0.15s ease',
-            }}
           >
-            <span>{showEvidence ? '📂' : '🔍'}</span>
-            <span style={{ color: showEvidence ? '#0f172a' : '#fbbf24' }}>
+            {showEvidence ? <CollapseIcon size={16} /> : <InspectIcon size={16} />}
+            <span>
               {showEvidence ? 'Thu gọn hồ sơ & minh chứng' : 'Xem chi tiết hồ sơ & minh chứng đã duyệt'}
             </span>
           </button>
@@ -155,24 +159,9 @@ export const CtsvPortalResult: React.FC<CtsvPortalResultProps> = ({
             className="portal-btn-logout"
             onClick={handleLogout}
             title="Đăng xuất khỏi Cổng Cán bộ / CTSV"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '10px 20px',
-              fontSize: '14px',
-              fontWeight: 700,
-              cursor: 'pointer',
-              backgroundColor: '#334155',
-              color: '#ffffff',
-              border: '2px solid #1e293b',
-              borderRadius: '5px',
-              boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
-              transition: 'all 0.15s ease',
-            }}
           >
-            <span>🚪</span>
-            <span style={{ color: '#ffffff' }}>Đăng xuất tài khoản</span>
+            <LogoutIcon size={16} />
+            <span>Đăng xuất tài khoản</span>
           </button>
         </div>
       </Paper>

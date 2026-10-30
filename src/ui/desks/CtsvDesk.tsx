@@ -18,7 +18,7 @@ import { EvidenceZoom } from './ctsv/EvidenceZoom';
 import { CtsvResult, InspectionResult } from './ctsv/InspectionResult';
 import { CtsvPortalResult } from './ctsv/CtsvPortalResult';
 import {
-  getAllSubmittedCases,
+  getCtsvCases,
   updateCaseCtsvDecision,
   SubmittedCase,
 } from '../../data/caseRegistry';
@@ -242,14 +242,14 @@ export const CtsvDesk: React.FC = () => {
   const isCustomFlow = isCustomCase || sessionMode === 'portal';
 
   const [submittedCases, setSubmittedCases] = useState<SubmittedCase[]>(() =>
-    getAllSubmittedCases()
+    getCtsvCases()
   );
   const [selectedCaseId, setSelectedCaseId] = useState<string>(() => {
-    const all = getAllSubmittedCases();
+    const cases = getCtsvCases();
     // Ưu tiên chọn hồ sơ Cố vấn đã duyệt và đang chờ CTSV thẩm định
-    const pendingCtsv = all.find((c) => c.advisorDecision === 'confirmed' && !c.ctsvDecision);
+    const pendingCtsv = cases.find((c) => !c.ctsvDecision);
     if (pendingCtsv) return pendingCtsv.id;
-    return all[0]?.id || '';
+    return cases[0]?.id || '';
   });
 
   const [brief, setBrief] = useState<ReviewerBrief | null>(null);
@@ -259,14 +259,14 @@ export const CtsvDesk: React.FC = () => {
   const resolved = useRef(false);
 
   useEffect(() => {
-    const all = getAllSubmittedCases();
-    setSubmittedCases(all);
-    if (all.length > 0) {
-      if (!selectedCaseId || !all.some((c) => c.id === selectedCaseId)) {
-        const pendingCtsv = all.find((c) => c.advisorDecision === 'confirmed' && !c.ctsvDecision);
-        const targetId = pendingCtsv ? pendingCtsv.id : all[0].id;
+    const cases = getCtsvCases();
+    setSubmittedCases(cases);
+    if (cases.length > 0) {
+      if (!selectedCaseId || !cases.some((c) => c.id === selectedCaseId)) {
+        const pendingCtsv = cases.find((c) => !c.ctsvDecision);
+        const targetId = pendingCtsv ? pendingCtsv.id : cases[0].id;
         setSelectedCaseId(targetId);
-        const target = all.find((c) => c.id === targetId);
+        const target = cases.find((c) => c.id === targetId);
         if (target) useAppStore.getState().setCaseCode(target.caseCode);
       }
     }
@@ -302,7 +302,7 @@ export const CtsvDesk: React.FC = () => {
   };
 
   if (submittedCases.length === 0) {
-    return <DeskEmpty deskName="Bàn Phòng CTSV" reason="not-submitted" />;
+    return <DeskEmpty deskName="Bàn Phòng CTSV" reason="upcoming" />;
   }
 
   const selectedCase =
@@ -371,7 +371,7 @@ export const CtsvDesk: React.FC = () => {
       pending.marks
     );
     if (updated) {
-      setSubmittedCases(getAllSubmittedCases());
+      setSubmittedCases(getCtsvCases());
     }
     sfx.playStamp();
 
