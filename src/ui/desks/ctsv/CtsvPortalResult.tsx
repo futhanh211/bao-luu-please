@@ -25,16 +25,10 @@ export const CtsvPortalResult: React.FC<CtsvPortalResultProps> = ({
   day,
 }) => {
   const [showEvidence, setShowEvidence] = useState(false);
-  const loginAsOfficer = useAuthStore((s) => s.loginAsOfficer);
   const logout = useAuthStore((s) => s.logout);
   const setScreen = useAppStore((s) => s.setScreen);
 
   const isValid = result?.outcome === 'valid' || !result?.outcome.includes('invalid');
-
-  const handleSwitchToPrincipal = () => {
-    sfx.play('stamp');
-    loginAsOfficer('bgh_khoi');
-  };
 
   const handleLogout = () => {
     sfx.play('paper');
@@ -126,16 +120,6 @@ export const CtsvPortalResult: React.FC<CtsvPortalResultProps> = ({
 
         {/* Thanh công cụ tác vụ chuyên môn */}
         <div className="portal-actions-row">
-          <button
-            type="button"
-            className="portal-btn-primary"
-            onClick={handleSwitchToPrincipal}
-            title="Đăng nhập tài khoản PGS.TS. Trần Đình Khôi (Ban Giám hiệu) để ký số quyết định"
-          >
-            <span>🏛️</span>
-            <span>Chuyển sang Cổng Ban Giám hiệu (PGS.TS. Trần Đình Khôi) ➜</span>
-          </button>
-
           {evidence.length > 0 && (
             <button
               type="button"
@@ -149,8 +133,9 @@ export const CtsvPortalResult: React.FC<CtsvPortalResultProps> = ({
 
           <button
             type="button"
-            className="portal-btn-logout"
+            className="portal-btn-secondary"
             onClick={handleLogout}
+            title="Đăng xuất khỏi Cổng Cán bộ / CTSV"
           >
             <span>🚪</span>
             <span>Đăng xuất tài khoản</span>

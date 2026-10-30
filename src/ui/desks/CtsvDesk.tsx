@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ReviewerBrief } from '../../engine/types';
 import { collectAnomalies, scoreInspection } from '../../data/inspection';
 import { useAppStore } from '../../store/useApp';
@@ -8,6 +8,7 @@ import { DeskEmpty } from './DeskEmpty';
 import { StampChoice, StampControls } from './StampControls';
 import { useCaseView } from './useCaseView';
 import { Stamp } from '../kit/Stamp';
+import { Paper } from '../kit/Paper';
 import { sfx } from '../audio/sfx';
 import { ApplicationCard } from './ctsv/ApplicationCard';
 import { LookupCard } from './ctsv/LookupCard';
@@ -15,6 +16,11 @@ import { EvidencePaper } from './ctsv/EvidencePaper';
 import { EvidenceZoom } from './ctsv/EvidenceZoom';
 import { CtsvResult, InspectionResult } from './ctsv/InspectionResult';
 import { CtsvPortalResult } from './ctsv/CtsvPortalResult';
+import {
+  getAllSubmittedCases,
+  updateCaseCtsvDecision,
+  SubmittedCase,
+} from '../../data/caseRegistry';
 
 const CTSV_STAMPS: StampChoice[] = [
   { label: 'HỢP LỆ', color: 'green', outcome: 'valid' },
@@ -28,6 +34,197 @@ interface PendingStamp {
   marks: string[];
 }
 
+/**
+ * Thanh danh sách hồ sơ chuyển tới Phòng Công tác sinh viên (CTSV)
+ */
+const CtsvCaseDocketList: React.FC<{
+  cases: SubmittedCase[];
+  selectedId: string;
+  onSelect: (id: string) => void;
+}> = ({ cases, selectedId, onSelect }) => {
+  return (
+    <Paper
+      className="portal-docket-paper"
+      elevated
+      width="100%"
+      style={{
+        padding: '16px 20px',
+        marginBottom: '16px',
+        borderLeft: '5px solid var(--amber)',
+        background: 'var(--paper)',
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: 10,
+          marginBottom: 12,
+        }}
+      >
+        <div>
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 'bold',
+              letterSpacing: 1,
+              textTransform: 'uppercase',
+              color: 'var(--amber)',
+              marginBottom: 2,
+            }}
+          >
+            HỘP THƯ TIẾP NHẬN BÀN THẨM ĐỊNH MINH CHỨNG
+          </div>
+          <h3
+            style={{
+              fontFamily: 'var(--font-paper)',
+              fontSize: 17,
+              margin: 0,
+              color: 'var(--ink)',
+            }}
+          >
+            📁 DANH SÁCH HỒ SƠ CHUYỂN TỚI PHÒNG CTSV ({cases.length} HỒ SƠ)
+          </h3>
+        </div>
+        <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
+          Bấm chọn từng hồ sơ để soi lệch và đóng dấu thẩm định (T5)
+        </div>
+      </div>
+
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))',
+          gap: 10,
+        }}
+      >
+        {cases.map((c) => {
+          const isSelected = c.id === selectedId;
+          const isCtsvValid = c.ctsvDecision === 'valid';
+          const isCtsvInvalid = c.ctsvDecision === 'invalid';
+          const isPendingCtsv = !c.ctsvDecision && Boolean(c.advisorDecision);
+
+          return (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => onSelect(c.id)}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'flex-start',
+                textAlign: 'left',
+                padding: '11px 14px',
+                backgroundColor: isSelected ? 'var(--desk-900)' : 'var(--paper-dim)',
+                color: isSelected ? 'var(--paper)' : 'var(--ink)',
+                border: isSelected
+                  ? '2px solid var(--amber)'
+                  : isPendingCtsv
+                  ? '1.5px solid rgba(245, 158, 11, 0.5)'
+                  : '1px solid var(--paper-line)',
+                borderRadius: 'var(--radius-sm)',
+                cursor: 'var(--cursor-pointer)',
+                transition: 'all 120ms ease',
+                boxShadow: isSelected ? '0 3px 8px rgba(0,0,0,0.25)' : 'none',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  width: '100%',
+                  alignItems: 'center',
+                  marginBottom: 4,
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: 'var(--font-paper)',
+                    fontWeight: 'bold',
+                    fontSize: 13,
+                    color: isSelected ? 'var(--amber)' : 'var(--ink)',
+                  }}
+                >
+                  📄 {c.caseCode}
+                </span>
+                <span
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 'bold',
+                    padding: '2px 6px',
+                    borderRadius: 3,
+                    backgroundColor: isCtsvValid
+                      ? 'var(--wash-green)'
+                      : isCtsvInvalid
+                      ? 'var(--wash-red)'
+                      : isPendingCtsv
+                      ? 'var(--amber)'
+                      : 'rgba(0,0,0,0.06)',
+                    color: isCtsvValid
+                      ? 'var(--stamp-green)'
+                      : isCtsvInvalid
+                      ? 'var(--stamp-red)'
+                      : isPendingCtsv
+                      ? 'var(--desk-900)'
+                      : 'var(--ink-soft)',
+                  }}
+                >
+                  {isCtsvValid
+                    ? '✓ HỢP LỆ (TRÌNH BGH)'
+                    : isCtsvInvalid
+                    ? '✗ KHÔNG HỢP LỆ'
+                    : isPendingCtsv
+                    ? '⏳ CHỜ THẨM ĐỊNH (T5)'
+                    : '⏳ CHỜ CỐ VẤN (T4)'}
+                </span>
+              </div>
+
+              <div
+                style={{
+                  fontFamily: 'var(--font-paper)',
+                  fontSize: 14.5,
+                  fontWeight: 'bold',
+                  color: isSelected ? '#fff' : 'var(--ink)',
+                }}
+              >
+                {c.studentName}{' '}
+                <span style={{ fontSize: 12, fontWeight: 'normal', opacity: 0.85 }}>
+                  ({c.studentMssv})
+                </span>
+              </div>
+
+              <div
+                style={{
+                  fontSize: 12,
+                  color: isSelected ? 'var(--paper-dim)' : 'var(--ink-soft)',
+                  marginTop: 2,
+                }}
+              >
+                {c.studentClass} · {c.studentFaculty}
+              </div>
+
+              <div
+                style={{
+                  fontSize: 11.5,
+                  color: isSelected ? 'var(--amber)' : '#b45309',
+                  marginTop: 4,
+                  fontStyle: 'italic',
+                }}
+              >
+                {c.evidence.length > 0
+                  ? `Minh chứng: ${c.evidence[0].name}`
+                  : 'Chưa có file minh chứng'}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </Paper>
+  );
+};
+
 export const CtsvDesk: React.FC = () => {
   const view = useCaseView('ctsv');
   const completeUserTask = usePlaybackStore((s) => s.completeUserTask);
@@ -40,15 +237,16 @@ export const CtsvDesk: React.FC = () => {
   const isCustomCase = usePlaybackStore((s) => s.isCustomCase);
   const isCustomFlow = isCustomCase || sessionMode === 'portal';
 
-  const engine = view.engine;
-  const caseId = engine?.state.caseId ?? view.scenario?.code ?? 'case';
-  const inspection = usePlaybackStore((s) => s.ctsvInspections[caseId]);
-  const marks = inspection?.marks ?? EMPTY_MARKS;
-  const result = inspection?.result ?? null;
-
-  const form = engine?.state.form ?? view.scenario?.form;
-  const evidence = engine?.state.evidence ?? [];
-  const anomalies = React.useMemo(() => collectAnomalies(evidence), [evidence]);
+  const [submittedCases, setSubmittedCases] = useState<SubmittedCase[]>(() =>
+    getAllSubmittedCases()
+  );
+  const [selectedCaseId, setSelectedCaseId] = useState<string>(() => {
+    const all = getAllSubmittedCases();
+    // Ưu tiên chọn hồ sơ Cố vấn đã duyệt và đang chờ CTSV thẩm định
+    const pendingCtsv = all.find((c) => Boolean(c.advisorDecision) && !c.ctsvDecision);
+    if (pendingCtsv) return pendingCtsv.id;
+    return all[0]?.id || '';
+  });
 
   const [brief, setBrief] = useState<ReviewerBrief | null>(null);
   const [loading, setLoading] = useState(false);
@@ -57,12 +255,26 @@ export const CtsvDesk: React.FC = () => {
   const resolved = useRef(false);
 
   useEffect(() => {
+    const all = getAllSubmittedCases();
+    setSubmittedCases(all);
+    if (all.length > 0) {
+      if (!selectedCaseId || !all.some((c) => c.id === selectedCaseId)) {
+        const pendingCtsv = all.find((c) => Boolean(c.advisorDecision) && !c.ctsvDecision);
+        const targetId = pendingCtsv ? pendingCtsv.id : all[0].id;
+        setSelectedCaseId(targetId);
+        const target = all.find((c) => c.id === targetId);
+        if (target) useAppStore.getState().setCaseCode(target.caseCode);
+      }
+    }
+  }, [view]);
+
+  useEffect(() => {
     setBrief(null);
     setLoading(false);
     setPending(null);
     setZoomId(null);
     resolved.current = false;
-  }, [engine]);
+  }, [selectedCaseId]);
 
   useEffect(() => {
     if (!zoomId) return undefined;
@@ -73,23 +285,54 @@ export const CtsvDesk: React.FC = () => {
     return () => window.removeEventListener('keydown', onKey);
   }, [zoomId]);
 
-  const toggleMark = useCallback(
-    (key: string) => {
-      sfx.playPencilCircle();
-      const next = marks.includes(key) ? marks.filter((k) => k !== key) : [...marks, key];
-      setCtsvMarks(caseId, next);
-    },
-    [caseId, marks, setCtsvMarks]
-  );
+  const handleSelectCase = (id: string) => {
+    sfx.playPaper();
+    setSelectedCaseId(id);
+    setPending(null);
+    setZoomId(null);
+    resolved.current = false;
+    const target = submittedCases.find((c) => c.id === id);
+    if (target) {
+      useAppStore.getState().setCaseCode(target.caseCode);
+    }
+  };
 
-  const handleAsk = useCallback(async () => {
+  if (submittedCases.length === 0) {
+    return <DeskEmpty deskName="Bàn Phòng CTSV" reason="not-submitted" />;
+  }
+
+  const selectedCase =
+    submittedCases.find((c) => c.id === selectedCaseId) || submittedCases[0];
+
+  const currentForm = selectedCase.form;
+  const currentEvidence = selectedCase.evidence;
+  const anomalies = collectAnomalies(currentEvidence);
+
+  const inspection = usePlaybackStore((s) => s.ctsvInspections[selectedCase.caseCode]);
+  const marks = selectedCase.ctsvMarks ?? inspection?.marks ?? EMPTY_MARKS;
+  const result: CtsvResult | null = selectedCase.ctsvDecision
+    ? {
+        outcome: selectedCase.ctsvDecision,
+        score: scoreInspection(marks, anomalies),
+        anomalies,
+        markedKeys: marks,
+      }
+    : inspection?.result ?? null;
+
+  const toggleMark = (key: string) => {
+    sfx.playPencilCircle();
+    const next = marks.includes(key) ? marks.filter((k) => k !== key) : [...marks, key];
+    setCtsvMarks(selectedCase.caseCode, next);
+  };
+
+  const handleAsk = async () => {
     setLoading(true);
     const b = await askReviewerBrief('ctsv');
     setBrief(b);
     setLoading(false);
-  }, [askReviewerBrief]);
+  };
 
-  const handleLanded = useCallback(() => {
+  const handleLanded = () => {
     if (!pending || resolved.current) return;
     resolved.current = true;
     const choice = pending.choice;
@@ -100,43 +343,77 @@ export const CtsvDesk: React.FC = () => {
       anomalies,
       markedKeys: pending.marks,
     };
-    sealCtsvInspection(caseId, nextResult);
+
+    sealCtsvInspection(selectedCase.caseCode, nextResult);
+    const updated = updateCaseCtsvDecision(
+      selectedCase.id,
+      choice.outcome as 'valid' | 'invalid',
+      pending.marks
+    );
+    if (updated) {
+      setSubmittedCases(getAllSubmittedCases());
+    }
+    sfx.playStamp();
+
     if (brief) {
       recordHumanDecision('T5', choice.outcome, brief.suggestedDecision);
     }
-    void completeUserTask('T5', choice.outcome);
-  }, [anomalies, brief, caseId, completeUserTask, pending, recordHumanDecision, sealCtsvInspection]);
 
-  const header = (
-    <div className="desk-head">
-      <div>
-        <h1 className="desk-title">Bàn Phòng Công tác sinh viên</h1>
-        <p className="desk-sub">
-          Lane L3 · Soi lệch minh chứng và quyết định thẩm tra (T5) · NGÀY {view.day}
-        </p>
-      </div>
-      <div className="desk-toolbar">
-        <span className="desk-hint">Soi từng trường · <kbd>T</kbd>/<kbd>Shift+T</kbd> tua ngày</span>
-      </div>
-    </div>
-  );
+    if (view.scenario?.form.mssv === selectedCase.studentMssv) {
+      void completeUserTask('T5', choice.outcome);
+    }
+  };
 
-  if (view.phase === 'done') {
+  const isCaseProcessed = Boolean(selectedCase.ctsvDecision);
+
+  // Khi hồ sơ đã được CTSV thẩm định xong
+  if (isCaseProcessed) {
     if (sessionMode === 'portal') {
       return (
-        <CtsvPortalResult
-          result={result}
-          form={form}
-          evidence={evidence}
-          caseCode={caseId}
-          day={view.day}
-        />
+        <div
+          className="desk-page ctsv-portal-page"
+          style={{
+            width: '100%',
+            maxWidth: '980px',
+            margin: '0 auto',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 16,
+          }}
+        >
+          <CtsvCaseDocketList
+            cases={submittedCases}
+            selectedId={selectedCase.id}
+            onSelect={handleSelectCase}
+          />
+          <CtsvPortalResult
+            result={result}
+            form={currentForm}
+            evidence={currentEvidence}
+            caseCode={selectedCase.caseCode}
+            day={selectedCase.day || view.day || 0}
+          />
+        </div>
       );
     }
 
     return (
-      <div className="desk-page">
-        {header}
+      <div
+        className="desk-page"
+        style={{
+          width: '100%',
+          maxWidth: '980px',
+          margin: '0 auto',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 16,
+        }}
+      >
+        <CtsvCaseDocketList
+          cases={submittedCases}
+          selectedId={selectedCase.id}
+          onSelect={handleSelectCase}
+        />
         {result ? (
           <InspectionResult result={result} />
         ) : (
@@ -146,29 +423,55 @@ export const CtsvDesk: React.FC = () => {
     );
   }
 
-  if (view.phase !== 'waiting' || !form) {
-    const reason = view.phase === 'waiting' ? 'upcoming' : view.phase;
-    return <DeskEmpty deskName="Bàn Phòng CTSV" reason={reason} />;
-  }
-
+  // Khi hồ sơ đang chờ CTSV thẩm định (Pending T5)
   const locked = Boolean(pending);
-  const zoomEvidence = evidence.find((e) => e.id === zoomId) ?? null;
+  const zoomEvidence = currentEvidence.find((e) => e.id === zoomId) ?? null;
 
   return (
-    <div className="desk-page ctsv-page">
-      {header}
+    <div
+      className="desk-page ctsv-page"
+      style={{
+        width: '100%',
+        maxWidth: '980px',
+        margin: '0 auto',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 16,
+      }}
+    >
+      <CtsvCaseDocketList
+        cases={submittedCases}
+        selectedId={selectedCase.id}
+        onSelect={handleSelectCase}
+      />
+
+      <div className="desk-head">
+        <div>
+          <h1 className="desk-title">Bàn Phòng Công tác sinh viên</h1>
+          <p className="desk-sub">
+            Lane L3 · Đang thẩm định hồ sơ:{' '}
+            <strong style={{ color: 'var(--amber)' }}>
+              {selectedCase.caseCode} — {selectedCase.studentName} ({selectedCase.studentMssv})
+            </strong>{' '}
+            · Tác vụ T5 · NGÀY {view.day}
+          </p>
+        </div>
+        <div className="desk-toolbar">
+          <span className="desk-hint">Soi từng trường · <kbd>T</kbd>/<kbd>Shift+T</kbd> tua ngày</span>
+        </div>
+      </div>
 
       <div className="ctsv-grid">
         <div className="ctsv-col">
-          <ApplicationCard form={form} />
+          <ApplicationCard form={currentForm} />
           <LookupCard record={view.studentRecord} />
         </div>
 
         <div className="ctsv-col ctsv-col-main">
-          {evidence.length === 0 && (
+          {currentEvidence.length === 0 && (
             <p className="ctsv-muted">Hồ sơ không có minh chứng đính kèm.</p>
           )}
-          {evidence.map((item) => (
+          {currentEvidence.map((item) => (
             <EvidencePaper
               key={item.id}
               evidence={item}
