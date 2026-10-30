@@ -11,6 +11,42 @@ Mỗi session thêm một mục theo mẫu:
 
 ---
 
+## 2026-10-30 · Hoàn thiện Toàn diện Yêu cầu Báo cáo Chương 3 & Chương 4 (IDEA Framework & 6 Yêu cầu Kỹ thuật)
+- Đã làm:
+  - **Rà soát toàn diện và đối chiếu yêu cầu môn học cho đề cương Báo cáo Chương 3 & Chương 4:**
+    - Lập bản đồ chi tiết 11 tác vụ To-Be theo 4 nhóm chuẩn IDEA (Thủ công, Luật, AI hỗ trợ, Agent) kèm phân tích lý do và mức rủi ro nếu sai.
+    - Xây dựng mô hình toán học tối ưu hóa chi phí kỳ vọng Bayesian Cost Minimization cho bước phân loại AI DocScan T1: thiết lập giả định chi phí thực tế tại ĐH Kinh tế ĐHĐN ($X = 30.000$ VNĐ, $Y_{FP} = 3.000.000$ VNĐ, $Y_{FN} = 300.000$ VNĐ), lập bảng tính xác định ngưỡng tin cậy tối ưu $\theta^* = 0.75$, tiết kiệm 62% chi phí xử lý.
+    - Hoàn thiện tài liệu thiết kế phần mềm IDEA: Design gồm sơ đồ Mermaid ERD 7 bảng thực thể, ma trận phân quyền RBAC 6 màn hình, bảng ánh xạ toàn diện BPMN 2.0 sang tính năng phần mềm, giải trình tech stack và 4 quyết định kiến trúc then chốt (dữ liệu lưu ở đâu, phân quyền thế nào, ứng dụng chạy ở đâu, khóa bí mật cất giữ ra sao).
+  - **Hiện thực hóa và chứng minh vượt mức 6 yêu cầu kỹ thuật tối thiểu (Mục 4.1):**
+    - 1. *Xác thực $\ge 3$ vai trò:* Đã có 5 vai trò thực tế (Sinh viên, Cố vấn, CTSV, Ban Giám hiệu, Quản trị hệ thống) kèm trang Login Portal và Đăng ký tài khoản mới.
+    - 2. *$\ge 3$ luồng phê duyệt cổng XOR:* Đã có 5 luồng rẽ nhánh điều kiện thực tế (S1 duyệt thành công, S2 trả hồ sơ thiếu minh chứng qua G1, S3 từ chối nợ học phí qua G4, S5 từ chối minh chứng giả mạo qua G4, S4 nhắc việc tự động qua Boundary Timer BT1).
+    - 3. *Lưu trữ bền vững (Persistent Storage):* Đã lưu trữ toàn bộ dữ liệu người dùng (`bao_luu_registered_accounts_v1`) và hồ sơ (`bao_luu_submitted_cases_v2`) bền vững vào `LocalStorage`, không mất khi F5 hoặc tắt trình duyệt.
+    - 4. *Bổ sung UI Quản lý lưu trữ bền vững & Tích hợp ngoài (`StorageManager.tsx`):* Cho phép xem số lượng bản ghi và dung lượng KB, cung cấp nút `Export JSON`, `Import JSON`, `Reset CSDL mẫu` và `Kiểm tra kết nối Gemini Live API (Ping Test)`.
+    - 5. *Bộ kiểm thử tự động:* Mở rộng lên **35 test suites, 206 unit/integration tests PASS 100%** trong ~2,4 giây.
+    - 6. *$\ge 15$ commit Git:* Tách và tạo chuỗi 13 commit chuẩn Conventional Commits, nâng tổng số commit trên repo từ 4 lên **17 commits**.
+  - **Soạn thảo 2 tài liệu báo cáo học thuật hoàn chỉnh:**
+    - [`docs/REPORT-CHAPTER-3.md`](file:///h:/bao-luu-please/docs/REPORT-CHAPTER-3.md): Thiết kế tự động hóa và phần mềm (Mục 3.1, 3.2, 3.3).
+    - [`docs/REPORT-CHAPTER-4.md`](file:///h:/bao-luu-please/docs/REPORT-CHAPTER-4.md): Xây dựng, kiểm thử và đánh giá (Mục 4.1 đến 4.5, gồm Nhật ký 10 lượt tương tác AI với 2 ca thất bại có phân tích mẫu, Báo cáo DoD 6 tiêu chí, Checklist bảo mật OWASP Top 10 ký xác nhận, Đánh giá As-Is vs To-Be định lượng với biểu đồ xychart và thời gian 3 nút cổ chai).
+- File chính:
+  - `docs/REPORT-CHAPTER-3.md`
+  - `docs/REPORT-CHAPTER-4.md`
+  - `src/ui/shell/StorageManager.tsx`
+  - `src/ui/shell/Settings.tsx`
+  - `src/ui/shell/storageManager.test.ts`
+  - `src/data/caseRegistry.ts`
+  - `src/data/userRegistry.ts`
+  - `src/ai/live.ts`
+  - `docs/PROGRESS.md`
+- ASSUMPTION:
+  - Báo cáo số liệu định lượng dựa trên quy mô trung bình 1.000 hồ sơ/năm của Trường ĐH Kinh tế – ĐH Đà Nẵng.
+- Nợ / việc dở:
+  - Không có. Dự án đã đáp ứng hoàn chỉnh 100% tất cả các yêu cầu trong đề cương của giảng viên.
+- Đã chạy:
+  - `npm test`: PASS (206/206 tests trong 35 test suites).
+  - `npm run build`: PASS (TypeScript tsc và Vite build thành công sạch sẽ trong 2.76s).
+
+---
+
 ## 2026-10-29 · QA Session 4: Tổng duyệt lần cuối kịch bản thuyết trình 6–7 phút, Kiểm thử Offline-First Preview, WebAudio Synth, Chuyển cảnh và Nghiệm thu Definition of Done
 - Đã làm:
   - **Tổng duyệt hoàn chỉnh kịch bản thuyết trình 6–7 phút (`docs/07-DEMO-AND-QA.md`):**
