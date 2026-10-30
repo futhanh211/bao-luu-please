@@ -4,6 +4,7 @@ import { CtsvResult } from './InspectionResult';
 import { EvidencePaper } from './EvidencePaper';
 import { Paper } from '../../kit/Paper';
 import { Stamp } from '../../kit/Stamp';
+import { ArchivedCaseDocument } from '../ArchivedCaseDocument';
 import { DispatchedTray } from '../DispatchedTray';
 import { useAuthStore } from '../../../store/useAuth';
 import { useAppStore } from '../../../store/useApp';
@@ -120,22 +121,49 @@ export const CtsvPortalResult: React.FC<CtsvPortalResultProps> = ({
 
         {/* Thanh công cụ tác vụ chuyên môn */}
         <div className="portal-actions-row">
-          {evidence.length > 0 && (
-            <button
-              type="button"
-              className={`portal-btn-secondary ${showEvidence ? 'active' : ''}`}
-              onClick={() => setShowEvidence(!showEvidence)}
-            >
-              <span>🔍</span>
-              <span>{showEvidence ? 'Ẩn tài liệu minh chứng' : 'Xem lại tài liệu minh chứng'}</span>
-            </button>
-          )}
+          <button
+            type="button"
+            className={`portal-btn-secondary ${showEvidence ? 'active' : ''}`}
+            onClick={() => {
+              sfx.playPaper();
+              setShowEvidence(!showEvidence);
+            }}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px 16px',
+              fontSize: '13.5px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              backgroundColor: showEvidence ? 'var(--amber)' : 'var(--desk-800)',
+              color: showEvidence ? 'var(--desk-900)' : 'var(--paper)',
+              border: '1px solid var(--paper-line)',
+              borderRadius: '4px',
+            }}
+          >
+            <span>{showEvidence ? '📂' : '🔍'}</span>
+            <span>{showEvidence ? 'Thu gọn hồ sơ & minh chứng' : 'Xem chi tiết hồ sơ & minh chứng đã duyệt'}</span>
+          </button>
 
           <button
             type="button"
             className="portal-btn-secondary"
             onClick={handleLogout}
             title="Đăng xuất khỏi Cổng Cán bộ / CTSV"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px 16px',
+              fontSize: '13.5px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              backgroundColor: 'var(--desk-800)',
+              color: 'var(--paper)',
+              border: '1px solid var(--paper-line)',
+              borderRadius: '4px',
+            }}
           >
             <span>🚪</span>
             <span>Đăng xuất tài khoản</span>
@@ -143,26 +171,48 @@ export const CtsvPortalResult: React.FC<CtsvPortalResultProps> = ({
         </div>
       </Paper>
 
-      {/* Khay công văn đã bàn giao (thay thế khối trắng xấu xí) */}
-      <DispatchedTray
-        deskRoleName="Phòng Công tác sinh viên (CTSV)"
-        nextStepName="Ban Giám hiệu nhà trường"
-      />
-
-      {/* Danh sách minh chứng khi mở xem */}
+      {/* Hiển thị chi tiết hồ sơ đã đóng dấu & minh chứng */}
       {showEvidence && (
-        <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {evidence.map((item) => (
-            <EvidencePaper
-              key={item.id}
-              evidence={item}
-              marks={[]}
-              onToggle={() => {}}
-              onZoom={() => {}}
-              locked={true}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {form && (
+            <ArchivedCaseDocument
+              form={form}
+              evidence={evidence}
+              caseCode={caseCode}
+              day={day}
+              roleName="ctsv"
+              stampLabel={isValid ? 'HỢP LỆ' : 'KHÔNG HỢP LỆ'}
+              stampColor={isValid ? 'green' : 'red'}
+              signerTitle="PHÒNG CÔNG TÁC SINH VIÊN (CTSV)"
             />
-          ))}
+          )}
+
+          {evidence.length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--paper)' }}>
+                📁 TÀI LIỆU MINH CHỨNG KÈM THEO HỒ SƠ:
+              </div>
+              {evidence.map((item) => (
+                <EvidencePaper
+                  key={item.id}
+                  evidence={item}
+                  marks={[]}
+                  onToggle={() => {}}
+                  onZoom={() => {}}
+                  locked={true}
+                />
+              ))}
+            </div>
+          )}
         </div>
+      )}
+
+      {/* Khay công văn đã bàn giao (chỉ hiện khi chưa mở xem hồ sơ) */}
+      {!showEvidence && (
+        <DispatchedTray
+          deskRoleName="Phòng Công tác sinh viên (CTSV)"
+          nextStepName="Ban Giám hiệu nhà trường"
+        />
       )}
     </div>
   );

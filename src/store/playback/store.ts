@@ -497,23 +497,30 @@ export const usePlaybackStore = create<PlaybackStoreState>((set, get) => ({
     await processQueue(get, set);
   },
 
-  askReviewerBrief: async (role) => {
+  askReviewerBrief: async (role, overrideSummary) => {
     const { engine, mapState } = get();
     const ai = getActiveAI();
-    if (!ai || !engine || mapState.caseEnded) return null;
+    if (!ai) return null;
 
     const source = role === 'advisor' ? 'T4' : 'T5';
-    const caseState = engine.state;
-    const ctx: CaseSummary = {
-      form: caseState.form,
-      validity: { ...caseState.validity, missing: [...caseState.validity.missing] },
-      ruleResult: { ...caseState.ruleResult, violations: [...caseState.ruleResult.violations] },
-      advisorStatus: caseState.advisor.status,
-      ctsvStatus: caseState.ctsv.status,
-      day: getPlaybackDay(),
-      evidence: caseState.evidence,
-      aiScan: lastDocScan(get().currentEventLog),
-    };
+    let ctx: CaseSummary;
+
+    if (overrideSummary) {
+      ctx = overrideSummary;
+    } else {
+      if (!engine || mapState.caseEnded) return null;
+      const caseState = engine.state;
+      ctx = {
+        form: caseState.form,
+        validity: { ...caseState.validity, missing: [...caseState.validity.missing] },
+        ruleResult: { ...caseState.ruleResult, violations: [...caseState.ruleResult.violations] },
+        advisorStatus: caseState.advisor.status,
+        ctsvStatus: caseState.ctsv.status,
+        day: getPlaybackDay(),
+        evidence: caseState.evidence,
+        aiScan: lastDocScan(get().currentEventLog),
+      };
+    }
 
     let brief: ReviewerBrief | null = null;
     try {

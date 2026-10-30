@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ReviewerBrief } from '../../engine/types';
+import { CaseSummary } from '../../ai/provider';
 import { useAppStore } from '../../store/useApp';
 import { usePlaybackStore } from '../../store/playback';
 import { Paper } from '../kit/Paper';
@@ -278,13 +279,6 @@ export const AdvisorDesk: React.FC = () => {
     return () => clearTimeout(timer);
   }, [reminder?.id, reducedMotion, bellMs, reminder]);
 
-  const handleAsk = useCallback(async () => {
-    setLoading(true);
-    const result = await askReviewerBrief('advisor');
-    setBrief(result);
-    setLoading(false);
-  }, [askReviewerBrief]);
-
   const handleSelectCase = (id: string) => {
     sfx.playPaper();
     setSelectedCaseId(id);
@@ -303,6 +297,29 @@ export const AdvisorDesk: React.FC = () => {
 
   const selectedCase =
     submittedCases.find((c) => c.id === selectedCaseId) || submittedCases[0];
+
+  const handleAsk = useCallback(async () => {
+    if (!selectedCase) return;
+    setLoading(true);
+
+    const caseSummary: CaseSummary = {
+      form: selectedCase.form,
+      validity: {
+        complete: Boolean(selectedCase.form.fullName && selectedCase.form.mssv),
+        missing: [],
+        evidenceOk: selectedCase.evidence.length > 0,
+      },
+      ruleResult: { pass: true, violations: [] },
+      advisorStatus: selectedCase.advisorDecision || 'pending',
+      ctsvStatus: selectedCase.ctsvDecision || 'pending',
+      day: selectedCase.day || view.day || 0,
+      evidence: selectedCase.evidence,
+    };
+
+    const result = await askReviewerBrief('advisor', caseSummary);
+    setBrief(result);
+    setLoading(false);
+  }, [askReviewerBrief, selectedCase, view.day]);
 
   const handleLanded = () => {
     if (!stamp || resolved.current) return;

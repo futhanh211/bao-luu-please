@@ -8,7 +8,7 @@ import {
 } from '../../engine/types';
 import { ScenarioConfig } from '../../data/scenarios';
 import { StudentChatContext } from '../../data/knowledge-base';
-import { ChatMessage } from '../../ai/provider';
+import { ChatMessage, CaseSummary } from '../../ai/provider';
 import { MapDisplayState } from '../../ui/map/mapState';
 import { CtsvResult } from '../../data/inspection';
 import { CustomTestDataConfig } from '../../data/customTestData';
@@ -78,7 +78,7 @@ export interface PlaybackStoreState {
   resume: () => Promise<void>;
   stepNext: () => Promise<void>;
   completeUserTask: (taskId: string, outcome: unknown) => Promise<void>;
-  askReviewerBrief: (role: 'advisor' | 'ctsv') => Promise<ReviewerBrief | null>;
+  askReviewerBrief: (role: 'advisor' | 'ctsv', overrideSummary?: CaseSummary) => Promise<ReviewerBrief | null>;
   askAssistant: (history: ChatMessage[], ctx: StudentChatContext) => Promise<string>;
   setAiMode: (mode: 'mock' | 'live') => boolean;
   recordHumanDecision: (taskId: string, human: string, ai: string) => void;

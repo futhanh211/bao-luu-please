@@ -66,10 +66,27 @@ export class MockAIProvider implements AIProvider {
   public async reviewerBrief(role: 'advisor' | 'ctsv', ctx: unknown): Promise<ReviewerBrief> {
     await this.delay();
 
-    const scripted = role === 'advisor' ? this.script?.advisorBrief : this.script?.ctsvBrief;
-    if (scripted) return scripted;
-
     const summary = asCaseSummary(ctx);
+    const scripted = role === 'advisor' ? this.script?.advisorBrief : this.script?.ctsvBrief;
+
+    // Nếu có dữ liệu ca truyền vào và là ca tùy biến (không phải 6 kịch bản chuẩn S1-S6),
+    // ưu tiên sinh Brief động theo đúng thông tin hồ sơ của sinh viên đang được duyệt!
+    const STANDARD_SCENARIO_NAMES = [
+      'Nguyễn Văn An',
+      'Trần Thị Mai',
+      'Lê Hoàng Long',
+      'Phạm Ngọc Anh',
+      'Hoàng Khánh Linh',
+      'Vũ Hải Đăng',
+    ];
+    if (summary && scripted) {
+      if (!STANDARD_SCENARIO_NAMES.includes(summary.form.fullName)) {
+        return buildFallbackBrief(role, summary);
+      }
+      return scripted;
+    }
+
+    if (scripted) return scripted;
     if (!summary) return EMPTY_BRIEF[role];
 
     return buildFallbackBrief(role, summary);

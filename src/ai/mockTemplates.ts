@@ -122,28 +122,48 @@ export function buildFallbackBrief(role: 'advisor' | 'ctsv', ctx: CaseSummary): 
   const validity = ctx.validity;
   const ruleResult = ctx.ruleResult;
   const day = ctx.day ?? 0;
+  const evidenceList = ctx.evidence ?? [];
 
   if (role === 'advisor') {
     const complete = validity?.complete !== false;
-    const evidenceOk = validity?.evidenceOk !== false;
     const rulesPass = ruleResult?.pass !== false;
+    const hasEvidence = evidenceList.length > 0;
+    const ratio = matchEvidenceToReason(form.reason, evidenceList);
+    const evidenceOk = hasEvidence && ratio.matches;
+
+    let evidencePoint = 'Minh chứng: Chưa đính kèm tài liệu minh chứng';
+    if (hasEvidence) {
+      const names = evidenceList.map((e) => e.name).join(', ');
+      evidencePoint = evidenceOk
+        ? `Minh chứng: ${names} (Khớp với lý do xin nghỉ)`
+        : `Minh chứng: ${names} (Chưa khớp với lý do "${form.reason}")`;
+    }
+
     const points: string[] = [
-      `Hồ sơ: ${complete ? 'đầy đủ trường bắt buộc' : `còn thiếu: ${(validity?.missing ?? []).join(', ')}`}`,
-      `Minh chứng: ${evidenceOk ? 'khớp với lý do đã khai' : 'chưa khớp với lý do đã khai'}`,
-      `Điều kiện R1–R4: ${rulesPass ? 'đạt' : (ruleResult?.violations ?? []).join('; ')}`,
+      `Hồ sơ: ${complete ? 'Đầy đủ trường bắt buộc' : `Còn thiếu: ${(validity?.missing ?? []).join(', ')}`}`,
+      evidencePoint,
+      `Điều kiện R1–R4: ${rulesPass ? 'Đạt quy chế đào tạo' : (ruleResult?.violations ?? []).join('; ')}`,
       `Đã chờ ${day} ngày làm việc (SLA 3 ngày)`,
     ];
+
+    const canConfirm = complete && evidenceOk && rulesPass;
+
     return {
-      summary: `${form.fullName} xin nghỉ ${form.semesterCount} học kỳ vì lý do “${form.reason}”.`,
+      summary: `${form.fullName} (${form.mssv} · ${form.className}) xin nghỉ ${form.semesterCount} học kỳ vì lý do “${form.reason}”.`,
       points: points.slice(0, 4),
-      suggestedDecision: complete && evidenceOk && rulesPass ? 'confirm' : 'decline',
-      rationale: `${ADVISOR_NOTE} Cố vấn nên đối chiếu lại hồ sơ trước khi bấm dấu.`,
+      suggestedDecision: canConfirm ? 'confirm' : 'decline',
+      rationale: canConfirm
+        ? `${ADVISOR_NOTE} Hồ sơ hợp lệ, Cố vấn có thể bấm xác nhận nguyện vọng.`
+        : `${ADVISOR_NOTE} Hồ sơ chưa đủ minh chứng hoặc chưa đạt điều kiện, khuyến nghị Cố vấn kiểm tra kỹ trước khi bấm dấu.`,
     };
   }
 
   const fromScan = (ctx.aiScan?.anomalies ?? []).map((a) => a.issue);
-  const fromFields = collectAnomalies(ctx.evidence ?? []).map((a) => a.issue);
+  const fromFields = collectAnomalies(evidenceList).map((a) => a.issue);
   const issues: string[] = [];
+  if (evidenceList.length === 0) {
+    issues.push('Sinh viên chưa tải lên tệp tài liệu minh chứng hợp lệ');
+  }
   for (const issue of [...fromScan, ...fromFields]) {
     if (!issues.includes(issue)) issues.push(issue);
   }
@@ -152,19 +172,19 @@ export function buildFallbackBrief(role: 'advisor' | 'ctsv', ctx: CaseSummary): 
     issues.length > 0
       ? issues.slice(0, 4)
       : [
-          'Không phát hiện sai lệch trên các trường đã đọc',
-          'Loại giấy tờ khớp với lý do xin nghỉ',
+          'Không phát hiện sai lệch trên các trường tài liệu đã đọc',
+          `Minh chứng (${evidenceList.map((e) => e.name).join(', ') || 'Đã nộp'}) khớp với lý do xin nghỉ`,
           `Đã chờ ${day} ngày làm việc để thẩm định`,
         ];
 
   return {
     summary:
       issues.length > 0
-        ? `Phát hiện ${issues.length} bất thường cần con người thẩm tra trước khi kết luận.`
-        : 'Không phát hiện bất thường trên minh chứng đã nộp.',
+        ? `Phát hiện ${issues.length} điểm cần chú ý trên hồ sơ của sinh viên ${form.fullName}.`
+        : `Hồ sơ và minh chứng của sinh viên ${form.fullName} hợp lệ, không có nghi vấn.`,
     points: points.slice(0, 4),
     suggestedDecision: issues.length > 0 ? 'invalid' : 'valid',
-    rationale: `${ADVISOR_NOTE} CTSV kiểm tra bản giấy gốc trước khi chốt.`,
+    rationale: `${ADVISOR_NOTE} Chuyên viên CTSV kiểm tra đối chiếu trước khi kết luận.`,
   };
 }
 

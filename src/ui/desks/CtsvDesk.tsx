@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ReviewerBrief } from '../../engine/types';
+import { CaseSummary } from '../../ai/provider';
 import { collectAnomalies, scoreInspection } from '../../data/inspection';
 import { useAppStore } from '../../store/useApp';
 import { usePlaybackStore } from '../../store/playback';
@@ -326,8 +327,24 @@ export const CtsvDesk: React.FC = () => {
   };
 
   const handleAsk = async () => {
+    if (!selectedCase) return;
     setLoading(true);
-    const b = await askReviewerBrief('ctsv');
+
+    const caseSummary: CaseSummary = {
+      form: selectedCase.form,
+      validity: {
+        complete: Boolean(selectedCase.form.fullName && selectedCase.form.mssv),
+        missing: [],
+        evidenceOk: selectedCase.evidence.length > 0,
+      },
+      ruleResult: { pass: true, violations: [] },
+      advisorStatus: selectedCase.advisorDecision || 'pending',
+      ctsvStatus: selectedCase.ctsvDecision || 'pending',
+      day: selectedCase.day || view.day || 0,
+      evidence: selectedCase.evidence,
+    };
+
+    const b = await askReviewerBrief('ctsv', caseSummary);
     setBrief(b);
     setLoading(false);
   };

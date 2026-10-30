@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { StudentApplicationForm, EvidenceItem } from '../../../engine/types';
 import { Paper } from '../../kit/Paper';
 import { Stamp } from '../../kit/Stamp';
-import { AdvisorFile } from './AdvisorFile';
+import { ArchivedCaseDocument } from '../ArchivedCaseDocument';
 import { DispatchedTray } from '../DispatchedTray';
 import { useAuthStore } from '../../../store/useAuth';
 import { useAppStore } from '../../../store/useApp';
@@ -122,10 +122,26 @@ export const AdvisorPortalResult: React.FC<AdvisorPortalResultProps> = ({
           <button
             type="button"
             className={`portal-btn-secondary ${showDocument ? 'active' : ''}`}
-            onClick={() => setShowDocument(!showDocument)}
+            onClick={() => {
+              sfx.playPaper();
+              setShowDocument(!showDocument);
+            }}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px 16px',
+              fontSize: '13.5px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              backgroundColor: showDocument ? 'var(--amber)' : 'var(--desk-800)',
+              color: showDocument ? 'var(--desk-900)' : 'var(--paper)',
+              border: '1px solid var(--paper-line)',
+              borderRadius: '4px',
+            }}
           >
-            <span>📄</span>
-            <span>{showDocument ? 'Ẩn hồ sơ đã đóng dấu' : 'Xem lại hồ sơ đã đóng dấu'}</span>
+            <span>{showDocument ? '📂' : '📄'}</span>
+            <span>{showDocument ? 'Thu gọn hồ sơ' : 'Xem chi tiết hồ sơ gốc đã đóng dấu'}</span>
           </button>
 
           <button
@@ -133,6 +149,19 @@ export const AdvisorPortalResult: React.FC<AdvisorPortalResultProps> = ({
             className="portal-btn-secondary"
             onClick={handleLogout}
             title="Đăng xuất khỏi Cổng Cán bộ / Cố vấn học tập"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px 16px',
+              fontSize: '13.5px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              backgroundColor: 'var(--desk-800)',
+              color: 'var(--paper)',
+              border: '1px solid var(--paper-line)',
+              borderRadius: '4px',
+            }}
           >
             <span>🚪</span>
             <span>Đăng xuất tài khoản</span>
@@ -140,23 +169,26 @@ export const AdvisorPortalResult: React.FC<AdvisorPortalResultProps> = ({
         </div>
       </Paper>
 
-      {/* Khay công văn đã bàn giao (thay thế khối trắng xấu xí) */}
-      <DispatchedTray
-        deskRoleName="Khoa / Cố vấn học tập"
-        nextStepName="Phòng Công tác sinh viên (CTSV)"
-      />
-
-      {/* Chi tiết tài liệu khi người dùng bấm xem lại */}
+      {/* Chi tiết tài liệu hồ sơ gốc đã đóng dấu khi người dùng bấm xem */}
       {showDocument && (
-        <div style={{ marginTop: '4px', position: 'relative' }}>
-          <AdvisorFile
-            form={form}
-            evidence={evidence}
-            ruleResult={{ pass: true, violations: [] }}
-            ruleEvaluated={true}
-            validity={{ complete: true, missing: [], evidenceOk: true }}
-          />
-        </div>
+        <ArchivedCaseDocument
+          form={form}
+          evidence={evidence}
+          caseCode={caseCode}
+          day={day}
+          roleName="advisor"
+          stampLabel={isConfirmed ? 'XÁC NHẬN' : 'KHÔNG XÁC NHẬN'}
+          stampColor={isConfirmed ? 'green' : 'red'}
+          signerTitle="CỐ VẤN HỌC TẬP / KHOA"
+        />
+      )}
+
+      {/* Khay công văn đã bàn giao (chỉ hiện khi chưa mở xem hồ sơ để tránh rối mắt) */}
+      {!showDocument && (
+        <DispatchedTray
+          deskRoleName="Khoa / Cố vấn học tập"
+          nextStepName="Phòng Công tác sinh viên (CTSV)"
+        />
       )}
     </div>
   );
