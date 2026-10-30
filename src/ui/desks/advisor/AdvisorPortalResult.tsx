@@ -24,16 +24,10 @@ export const AdvisorPortalResult: React.FC<AdvisorPortalResultProps> = ({
   day,
 }) => {
   const [showDocument, setShowDocument] = useState(false);
-  const loginAsOfficer = useAuthStore((s) => s.loginAsOfficer);
   const logout = useAuthStore((s) => s.logout);
   const setScreen = useAppStore((s) => s.setScreen);
 
   const isConfirmed = advisorStatus !== 'declined';
-
-  const handleSwitchToCtsv = () => {
-    sfx.play('stamp');
-    loginAsOfficer('ctsv_mai');
-  };
 
   const handleLogout = () => {
     sfx.play('paper');
@@ -127,16 +121,6 @@ export const AdvisorPortalResult: React.FC<AdvisorPortalResultProps> = ({
         <div className="portal-actions-row">
           <button
             type="button"
-            className="portal-btn-primary"
-            onClick={handleSwitchToCtsv}
-            title="Đăng nhập tài khoản ThS. Nguyễn Thị Mai (Phòng CTSV) để duyệt bước tiếp theo"
-          >
-            <span>👩‍💼</span>
-            <span>Chuyển sang Cổng CTSV (ThS. Nguyễn Thị Mai) ➜</span>
-          </button>
-
-          <button
-            type="button"
             className={`portal-btn-secondary ${showDocument ? 'active' : ''}`}
             onClick={() => setShowDocument(!showDocument)}
           >
@@ -146,8 +130,9 @@ export const AdvisorPortalResult: React.FC<AdvisorPortalResultProps> = ({
 
           <button
             type="button"
-            className="portal-btn-logout"
+            className="portal-btn-secondary"
             onClick={handleLogout}
+            title="Đăng xuất khỏi Cổng Cán bộ / Cố vấn học tập"
           >
             <span>🚪</span>
             <span>Đăng xuất tài khoản</span>

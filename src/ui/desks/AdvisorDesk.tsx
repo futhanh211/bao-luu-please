@@ -13,6 +13,11 @@ import { useCaseView } from './useCaseView';
 import { SLA_DAY_LIMIT, isSlaOverdue } from './deskState';
 import { AdvisorFile } from './advisor/AdvisorFile';
 import { AdvisorPortalResult } from './advisor/AdvisorPortalResult';
+import {
+  getAllSubmittedCases,
+  updateCaseAdvisorDecision,
+  SubmittedCase,
+} from '../../data/caseRegistry';
 
 const ADVISOR_STAMPS: StampChoice[] = [
   { label: 'XÁC NHẬN', color: 'green', outcome: 'confirmed' },
@@ -20,6 +25,189 @@ const ADVISOR_STAMPS: StampChoice[] = [
 ];
 
 const soundedReminderIds = new Set<string>();
+
+/**
+ * Thanh danh sách hồ sơ Một cửa số nộp cho Cố vấn học tập (Hộp thư tiếp nhận ca)
+ */
+const AdvisorCaseDocketList: React.FC<{
+  cases: SubmittedCase[];
+  selectedId: string;
+  onSelect: (id: string) => void;
+}> = ({ cases, selectedId, onSelect }) => {
+  return (
+    <Paper
+      className="portal-docket-paper"
+      elevated
+      width="100%"
+      style={{
+        padding: '16px 20px',
+        marginBottom: '16px',
+        borderLeft: '5px solid var(--amber)',
+        background: 'var(--paper)',
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: 10,
+          marginBottom: 12,
+        }}
+      >
+        <div>
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 'bold',
+              letterSpacing: 1,
+              textTransform: 'uppercase',
+              color: 'var(--amber)',
+              marginBottom: 2,
+            }}
+          >
+            HỘP THƯ TIẾP NHẬN ĐƠN MỘT CỬA SỐ
+          </div>
+          <h3
+            style={{
+              fontFamily: 'var(--font-paper)',
+              fontSize: 17,
+              margin: 0,
+              color: 'var(--ink)',
+            }}
+          >
+            📁 DANH SÁCH HỒ SƠ SINH VIÊN NỘP CHO CỐ VẤN ({cases.length} HỒ SƠ)
+          </h3>
+        </div>
+        <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
+          Bấm chọn từng hồ sơ để xem xét và đóng dấu phê duyệt
+        </div>
+      </div>
+
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))',
+          gap: 10,
+        }}
+      >
+        {cases.map((c) => {
+          const isSelected = c.id === selectedId;
+          const isConfirmed = c.advisorDecision === 'confirmed';
+          const isDeclined = c.advisorDecision === 'declined';
+          const isPending = !c.advisorDecision;
+
+          return (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => onSelect(c.id)}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'flex-start',
+                textAlign: 'left',
+                padding: '11px 14px',
+                backgroundColor: isSelected ? 'var(--desk-900)' : 'var(--paper-dim)',
+                color: isSelected ? 'var(--paper)' : 'var(--ink)',
+                border: isSelected
+                  ? '2px solid var(--amber)'
+                  : isPending
+                  ? '1.5px solid rgba(245, 158, 11, 0.5)'
+                  : '1px solid var(--paper-line)',
+                borderRadius: 'var(--radius-sm)',
+                cursor: 'var(--cursor-pointer)',
+                transition: 'all 120ms ease',
+                boxShadow: isSelected ? '0 3px 8px rgba(0,0,0,0.25)' : 'none',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  width: '100%',
+                  alignItems: 'center',
+                  marginBottom: 4,
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: 'var(--font-paper)',
+                    fontWeight: 'bold',
+                    fontSize: 13,
+                    color: isSelected ? 'var(--amber)' : 'var(--ink)',
+                  }}
+                >
+                  📄 {c.caseCode}
+                </span>
+                <span
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 'bold',
+                    padding: '2px 6px',
+                    borderRadius: 3,
+                    backgroundColor: isConfirmed
+                      ? 'var(--wash-green)'
+                      : isDeclined
+                      ? 'var(--wash-red)'
+                      : 'var(--amber)',
+                    color: isConfirmed
+                      ? 'var(--stamp-green)'
+                      : isDeclined
+                      ? 'var(--stamp-red)'
+                      : 'var(--desk-900)',
+                  }}
+                >
+                  {isConfirmed
+                    ? '✓ ĐÃ XÁC NHẬN'
+                    : isDeclined
+                    ? '✗ KHÔNG XÁC NHẬN'
+                    : '⏳ CHỜ DUYỆT (T4)'}
+                </span>
+              </div>
+
+              <div
+                style={{
+                  fontFamily: 'var(--font-paper)',
+                  fontSize: 14.5,
+                  fontWeight: 'bold',
+                  color: isSelected ? '#fff' : 'var(--ink)',
+                }}
+              >
+                {c.studentName}{' '}
+                <span style={{ fontSize: 12, fontWeight: 'normal', opacity: 0.85 }}>
+                  ({c.studentMssv})
+                </span>
+              </div>
+
+              <div
+                style={{
+                  fontSize: 12,
+                  color: isSelected ? 'var(--paper-dim)' : 'var(--ink-soft)',
+                  marginTop: 2,
+                }}
+              >
+                {c.studentClass} · {c.studentFaculty}
+              </div>
+
+              <div
+                style={{
+                  fontSize: 11.5,
+                  color: isSelected ? 'var(--amber)' : '#b45309',
+                  marginTop: 4,
+                  fontStyle: 'italic',
+                }}
+              >
+                Lý do: {c.form.reason}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </Paper>
+  );
+};
 
 export const AdvisorDesk: React.FC = () => {
   const view = useCaseView('advisor');
@@ -33,6 +221,15 @@ export const AdvisorDesk: React.FC = () => {
   const isCustomCase = usePlaybackStore((s) => s.isCustomCase);
   const isCustomFlow = isCustomCase || sessionMode === 'portal';
 
+  const [submittedCases, setSubmittedCases] = useState<SubmittedCase[]>(() =>
+    getAllSubmittedCases()
+  );
+  const [selectedCaseId, setSelectedCaseId] = useState<string>(() => {
+    const all = getAllSubmittedCases();
+    const pending = all.find((c) => !c.advisorDecision);
+    return pending ? pending.id : all[0]?.id || '';
+  });
+
   const [brief, setBrief] = useState<ReviewerBrief | null>(null);
   const [loading, setLoading] = useState(false);
   const [stamp, setStamp] = useState<StampChoice | null>(null);
@@ -40,12 +237,24 @@ export const AdvisorDesk: React.FC = () => {
   const resolved = useRef(false);
 
   const engine = view.engine;
-  const form = engine?.state.form ?? view.scenario?.form;
-  const evidence = engine?.state.evidence ?? view.scenario?.evidence ?? [];
   const validity = engine?.state.validity;
   const ruleResult = engine?.state.ruleResult;
   const ruleEvaluated = view.log.some((e) => e.type === 'rule.evaluated');
   const reminder = engine?.state.messages.filter((m) => m.recipient === 'advisor').slice(-1)[0];
+
+  useEffect(() => {
+    const all = getAllSubmittedCases();
+    setSubmittedCases(all);
+    if (all.length > 0) {
+      if (!selectedCaseId || !all.some((c) => c.id === selectedCaseId)) {
+        const pending = all.find((c) => !c.advisorDecision);
+        const targetId = pending ? pending.id : all[0].id;
+        setSelectedCaseId(targetId);
+        const target = all.find((c) => c.id === targetId);
+        if (target) useAppStore.getState().setCaseCode(target.caseCode);
+      }
+    }
+  }, [view]);
 
   useEffect(() => {
     setBrief(null);
@@ -53,7 +262,7 @@ export const AdvisorDesk: React.FC = () => {
     setStamp(null);
     resolved.current = false;
     soundedReminderIds.clear();
-  }, [engine]);
+  }, [engine, selectedCaseId]);
 
   const bellMs = 600 / speed;
 
@@ -76,116 +285,115 @@ export const AdvisorDesk: React.FC = () => {
     setLoading(false);
   }, [askReviewerBrief]);
 
-  const handleLanded = useCallback(() => {
+  const handleSelectCase = (id: string) => {
+    sfx.playPaper();
+    setSelectedCaseId(id);
+    setStamp(null);
+    resolved.current = false;
+    const target = submittedCases.find((c) => c.id === id);
+    if (target) {
+      useAppStore.getState().setCaseCode(target.caseCode);
+    }
+  };
+
+  // Nếu không có bất kỳ hồ sơ nào trong sổ tiếp nhận
+  if (submittedCases.length === 0) {
+    return <DeskEmpty deskName="Bàn Cố vấn học tập" reason="not-submitted" />;
+  }
+
+  const selectedCase =
+    submittedCases.find((c) => c.id === selectedCaseId) || submittedCases[0];
+
+  const handleLanded = () => {
     if (!stamp || resolved.current) return;
     resolved.current = true;
     if (brief) {
       recordHumanDecision('T4', stamp.outcome, brief.suggestedDecision);
     }
-    void completeUserTask('T4', stamp.outcome);
-  }, [brief, completeUserTask, recordHumanDecision, stamp]);
 
-  if (view.phase === 'done' && form) {
-    const advisorStatus =
-      engine?.state.advisor.status ?? (stamp?.outcome as 'confirmed' | 'declined' | undefined) ?? 'confirmed';
-    const safeAdvisorStatus: 'confirmed' | 'declined' =
-      advisorStatus === 'declined' ? 'declined' : 'confirmed';
-
-    if (sessionMode === 'portal') {
-      return (
-        <AdvisorPortalResult
-          form={form}
-          evidence={evidence}
-          advisorStatus={safeAdvisorStatus}
-          caseCode={engine?.state.caseId ?? 'BL-2026-88'}
-          day={view.day}
-        />
-      );
+    const updated = updateCaseAdvisorDecision(
+      selectedCase.id,
+      stamp.outcome as 'confirmed' | 'declined'
+    );
+    if (updated) {
+      setSubmittedCases(getAllSubmittedCases());
     }
 
+    // Nếu ca này là ca đang chạy trong BPMN engine thì hoàn tất task T4
+    if (view.scenario?.form.mssv === selectedCase.studentMssv) {
+      void completeUserTask('T4', stamp.outcome);
+    }
+    sfx.playStamp();
+  };
+
+  const isCaseProcessed =
+    selectedCase.advisorDecision === 'confirmed' ||
+    selectedCase.advisorDecision === 'declined';
+
+  // Khi hồ sơ đã được Cố vấn đóng dấu xử lý xong
+  if (isCaseProcessed) {
+    const safeAdvisorStatus: 'confirmed' | 'declined' =
+      selectedCase.advisorDecision === 'declined' ? 'declined' : 'confirmed';
+
     return (
-      <div className="desk-page advisor-page">
-        <div className="desk-head">
-          <div>
-            <h1 className="desk-title">Bàn Cố vấn học tập</h1>
-            <p className="desk-sub">
-              Lane L2 · Thẩm tra nguyện vọng và xác nhận bảo lưu (T4) · NGÀY {view.day}
-            </p>
-          </div>
-          <div className="desk-toolbar">
-            <span className="desk-hint">Đã đóng dấu hoàn tất T4</span>
-          </div>
-        </div>
+      <div
+        className="desk-page advisor-portal-page"
+        style={{
+          width: '100%',
+          maxWidth: '980px',
+          margin: '0 auto',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 16,
+        }}
+      >
+        <AdvisorCaseDocketList
+          cases={submittedCases}
+          selectedId={selectedCase.id}
+          onSelect={handleSelectCase}
+        />
 
-        <div className="advisor-tablet">
-          <div className="tablet-screen" style={{ position: 'relative' }}>
-            <AdvisorFile
-              form={form}
-              evidence={evidence}
-              ruleResult={ruleResult ?? { pass: false, violations: [] }}
-              ruleEvaluated={ruleEvaluated}
-              validity={validity ?? { complete: false, missing: [], evidenceOk: false }}
-            />
-            <div style={{ position: 'absolute', right: 28, top: 20, zIndex: 10 }}>
-              <Stamp
-                label={advisorStatus === 'declined' ? 'KHÔNG XÁC NHẬN' : 'XÁC NHẬN'}
-                color={advisorStatus === 'declined' ? 'red' : 'green'}
-                seed="T4-done"
-                size="lg"
-              />
-            </div>
-          </div>
-
-          <aside className="advisor-side">
-            <div
-              className="signing-done"
-              style={{
-                background: 'var(--desk-700)',
-                border: `1px solid ${advisorStatus === 'declined' ? 'var(--stamp-red)' : 'var(--stamp-green)'}`,
-                padding: 18,
-                borderRadius: 'var(--radius-sm)',
-              }}
-            >
-              <div
-                className="signing-kicker"
-                style={{
-                  color: advisorStatus === 'declined' ? 'var(--stamp-red)' : 'var(--stamp-green)',
-                  fontWeight: 'bold',
-                  fontSize: 12,
-                }}
-              >
-                ĐÃ HOÀN TẤT T4
-              </div>
-              <h3
-                className="signing-title"
-                style={{ fontFamily: 'var(--font-paper)', fontSize: 18, color: 'var(--paper)', margin: '6px 0' }}
-              >
-                {advisorStatus === 'declined' ? 'Cố vấn không xác nhận' : 'Cố vấn đã xác nhận'}
-              </h3>
-              <p className="signing-sub" style={{ fontSize: 13, color: 'var(--paper-dim)', lineHeight: 1.5 }}>
-                Ý kiến cố vấn học tập đã được đóng dấu niêm phong. Quy trình đã chuyển sang cổng hội tụ G3 để phối hợp với CTSV và CSDL Đào tạo.
-              </p>
-            </div>
-          </aside>
-        </div>
+        <AdvisorPortalResult
+          form={selectedCase.form}
+          evidence={selectedCase.evidence}
+          advisorStatus={safeAdvisorStatus}
+          caseCode={selectedCase.caseCode}
+          day={selectedCase.day || view.day || 0}
+        />
       </div>
     );
   }
 
-  if (view.phase !== 'waiting' || !form) {
-    const reason = view.phase === 'waiting' ? 'upcoming' : view.phase;
-    return <DeskEmpty deskName="Bàn Cố vấn học tập" reason={reason} />;
-  }
-
+  // Khi hồ sơ đang chờ Cố vấn xem xét và dập dấu (Pending T4)
   const overdue = isSlaOverdue(view.waitedDays);
 
   return (
-    <div className="desk-page advisor-page">
+    <div
+      className="desk-page advisor-page"
+      style={{
+        width: '100%',
+        maxWidth: '980px',
+        margin: '0 auto',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 16,
+      }}
+    >
+      <AdvisorCaseDocketList
+        cases={submittedCases}
+        selectedId={selectedCase.id}
+        onSelect={handleSelectCase}
+      />
+
       <div className="desk-head">
         <div>
           <h1 className="desk-title">Bàn Cố vấn học tập</h1>
           <p className="desk-sub">
-            Lane L2 · Thẩm tra nguyện vọng và xác nhận bảo lưu (T4 · SLA {SLA_DAY_LIMIT} ngày)
+            Lane L2 · Đang thẩm tra hồ sơ:{' '}
+            <strong style={{ color: 'var(--amber)' }}>
+              {selectedCase.caseCode} — {selectedCase.studentName} ({selectedCase.studentMssv})
+            </strong>{' '}
+            · SLA {SLA_DAY_LIMIT} ngày
           </p>
         </div>
         <div className="desk-toolbar">
@@ -193,7 +401,6 @@ export const AdvisorDesk: React.FC = () => {
           <button
             type="button"
             className="desk-btn"
-            disabled={view.phase !== 'waiting'}
             onClick={() => {
               sfx.playClockTick();
               void advanceDays(1);
@@ -204,7 +411,6 @@ export const AdvisorDesk: React.FC = () => {
           <button
             type="button"
             className="desk-btn"
-            disabled={view.phase !== 'waiting'}
             onClick={() => {
               sfx.playCalendarTear();
               void advanceDays(3);
@@ -235,11 +441,11 @@ export const AdvisorDesk: React.FC = () => {
       <div className="advisor-tablet">
         <div className="tablet-screen">
           <AdvisorFile
-            form={form}
-            evidence={evidence}
-            ruleResult={ruleResult ?? { pass: false, violations: [] }}
+            form={selectedCase.form}
+            evidence={selectedCase.evidence}
+            ruleResult={ruleResult ?? { pass: true, violations: [] }}
             ruleEvaluated={ruleEvaluated}
-            validity={validity ?? { complete: false, missing: [], evidenceOk: false }}
+            validity={validity ?? { complete: true, missing: [], evidenceOk: true }}
           />
         </div>
 
