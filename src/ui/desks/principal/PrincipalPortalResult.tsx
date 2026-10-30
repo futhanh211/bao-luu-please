@@ -20,7 +20,6 @@ export const PrincipalPortalResult: React.FC<PrincipalPortalResultProps> = ({
   day,
 }) => {
   const [showDocument, setShowDocument] = useState(true);
-  const loginAsStudent = useAuthStore((s) => s.loginAsStudent);
   const logout = useAuthStore((s) => s.logout);
   const setScreen = useAppStore((s) => s.setScreen);
 
@@ -29,14 +28,6 @@ export const PrincipalPortalResult: React.FC<PrincipalPortalResultProps> = ({
     if (typeof window !== 'undefined') {
       window.print();
     }
-  };
-
-  const handleSwitchToStudent = () => {
-    sfx.play('stamp');
-    loginAsStudent(doc.mssv || '3121102001', {
-      name: doc.studentName,
-      faculty: doc.faculty,
-    });
   };
 
   const handleLogout = () => {
@@ -138,16 +129,6 @@ export const PrincipalPortalResult: React.FC<PrincipalPortalResultProps> = ({
         <div className="portal-actions-row">
           <button
             type="button"
-            className="portal-btn-primary"
-            onClick={handleSwitchToStudent}
-            title={`Đăng nhập tài khoản sinh viên ${doc.studentName || 'sinh viên'} để kiểm tra kết quả tiếp nhận`}
-          >
-            <span>🎓</span>
-            <span>Đăng nhập Cổng Sinh viên để xem kết quả nhận được ➜</span>
-          </button>
-
-          <button
-            type="button"
             className={`portal-btn-secondary ${showDocument ? 'active' : ''}`}
             onClick={() => setShowDocument(!showDocument)}
           >
@@ -166,8 +147,9 @@ export const PrincipalPortalResult: React.FC<PrincipalPortalResultProps> = ({
 
           <button
             type="button"
-            className="portal-btn-logout"
+            className="portal-btn-secondary"
             onClick={handleLogout}
+            title="Đăng xuất khỏi Cổng Ban Giám hiệu"
           >
             <span>🚪</span>
             <span>Đăng xuất Ban Giám hiệu</span>
