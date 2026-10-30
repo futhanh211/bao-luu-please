@@ -1,44 +1,95 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { INITIAL_STUDENTS } from '../../../data/students.db';
+import { findRegisteredStudent } from '../../../data/userRegistry';
+import { useAuthStore } from '../../../store/useAuth';
 import { sfx } from '../../audio/sfx';
 
 interface Props {
   onLogin: (student: { mssv: string; name: string; className: string; faculty: string }) => void;
   onError: (msg: string) => void;
+  onSwitchToRegister?: () => void;
 }
 
-export const StudentCustomLogin: React.FC<Props> = ({ onLogin, onError }) => {
-  const [mssv, setMssv] = useState<string>('3121102001');
-  const [name, setName] = useState<string>('Nguyễn Minh Khoa');
-  const [className, setClassName] = useState<string>('47K12.1');
-  const [faculty, setFaculty] = useState<string>('Khoa Công nghệ thông tin kinh doanh');
-  const [customDetailsOpen, setCustomDetailsOpen] = useState<boolean>(false);
-  const [password, setPassword] = useState<string>('••••••••');
+export const StudentCustomLogin: React.FC<Props> = ({
+  onLogin,
+  onError,
+  onSwitchToRegister,
+}) => {
+  // Mặc định hoàn toàn trống, bắt buộc người dùng tự nhập
+  const [mssv, setMssv] = useState<string>('');
+  const [name, setName] = useState<string>('');
+  const [className, setClassName] = useState<string>('');
+  const [faculty, setFaculty] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+
+  const verifyStudentLogin = useAuthStore((s) => s.verifyStudentLogin);
+
+  const populateFromMssv = (val: string) => {
+    const trimmed = val.trim();
+    if (!trimmed) {
+      setName('');
+      setClassName('');
+      setFaculty('');
+      return;
+    }
+
+    const reg = findRegisteredStudent(trimmed);
+    if (reg) {
+      setName(reg.name);
+      setClassName(reg.className);
+      setFaculty(reg.faculty);
+      return;
+    }
+
+    const demo = INITIAL_STUDENTS.find((s) => s.mssv === trimmed);
+    if (demo) {
+      setName(demo.name);
+      setClassName(demo.className);
+      setFaculty(demo.faculty);
+      return;
+    }
+
+    setName('');
+    setClassName('');
+    setFaculty('');
+  };
+
+  useEffect(() => {
+    populateFromMssv(mssv);
+  }, [mssv]);
 
   const handleMssvChange = (val: string) => {
     setMssv(val);
-    const trimmed = val.trim();
-    const found = INITIAL_STUDENTS.find((s) => s.mssv === trimmed);
-    if (found) {
-      setName(found.name);
-      setClassName(found.className);
-      setFaculty(found.faculty);
-    }
+    populateFromMssv(val);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = mssv.trim();
     if (!trimmed) {
+      sfx.play('buzz');
       onError('Vui lòng nhập Mã số sinh viên (MSSV).');
       return;
     }
+
+    // Xác thực tài khoản qua store
+    const result = verifyStudentLogin(trimmed, password);
+    if (!result.success) {
+      sfx.play('buzz');
+      onError(result.message);
+      return;
+    }
+
     sfx.play('stamp');
+    const finalName = name.trim() || result.user?.name || `Sinh viên ${trimmed}`;
+    const finalClass = className.trim() || (result.user as any)?.className || '48K12.1';
+    const finalFaculty = faculty.trim() || (result.user as any)?.faculty || 'Khoa Công nghệ thông tin kinh doanh';
+
     onLogin({
       mssv: trimmed,
-      name: name.trim() || `Sinh viên ${trimmed}`,
-      className: className.trim() || '47K12.1',
-      faculty: faculty.trim() || 'Khoa Công nghệ thông tin kinh doanh',
+      name: finalName,
+      className: finalClass,
+      faculty: finalFaculty,
     });
   };
 
@@ -56,7 +107,8 @@ export const StudentCustomLogin: React.FC<Props> = ({ onLogin, onError }) => {
           type="text"
           value={mssv}
           onChange={(e) => handleMssvChange(e.target.value)}
-          placeholder="Nhập MSSV bất kỳ (VD: 3121102001 hoặc mã của bạn)..."
+          placeholder="Nhập Mã số sinh viên của bạn..."
+          autoFocus
           style={{
             width: '100%',
             padding: '9px 12px',
@@ -71,124 +123,6 @@ export const StudentCustomLogin: React.FC<Props> = ({ onLogin, onError }) => {
           }}
         />
       </div>
-
-      {/* Thẻ nhận diện sinh viên & Nút tùy chỉnh */}
-      <div
-        style={{
-          padding: '8px 12px',
-          backgroundColor: 'rgba(0, 0, 0, 0.04)',
-          border: '1px dashed var(--paper-line)',
-          borderRadius: 'var(--radius-sm)',
-          fontSize: '12px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '8px',
-        }}
-      >
-        <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          <strong>{name}</strong> · {className} ({faculty})
-        </div>
-        <button
-          type="button"
-          onClick={() => setCustomDetailsOpen(!customDetailsOpen)}
-          style={{
-            background: 'none',
-            border: 'none',
-            color: 'var(--ink-soft)',
-            cursor: 'var(--cursor-pointer)',
-            fontSize: '11.5px',
-            textDecoration: 'underline',
-            flexShrink: 0,
-          }}
-        >
-          {customDetailsOpen ? '▲ Ẩn chi tiết' : '✏️ Nhập SV khác'}
-        </button>
-      </div>
-
-      {customDetailsOpen && (
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '8px',
-            padding: '10px 12px',
-            backgroundColor: 'rgba(0, 0, 0, 0.03)',
-            border: '1px solid var(--paper-line)',
-            borderRadius: 'var(--radius-sm)',
-          }}
-        >
-          <div>
-            <label style={{ display: 'block', fontSize: '11px', fontWeight: 'bold', marginBottom: '2px' }}>
-              HỌ VÀ TÊN SINH VIÊN:
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Nhập họ và tên..."
-              style={{
-                width: '100%',
-                padding: '6px 8px',
-                fontSize: '13px',
-                fontFamily: 'var(--font-paper)',
-                border: '1px solid var(--paper-line)',
-                borderRadius: 'var(--radius-sm)',
-                backgroundColor: '#dfd8c2',
-                color: 'var(--ink)',
-                boxSizing: 'border-box',
-              }}
-            />
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '11px', fontWeight: 'bold', marginBottom: '2px' }}>
-                LỚP:
-              </label>
-              <input
-                type="text"
-                value={className}
-                onChange={(e) => setClassName(e.target.value)}
-                placeholder="VD: 47K12.1"
-                style={{
-                  width: '100%',
-                  padding: '6px 8px',
-                  fontSize: '13px',
-                  fontFamily: 'var(--font-paper)',
-                  border: '1px solid var(--paper-line)',
-                  borderRadius: 'var(--radius-sm)',
-                  backgroundColor: '#dfd8c2',
-                  color: 'var(--ink)',
-                  boxSizing: 'border-box',
-                }}
-              />
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '11px', fontWeight: 'bold', marginBottom: '2px' }}>
-                KHOA:
-              </label>
-              <input
-                type="text"
-                value={faculty}
-                onChange={(e) => setFaculty(e.target.value)}
-                placeholder="VD: Khoa CNTT Kinh doanh"
-                style={{
-                  width: '100%',
-                  padding: '6px 8px',
-                  fontSize: '13px',
-                  fontFamily: 'var(--font-paper)',
-                  border: '1px solid var(--paper-line)',
-                  borderRadius: 'var(--radius-sm)',
-                  backgroundColor: '#dfd8c2',
-                  color: 'var(--ink)',
-                  boxSizing: 'border-box',
-                }}
-              />
-            </div>
-          </div>
-        </div>
-      )}
 
       <div>
         <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 'bold', color: 'var(--ink)', marginBottom: '4px' }}>
@@ -238,6 +172,27 @@ export const StudentCustomLogin: React.FC<Props> = ({ onLogin, onError }) => {
         <span>▶</span>
         <span>ĐĂNG NHẬP VÀO BÀN SINH VIÊN</span>
       </button>
+
+      {onSwitchToRegister && (
+        <div style={{ textAlign: 'center', marginTop: '6px', fontSize: '13px' }}>
+          <span style={{ color: 'var(--ink-soft)' }}>Chưa có tài khoản sinh viên? </span>
+          <button
+            type="button"
+            onClick={onSwitchToRegister}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#b45309',
+              fontWeight: 'bold',
+              cursor: 'var(--cursor-pointer)',
+              textDecoration: 'underline',
+              padding: 0,
+            }}
+          >
+            Đăng ký tài khoản ngay
+          </button>
+        </div>
+      )}
     </form>
   );
 };
