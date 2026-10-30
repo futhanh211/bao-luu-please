@@ -1,9 +1,5 @@
 import React from 'react';
 import { Paper } from '../kit/Paper';
-import { usePlaybackStore } from '../../store/playback';
-import { useAuthStore } from '../../store/useAuth';
-import { useAppStore } from '../../store/useApp';
-import { sfx } from '../audio/sfx';
 
 export type EmptyReason = 'not-submitted' | 'upcoming' | 'done' | 'ended';
 
@@ -31,14 +27,6 @@ export const DeskEmpty: React.FC<{ reason: EmptyReason; deskName: string }> = ({
   deskName,
 }) => {
   const text = REASON_TEXT[reason];
-  const submitApplication = usePlaybackStore((s) => s.submitApplication);
-  const setScreen = useAppStore((s) => s.setScreen);
-  const logout = useAuthStore((s) => s.logout);
-
-  const handleQuickSubmit = async () => {
-    sfx.play('stamp');
-    await submitApplication({ useScenarioDefaults: true });
-  };
 
   return (
     <Paper minHeight={420} width="min(860px, 92vw)" rotation={-0.4}>
@@ -64,62 +52,6 @@ export const DeskEmpty: React.FC<{ reason: EmptyReason; deskName: string }> = ({
         <div style={{ fontSize: 15, color: 'var(--ink-soft)', lineHeight: 1.6, maxWidth: 540, margin: '0 auto' }}>
           {text.detail}
         </div>
-
-        {reason === 'not-submitted' && (
-          <div
-            style={{
-              marginTop: 22,
-              paddingTop: 18,
-              borderTop: '1px dashed var(--paper-line)',
-              display: 'flex',
-              gap: 12,
-              justifyContent: 'center',
-              flexWrap: 'wrap',
-            }}
-          >
-            <button
-              type="button"
-              onClick={handleQuickSubmit}
-              style={{
-                padding: '10px 20px',
-                backgroundColor: 'var(--desk-900)',
-                color: 'var(--amber)',
-                border: '2px solid var(--amber)',
-                borderRadius: 'var(--radius-sm)',
-                fontWeight: 'bold',
-                fontSize: 14,
-                cursor: 'var(--cursor-pointer)',
-                fontFamily: 'var(--font-paper)',
-              }}
-              title="Mô phỏng sinh viên nộp đơn kịch bản S1 để chuyển ngay tới bàn này duyệt"
-            >
-              ⚡ TỰ ĐỘNG NỘP HỒ SƠ MẪU (S1) ĐỂ DUYỆT NGAY
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                sfx.play('paper');
-                logout();
-                setScreen('login');
-              }}
-              style={{
-                padding: '10px 18px',
-                backgroundColor: '#fffdf8',
-                color: 'var(--ink)',
-                border: '1px solid var(--ink)',
-                borderRadius: 'var(--radius-sm)',
-                fontWeight: 'bold',
-                fontSize: 14,
-                cursor: 'var(--cursor-pointer)',
-                fontFamily: 'var(--font-paper)',
-              }}
-              title="Đăng xuất để vào Cổng Sinh viên tự điền và nộp đơn"
-            >
-              🎓 VÀO CỔNG SINH VIÊN TỰ NỘP ĐƠN
-            </button>
-          </div>
-        )}
       </div>
     </Paper>
   );

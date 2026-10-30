@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { EngineEvent, DecisionDoc } from '../../../engine/types';
 import { useAuthStore } from '../../../store/useAuth';
 import { useAppStore } from '../../../store/useApp';
@@ -7,6 +7,7 @@ import { composeLetter, LetterDoc } from '../../../data/letters';
 import { Paper } from '../../kit/Paper';
 import { Stamp } from '../../kit/Stamp';
 import { sfx } from '../../audio/sfx';
+import { getSubmittedCaseByMssv, getSubmittedCaseById } from '../../../data/caseRegistry';
 
 interface StudentPortalTrackerProps {
   caseCode: string;
@@ -27,23 +28,32 @@ export const StudentPortalTracker: React.FC<StudentPortalTrackerProps> = ({
   day,
   decisionDoc,
 }) => {
-  const [showDoc, setShowDoc] = useState(true);
-  const loginAsOfficer = useAuthStore((s) => s.loginAsOfficer);
   const logout = useAuthStore((s) => s.logout);
   const setScreen = useAppStore((s) => s.setScreen);
+
+  const regCase = getSubmittedCaseByMssv(mssv) || getSubmittedCaseById(caseCode);
+  const activeDoc = decisionDoc || regCase?.decisionDoc;
 
   // Phân tích trạng thái kết thúc ca
   const endEvent = [...log].reverse().find((e) => e.type === 'case.ended') as
     | { type: 'case.ended'; endEventId: string; outcome: string }
     | undefined;
 
-  const t4Done = log.some((e) => e.type === 'task.completed' && e.taskId === 'T4');
-  const t5Done = log.some((e) => e.type === 'task.completed' && e.taskId === 'T5');
-  const t9Done = log.some((e) => e.type === 'task.completed' && e.taskId === 'T9');
+  const t4Done =
+    log.some((e) => e.type === 'task.completed' && e.taskId === 'T4') ||
+    Boolean(regCase?.advisorDecision);
+  const t5Done =
+    log.some((e) => e.type === 'task.completed' && e.taskId === 'T5') ||
+    Boolean(regCase?.ctsvDecision);
+  const t9Done =
+    log.some((e) => e.type === 'task.completed' && e.taskId === 'T9') ||
+    Boolean(regCase?.principalSigned);
 
   const isApproved = t9Done || endEvent?.endEventId === 'E_END_OK';
-  const isRejected = endEvent?.endEventId === 'E_END_REJECTED';
-  const isReturned = endEvent?.endEventId === 'E_END_RETURNED';
+  const isRejected =
+    regCase?.ctsvDecision === 'invalid' || endEvent?.endEventId === 'E_END_REJECTED';
+  const isReturned =
+    regCase?.advisorDecision === 'declined' || endEvent?.endEventId === 'E_END_RETURNED';
   const isFinished = isApproved || isRejected || isReturned;
 
   // Lấy thư thông báo nếu có (MF2 hoặc MF3)
@@ -54,13 +64,6 @@ export const StudentPortalTracker: React.FC<StudentPortalTrackerProps> = ({
     lastMsg && lastMsg.type === 'message.sent'
       ? composeLetter(lastMsg.flowId, lastMsg.payload)
       : null;
-
-  const handleSwitchToOfficer = () => {
-    sfx.play('stamp');
-    if (!t4Done) loginAsOfficer('advisor_nam');
-    else if (!t5Done) loginAsOfficer('ctsv_mai');
-    else loginAsOfficer('bgh_khoi');
-  };
 
   const handleLogout = () => {
     sfx.play('paper');
@@ -161,27 +164,11 @@ export const StudentPortalTracker: React.FC<StudentPortalTrackerProps> = ({
         </div>
 
         {/* Nút tác vụ */}
-        <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', paddingTop: 10, borderTop: '1px dashed var(--paper-line)' }}>
-          <button
-            type="button"
-            onClick={() => setShowDoc(!showDoc)}
-            style={{ padding: '6px 14px', fontFamily: 'var(--font-paper)', fontSize: 13, fontWeight: 'bold', backgroundColor: 'var(--desk-900)', color: 'var(--amber)', border: '1px solid var(--amber)', borderRadius: 'var(--radius-sm)', cursor: 'var(--cursor-pointer)' }}
-          >
-            {showDoc ? 'Ẩn văn bản' : '📄 Xem toàn văn văn bản'}
-          </button>
-          {!isFinished && (
-            <button
-              type="button"
-              onClick={handleSwitchToOfficer}
-              style={{ padding: '6px 14px', fontFamily: 'var(--font-paper)', fontSize: 13, fontWeight: 'bold', backgroundColor: 'var(--amber)', color: 'var(--desk-900)', border: '1px solid var(--desk-900)', borderRadius: 'var(--radius-sm)', cursor: 'var(--cursor-pointer)' }}
-            >
-              👨‍🏫 Cổng Giảng viên duyệt đơn ➜
-            </button>
-          )}
+        <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10, flexWrap: 'wrap', paddingTop: 10, borderTop: '1px dashed var(--paper-line)' }}>
           <button
             type="button"
             onClick={handleLogout}
-            style={{ padding: '6px 12px', fontFamily: 'var(--font-paper)', fontSize: 12.5, backgroundColor: 'transparent', color: 'var(--ink-soft)', border: '1px solid var(--paper-line)', borderRadius: 'var(--radius-sm)', cursor: 'var(--cursor-pointer)', marginLeft: 'auto' }}
+            style={{ padding: '6px 14px', fontFamily: 'var(--font-paper)', fontSize: 13, backgroundColor: 'transparent', color: 'var(--ink-soft)', border: '1px solid var(--paper-line)', borderRadius: 'var(--radius-sm)', cursor: 'var(--cursor-pointer)' }}
           >
             🚪 Đăng xuất Cổng Sinh viên
           </button>
@@ -221,86 +208,84 @@ export const StudentPortalTracker: React.FC<StudentPortalTrackerProps> = ({
       </Paper>
 
       {/* 3. Hiển thị văn bản kết quả ngay trung tâm */}
-      {showDoc && (
-        <div style={{ display: 'flex', justifyContent: 'center' }}>
-          {isApproved && decisionDoc && (
-            <DecisionDraft
-              doc={decisionDoc}
-              signing="signed"
-              signerName={decisionDoc.signerName ?? 'PGS.TS. Trần Đình Khôi'}
-              mode="decision"
-              autoStamp={false}
-            />
-          )}
+      <div style={{ display: 'flex', justifyContent: 'center' }}>
+        {isApproved && activeDoc && (
+          <DecisionDraft
+            doc={activeDoc}
+            signing="signed"
+            signerName={activeDoc.signerName ?? 'PGS.TS. Trần Đình Khôi'}
+            mode="decision"
+            autoStamp={false}
+          />
+        )}
 
-          {(isRejected || isReturned) && (
-            <Paper className="decision-paper" rotation={-0.3} watermark creased elevated style={{ width: '100%', maxWidth: 720, padding: '32px 36px' }}>
-              <div style={{ textAlign: 'center', borderBottom: '2px solid var(--ink)', paddingBottom: 10, marginBottom: 14 }}>
-                <div style={{ fontSize: 11, letterSpacing: 1, color: 'var(--ink-soft)', textTransform: 'uppercase' }}>
-                  TRƯỜNG ĐẠI HỌC KINH TẾ – ĐẠI HỌC ĐÀ NẴNG
-                </div>
-                <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 2 }}>
-                  HỆ THỐNG MỘT CỬA SỐ · BỘ PHẬN TIẾP NHẬN & TRẢ KẾT QUẢ
-                </div>
-                <h2 style={{ fontFamily: 'var(--font-paper)', fontSize: 20, textTransform: 'uppercase', color: isRejected ? 'var(--stamp-red)' : 'var(--amber)', margin: '10px 0 4px 0' }}>
-                  {isRejected ? 'THÔNG BÁO TỪ CHỐI GIẢI QUYẾT HỒ SƠ' : 'PHIẾU HƯỚNG DẪN BỔ SUNG HỒ SƠ'}
-                </h2>
-                <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
-                  Mã hồ sơ: {caseCode} · Ngày thông báo: Ngày làm việc {day}
-                </div>
+        {(isRejected || isReturned) && (
+          <Paper className="decision-paper" rotation={-0.3} watermark creased elevated style={{ width: '100%', maxWidth: 720, padding: '32px 36px' }}>
+            <div style={{ textAlign: 'center', borderBottom: '2px solid var(--ink)', paddingBottom: 10, marginBottom: 14 }}>
+              <div style={{ fontSize: 11, letterSpacing: 1, color: 'var(--ink-soft)', textTransform: 'uppercase' }}>
+                TRƯỜNG ĐẠI HỌC KINH TẾ – ĐẠI HỌC ĐÀ NẴNG
               </div>
-
-              <div style={{ fontFamily: 'var(--font-paper)', fontSize: 14, lineHeight: 1.6, color: 'var(--ink)' }}>
-                <p>
-                  <strong>Kính gửi:</strong> Sinh viên <strong>{studentName}</strong> (MSSV: <strong>{mssv}</strong> · Khoa: {faculty})
-                </p>
-                <p>
-                  {letter?.intro || (isRejected
-                    ? 'Hội đồng xét duyệt và Phòng Công tác sinh viên đã thẩm định hồ sơ xin nghỉ học tạm thời của bạn nhưng không đủ điều kiện phê duyệt theo Quy định hiện hành.'
-                    : 'Hồ sơ xin nghỉ học tạm thời của bạn chưa đáp ứng yêu cầu tiếp nhận. Vui lòng bổ sung minh chứng và nộp lại.')}
-                </p>
-
-                {letter && letter.sections.length > 0 && (
-                  <div style={{ margin: '14px 0', padding: '12px 16px', backgroundColor: 'var(--paper-dim)', border: '1px dashed var(--paper-line)', borderRadius: 'var(--radius-sm)' }}>
-                    {letter.sections.map((sec, sIdx) => (
-                      <div key={sIdx} style={{ marginBottom: 8 }}>
-                        <div style={{ fontWeight: 'bold', fontSize: 13, color: isRejected ? 'var(--stamp-red)' : 'var(--ink)' }}>
-                          {sec.heading}:
-                        </div>
-                        {sec.lines.map((ln, lIdx) => (
-                          <div key={lIdx} style={{ fontSize: 13, marginLeft: 10, marginTop: 2 }}>{ln}</div>
-                        ))}
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <div style={{ marginTop: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                  <div>
-                    <Stamp label={isRejected ? 'TỪ CHỐI' : 'TRẢ HỒ SƠ'} color={isRejected ? 'red' : 'blue'} size="lg" />
-                  </div>
-                  <div style={{ textAlign: 'center', fontFamily: 'var(--font-paper)', minWidth: 200 }}>
-                    <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Đà Nẵng, ngày giải quyết thứ {day}</div>
-                    <div style={{ fontWeight: 'bold', fontSize: 13, marginTop: 4 }}>BỘ PHẬN MỘT CỬA CTSV</div>
-                    <div style={{ height: 40 }} />
-                    <div style={{ fontWeight: 'bold', fontSize: 13 }}>ThS. Nguyễn Thị Mai</div>
-                  </div>
-                </div>
+              <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 2 }}>
+                HỆ THỐNG MỘT CỬA SỐ · BỘ PHẬN TIẾP NHẬN & TRẢ KẾT QUẢ
               </div>
-            </Paper>
-          )}
+              <h2 style={{ fontFamily: 'var(--font-paper)', fontSize: 20, textTransform: 'uppercase', color: isRejected ? 'var(--stamp-red)' : 'var(--amber)', margin: '10px 0 4px 0' }}>
+                {isRejected ? 'THÔNG BÁO TỪ CHỐI GIẢI QUYẾT HỒ SƠ' : 'PHIẾU HƯỚNG DẪN BỔ SUNG HỒ SƠ'}
+              </h2>
+              <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
+                Mã hồ sơ: {caseCode} · Ngày thông báo: Ngày làm việc {day}
+              </div>
+            </div>
 
-          {!isFinished && (
-            <Paper className="decision-paper" elevated style={{ width: '100%', maxWidth: 640, padding: 24, textAlign: 'center' }}>
-              <div style={{ fontSize: 32, marginBottom: 8 }}>📋</div>
-              <h3 style={{ fontFamily: 'var(--font-paper)', fontSize: 17, margin: '0 0 6px 0' }}>Hồ sơ đang trong luồng thẩm tra</h3>
-              <p style={{ fontSize: 13.5, color: 'var(--ink-soft)', margin: 0, lineHeight: 1.5 }}>
-                Đơn xin bảo lưu của bạn đã được chuyển tới Cố vấn học tập và Phòng Công tác sinh viên. Bạn có thể sử dụng nút &quot;Cổng Giảng viên duyệt đơn&quot; phía trên để theo dõi hoặc phê duyệt hồ sơ này.
+            <div style={{ fontFamily: 'var(--font-paper)', fontSize: 14, lineHeight: 1.6, color: 'var(--ink)' }}>
+              <p>
+                <strong>Kính gửi:</strong> Sinh viên <strong>{studentName}</strong> (MSSV: <strong>{mssv}</strong> · Khoa: {faculty})
               </p>
-            </Paper>
-          )}
-        </div>
-      )}
+              <p>
+                {letter?.intro || (isRejected
+                  ? 'Hội đồng xét duyệt và Phòng Công tác sinh viên đã thẩm định hồ sơ xin nghỉ học tạm thời của bạn nhưng không đủ điều kiện phê duyệt theo Quy định hiện hành.'
+                  : 'Hồ sơ xin nghỉ học tạm thời của bạn chưa đáp ứng yêu cầu tiếp nhận. Vui lòng bổ sung minh chứng và nộp lại.')}
+              </p>
+
+              {letter && letter.sections.length > 0 && (
+                <div style={{ margin: '14px 0', padding: '12px 16px', backgroundColor: 'var(--paper-dim)', border: '1px dashed var(--paper-line)', borderRadius: 'var(--radius-sm)' }}>
+                  {letter.sections.map((sec, sIdx) => (
+                    <div key={sIdx} style={{ marginBottom: 8 }}>
+                      <div style={{ fontWeight: 'bold', fontSize: 13, color: isRejected ? 'var(--stamp-red)' : 'var(--ink)' }}>
+                        {sec.heading}:
+                      </div>
+                      {sec.lines.map((ln, lIdx) => (
+                        <div key={lIdx} style={{ fontSize: 13, marginLeft: 10, marginTop: 2 }}>{ln}</div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div style={{ marginTop: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                <div>
+                  <Stamp label={isRejected ? 'TỪ CHỐI' : 'TRẢ HỒ SƠ'} color={isRejected ? 'red' : 'blue'} size="lg" />
+                </div>
+                <div style={{ textAlign: 'center', fontFamily: 'var(--font-paper)', minWidth: 200 }}>
+                  <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Đà Nẵng, ngày giải quyết thứ {day}</div>
+                  <div style={{ fontWeight: 'bold', fontSize: 13, marginTop: 4 }}>BỘ PHẬN MỘT CỬA CTSV</div>
+                  <div style={{ height: 40 }} />
+                  <div style={{ fontWeight: 'bold', fontSize: 13 }}>ThS. Nguyễn Thị Mai</div>
+                </div>
+              </div>
+            </div>
+          </Paper>
+        )}
+
+        {!isFinished && (
+          <Paper className="decision-paper" elevated style={{ width: '100%', maxWidth: 640, padding: 24, textAlign: 'center' }}>
+            <div style={{ fontSize: 32, marginBottom: 8 }}>📋</div>
+            <h3 style={{ fontFamily: 'var(--font-paper)', fontSize: 17, margin: '0 0 6px 0' }}>Hồ sơ đang trong luồng thẩm tra</h3>
+            <p style={{ fontSize: 13.5, color: 'var(--ink-soft)', margin: 0, lineHeight: 1.5 }}>
+              Đơn xin bảo lưu của bạn đã được chuyển tới Cố vấn học tập và Phòng Công tác sinh viên để tiếp nhận và thẩm tra theo quy trình Một cửa số. Bạn có thể theo dõi tiến độ xử lý trực tiếp tại bảng tiến độ phía trên.
+            </p>
+          </Paper>
+        )}
+      </div>
     </div>
   );
 };

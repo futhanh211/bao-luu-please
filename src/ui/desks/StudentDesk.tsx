@@ -1,9 +1,20 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAppStore } from '../../store/useApp';
 import { usePlaybackStore } from '../../store/playback';
-import { EvidenceItem } from '../../engine/types';
+import { EvidenceItem, StudentApplicationForm } from '../../engine/types';
 import { composeLetter, LetterDoc } from '../../data/letters';
+import {
+  StudentEvidenceOptionKey,
+  STUDENT_EVIDENCE_OPTIONS,
+} from '../../data/customTestData';
+import {
+  StudentDetailedFormData,
+  getStudentFormData,
+  saveStudentFormData,
+  buildEvidenceItemFromFormData,
+  buildEvidenceItemsFromFormData,
+} from '../../data/studentFormData';
 import { StudentChatContext } from '../../data/knowledge-base';
 import { MOTION } from '../motion';
 import { Envelope } from '../kit/Envelope';
@@ -12,14 +23,13 @@ import { sfx } from '../audio/sfx';
 import { ApplicationPaper } from './student/ApplicationPaper';
 import { EvidenceBag } from './student/EvidenceBag';
 import { EvidenceModal } from './student/EvidenceModal';
+import { EvidenceFormModal } from './student/EvidenceFormModal';
 import { LetterModal } from './student/LetterModal';
-import { CustomTestDataPanel } from './student/CustomTestDataPanel';
 import { buildStudentTimeline } from './studentProgress';
 import { DeskTab, StudentRightPanel } from './student/StudentRightPanel';
 import { StudentPortalTracker } from './student/StudentPortalTracker';
 
 export const StudentDesk: React.FC = () => {
-  const scenarioId = useAppStore((s) => s.scenarioId) || 's1';
   const caseCode = useAppStore((s) => s.caseCode);
   const speed = useAppStore((s) => s.speed);
   const reducedMotion = useAppStore((s) => s.reducedMotion);
@@ -38,12 +48,134 @@ export const StudentDesk: React.FC = () => {
   const waitingTaskId = usePlaybackStore((s) => s.waitingTaskId);
   const engine = usePlaybackStore((s) => s.engine);
   const day = usePlaybackStore((s) => s.mapState.counters.day);
+  const setEvidenceList = usePlaybackStore((s) => s.setEvidenceList);
+  const removeEvidenceItem = usePlaybackStore((s) => s.removeEvidenceItem);
+  const studentRecord = usePlaybackStore((s) => s.studentRecord);
 
   const [tab, setTab] = useState<DeskTab>('inbox');
   const [readIds, setReadIds] = useState<string[]>([]);
   const [openEvidence, setOpenEvidence] = useState<EvidenceItem | null>(null);
+  const [fillOptionKey, setFillOptionKey] = useState<StudentEvidenceOptionKey | null>(null);
   const [openLetter, setOpenLetter] = useState<LetterDoc | null>(null);
   const [flying, setFlying] = useState(false);
+
+  const studentMssv = submissionDraft?.form.mssv || studentRecord?.mssv || '251121536115';
+
+  const [detailedFormData, setDetailedFormData] = useState<StudentDetailedFormData>(() =>
+    getStudentFormData(studentMssv, {
+      name: submissionDraft?.form.fullName || studentRecord?.name,
+      className: submissionDraft?.form.className || studentRecord?.className,
+      faculty: submissionDraft?.form.faculty || studentRecord?.faculty,
+      email: submissionDraft?.form.email || studentRecord?.email,
+      phone: submissionDraft?.form.phone || studentRecord?.phone,
+    })
+  );
+
+  useEffect(() => {
+    if (!studentMssv) return;
+    const loaded = getStudentFormData(studentMssv, {
+      name: submissionDraft?.form.fullName || studentRecord?.name,
+      className: submissionDraft?.form.className || studentRecord?.className,
+      faculty: submissionDraft?.form.faculty || studentRecord?.faculty,
+      email: submissionDraft?.form.email || studentRecord?.email,
+      phone: submissionDraft?.form.phone || studentRecord?.phone,
+    });
+    setDetailedFormData(loaded);
+  }, [studentMssv, studentRecord?.name, studentRecord?.className, studentRecord?.faculty]);
+
+  const handleStartFillOption = (key: StudentEvidenceOptionKey) => {
+    setFillOptionKey(key);
+  };
+
+  const handleSaveEvidenceForm = (updatedData: StudentDetailedFormData) => {
+    setDetailedFormData(updatedData);
+    saveStudentFormData(studentMssv, updatedData);
+
+    const option = STUDENT_EVIDENCE_OPTIONS.find((o) => o.key === fillOptionKey);
+    const matchingReason = option ? option.matchingReason : updatedData.reason;
+
+    updateDraftForm({ reason: matchingReason });
+
+    // Nộp cả Giấy xác nhận và Minh chứng do người dùng tải lên từ máy tính
+    const items = buildEvidenceItemsFromFormData(updatedData, matchingReason);
+    setEvidenceList(items, true);
+
+    setFillOptionKey(null);
+    sfx.playStamp();
+    sfx.playPaperclip();
+  };
+
+  const handleDirectFileUpload = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      const fileItem: EvidenceItem = {
+        id: `ev_file_direct_${Date.now()}`,
+        type: 'attached_file',
+        name: `Minh chứng gốc từ máy: ${file.name}`,
+        content: `Tệp minh chứng do sinh viên tải lên trực tiếp từ máy tính: ${file.name} (${(file.size / 1024).toFixed(1)} KB).`,
+        fileData: {
+          name: file.name,
+          size: file.size,
+          type: file.type || 'application/octet-stream',
+          lastModified: file.lastModified,
+          dataUrl: result,
+        },
+        fields: [
+          { id: 'fileName', label: 'Tên tệp gốc', value: file.name },
+          { id: 'fileSize', label: 'Dung lượng', value: `${(file.size / 1024).toFixed(1)} KB` },
+          { id: 'fileType', label: 'Định dạng', value: file.type || 'Tệp tin' },
+          { id: 'source', label: 'Nguồn tải lên', value: 'Máy tính người dùng' },
+        ],
+      };
+
+      const current = scenario?.evidence || [];
+      const updated = [...current, fileItem];
+      setEvidenceList(updated, true);
+      sfx.playStamp();
+      sfx.playPaperclip();
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleEditEvidence = (item: EvidenceItem) => {
+    let key: StudentEvidenceOptionKey = 'medical';
+    if (item.type === 'military_call' || item.type === 'military_service') {
+      key = 'military';
+    } else if (item.type === 'hardship_proof') {
+      key = 'hardship';
+    } else if (item.type === 'personal_reason') {
+      key = 'personal';
+    } else {
+      const reason = submissionDraft?.form.reason;
+      if (reason === 'Nghĩa vụ quân sự') key = 'military';
+      else if (reason === 'Hoàn cảnh gia đình') key = 'hardship';
+      else if (reason === 'Lý do cá nhân khác') key = 'personal';
+      else key = 'medical';
+    }
+    setFillOptionKey(key);
+  };
+
+  const handleFormChange = (patch: Partial<StudentApplicationForm>) => {
+    updateDraftForm(patch);
+
+    const updatedDetailed: StudentDetailedFormData = {
+      ...detailedFormData,
+      ...patch,
+    };
+    setDetailedFormData(updatedDetailed);
+    saveStudentFormData(studentMssv, updatedDetailed);
+
+    if (patch.reason && scenario && scenario.evidence && scenario.evidence.length > 0) {
+      const updatedItem = buildEvidenceItemFromFormData(updatedDetailed, patch.reason);
+      setEvidenceList([updatedItem], submissionDraft?.attachedEvidenceIds.includes(updatedItem.id) ?? false);
+    }
+  };
+
+  const handleRemoveEvidence = (id: string) => {
+    removeEvidenceItem(id);
+    sfx.playPaperSlide();
+  };
 
   const letters = useMemo<LetterDoc[]>(
     () =>
@@ -151,6 +283,10 @@ export const StudentDesk: React.FC = () => {
               sfx.playPaper();
               setOpenEvidence(item);
             }}
+            onStartFillOption={handleStartFillOption}
+            onEditItem={handleEditEvidence}
+            onRemoveItem={handleRemoveEvidence}
+            onDirectFileUpload={handleDirectFileUpload}
           />
         </div>
 
@@ -186,11 +322,10 @@ export const StudentDesk: React.FC = () => {
           </div>
 
           <div className="student-scroll" style={{ flex: 1, paddingRight: 2 }}>
-            {sessionMode === 'demo' && scenarioId === 's6' && <CustomTestDataPanel />}
             <ApplicationPaper
               form={submissionDraft.form}
               locked={submitted}
-              onChange={updateDraftForm}
+              onChange={handleFormChange}
             />
           </div>
 
@@ -225,6 +360,9 @@ export const StudentDesk: React.FC = () => {
                     fontSize: 11,
                     textDecoration: 'underline',
                     color: 'var(--stamp-blue)',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
                   }}
                 >
                   Xem tiến độ
@@ -247,6 +385,7 @@ export const StudentDesk: React.FC = () => {
                     borderRadius: 'var(--radius-sm)',
                     boxShadow: 'var(--shadow-hard)',
                     opacity: flying ? 0.6 : 1,
+                    cursor: flying ? 'wait' : 'pointer',
                   }}
                 >
                   {flying ? '✉ ĐANG GỬI HỒ SƠ…' : '✉ NỘP TRỰC TUYẾN'}
@@ -254,11 +393,11 @@ export const StudentDesk: React.FC = () => {
                 <div style={{ fontSize: 11, marginTop: 6, textAlign: 'center', fontFamily: 'var(--font-paper)' }}>
                   {submissionDraft.attachedEvidenceIds.length > 0 ? (
                     <span style={{ color: 'var(--stamp-green)', fontWeight: 'bold' }}>
-                      📎 Đã đính kèm {submissionDraft.attachedEvidenceIds.length} minh chứng hợp lệ
+                      📎 Đã nộp & đính kèm {submissionDraft.attachedEvidenceIds.length} tài liệu minh chứng (Giấy xác nhận & Tệp gốc từ máy)
                     </span>
                   ) : (
                     <span style={{ color: 'var(--stamp-red)', fontWeight: 'bold' }}>
-                      ⚠ Chưa đính kèm minh chứng nào (hệ thống sẽ trả lại nếu nộp)
+                      ⚠ Chưa nộp minh chứng (hãy bấm dấu ＋ ở Túi minh chứng bên trái để chọn mục và nộp file từ máy)
                     </span>
                   )}
                 </div>
@@ -303,6 +442,14 @@ export const StudentDesk: React.FC = () => {
         </motion.div>
       )}
 
+      {fillOptionKey && (
+        <EvidenceFormModal
+          optionKey={fillOptionKey}
+          initialData={detailedFormData}
+          onSave={handleSaveEvidenceForm}
+          onClose={() => setFillOptionKey(null)}
+        />
+      )}
       {openEvidence && <EvidenceModal item={openEvidence} onClose={() => setOpenEvidence(null)} />}
       {openLetter && <LetterModal letter={openLetter} onClose={() => setOpenLetter(null)} />}
     </>
