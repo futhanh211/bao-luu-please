@@ -7,6 +7,7 @@ export type CustomEvidencePreset =
   | 'suspicious_medical'
   | 'military'
   | 'hardship'
+  | 'personal'
   | 'none';
 
 export const CUSTOM_EVIDENCE_OPTIONS: { id: CustomEvidencePreset; label: string }[] = [
@@ -14,6 +15,7 @@ export const CUSTOM_EVIDENCE_OPTIONS: { id: CustomEvidencePreset; label: string 
   { id: 'suspicious_medical', label: 'Giấy ra viện nghi vấn (Lệch tên, sai ngày, thiếu dấu)' },
   { id: 'military', label: 'Lệnh gọi nhập ngũ BCH Quân sự (Hợp lệ)' },
   { id: 'hardship', label: 'Giấy xác nhận hoàn cảnh khó khăn UBND (Hợp lệ)' },
+  { id: 'personal', label: 'Giấy tờ / Đơn giải trình lý do cá nhân khác' },
   { id: 'none', label: 'Không đính kèm minh chứng nào' },
 ];
 
@@ -115,11 +117,122 @@ export function buildCustomEvidence(
         },
       ];
 
+    case 'personal':
+      return [
+        {
+          id: 'ev_custom_pers',
+          type: 'personal_reason',
+          name: 'Giấy tờ minh chứng lý do cá nhân khác',
+          content: 'Đơn giải trình tham gia đợt thực tập / học tập nâng cao cá nhân có hợp đồng liên kết ngoài trường.',
+          fields: [
+            { id: 'organization', label: 'Đơn vị tiếp nhận', value: 'Đơn vị thực tập / tiếp nhận ngoài trường' },
+            { id: 'citizenName', label: 'Họ tên', value: studentName },
+            { id: 'purpose', label: 'Mục đích', value: 'Thực tập, trải nghiệm nghề nghiệp ngoài trường' },
+            { id: 'stamp', label: 'Xác nhận', value: 'Có xác nhận và chữ ký hợp lệ' },
+          ],
+        },
+      ];
+
     case 'none':
     default:
       return [];
   }
 }
+
+export type StudentEvidenceOptionKey =
+  | 'medical'
+  | 'military'
+  | 'hardship'
+  | 'personal';
+
+export interface StudentEvidenceOption {
+  key: StudentEvidenceOptionKey;
+  icon: string;
+  title: string;
+  description: string;
+  matchingReason: StudentApplicationForm['reason'];
+  buildItem: (studentName: string) => EvidenceItem;
+}
+
+export const STUDENT_EVIDENCE_OPTIONS: StudentEvidenceOption[] = [
+  {
+    key: 'medical',
+    icon: '🏥',
+    title: 'Giấy xác nhận của bệnh viện',
+    description: 'Bệnh viện Đa khoa Đà Nẵng (Có dấu mộc đỏ)',
+    matchingReason: 'Ốm đau/tai nạn điều trị dài',
+    buildItem: (name) => ({
+      id: 'ev_custom_med',
+      type: 'medical_record',
+      name: 'Giấy xác nhận của bệnh viện (BV Đa khoa Đà Nẵng)',
+      content: 'Chẩn đoán: Hậu phẫu chấn thương thể thao, chỉ định điều trị và phục hồi chức năng 6 tháng.',
+      fields: [
+        { id: 'hospital', label: 'Bệnh viện', value: 'Bệnh viện Đa khoa Đà Nẵng' },
+        { id: 'patientName', label: 'Họ tên bệnh nhân', value: name },
+        { id: 'admissionDate', label: 'Ngày vào viện', value: '02/09/2026' },
+        { id: 'dischargeDate', label: 'Ngày ra viện', value: '18/09/2026' },
+        { id: 'hospitalStamp', label: 'Dấu bệnh viện', value: 'Có dấu đỏ tròn Bệnh viện' },
+      ],
+    }),
+  },
+  {
+    key: 'military',
+    icon: '🪖',
+    title: 'Giấy đi nghĩa vụ quân sự',
+    description: 'Lệnh gọi công dân nhập ngũ BCH Quân sự',
+    matchingReason: 'Nghĩa vụ quân sự',
+    buildItem: (name) => ({
+      id: 'ev_custom_mil',
+      type: 'military_call',
+      name: 'Giấy đi nghĩa vụ quân sự (Lệnh gọi BCH Quân sự)',
+      content: 'Lệnh nhập ngũ thực hiện nghĩa vụ quân sự bảo vệ Tổ quốc đợt 2 năm 2026.',
+      fields: [
+        { id: 'unit', label: 'Đơn vị ban hành', value: 'BCH Quân sự quận Hải Châu - TP Đà Nẵng' },
+        { id: 'citizenName', label: 'Công dân', value: name },
+        { id: 'reportDate', label: 'Ngày tập trung', value: '15/09/2026' },
+        { id: 'stamp', label: 'Dấu đơn vị', value: 'Có dấu mộc đỏ BCH Quân sự' },
+      ],
+    }),
+  },
+  {
+    key: 'hardship',
+    icon: '🏡',
+    title: 'Giấy chứng minh hoàn cảnh gia đình',
+    description: 'Xác nhận hoàn cảnh khó khăn của UBND Phường/Xã',
+    matchingReason: 'Hoàn cảnh gia đình',
+    buildItem: (name) => ({
+      id: 'ev_custom_hard',
+      type: 'hardship_proof',
+      name: 'Giấy chứng minh hoàn cảnh gia đình (UBND)',
+      content: 'Xác nhận gia đình gặp biến cố kinh tế đặc biệt nghiêm trọng do thiên tai, cần phụ giúp gia đình.',
+      fields: [
+        { id: 'authority', label: 'Cơ quan xác nhận', value: 'UBND Phường Thạch Thang' },
+        { id: 'citizenName', label: 'Họ tên', value: name },
+        { id: 'reason', label: 'Lý do', value: 'Gia đình hoàn cảnh khó khăn' },
+        { id: 'stamp', label: 'Dấu xác nhận', value: 'Có dấu đỏ UBND' },
+      ],
+    }),
+  },
+  {
+    key: 'personal',
+    icon: '📝',
+    title: 'Lý do cá nhân khác',
+    description: 'Đơn trình bày lý do cá nhân / Xác nhận thực tập ngoài trường',
+    matchingReason: 'Lý do cá nhân khác',
+    buildItem: (name) => ({
+      id: 'ev_custom_pers',
+      type: 'personal_reason',
+      name: 'Giấy tờ minh chứng lý do cá nhân khác',
+      content: 'Đơn giải trình tham gia đợt thực tập / học tập nâng cao cá nhân có hợp đồng liên kết ngoài trường.',
+      fields: [
+        { id: 'organization', label: 'Đơn vị tiếp nhận', value: 'Đơn vị tiếp nhận thực tập ngoài trường' },
+        { id: 'citizenName', label: 'Họ tên', value: name },
+        { id: 'purpose', label: 'Mục đích', value: 'Thực tập, trải nghiệm nghề nghiệp ngoài trường' },
+        { id: 'stamp', label: 'Xác nhận', value: 'Có xác nhận và chữ ký hợp lệ' },
+      ],
+    }),
+  },
+];
 
 export interface CustomPreset {
   id: string;
