@@ -1,70 +1,43 @@
 @echo off
-chcp 65001 > nul
-title BẢO LƯU, PLEASE! - KHỞI CHẠY HỆ THỐNG
-color 0A
-
-:: Đảm bảo đứng ở đúng thư mục chứa file bat
 cd /d "%~dp0"
+title Bao Luu Please - Khoi chay he thong
 
 echo ====================================================================
-echo        BẢO LƯU, PLEASE! — MÔ PHỎNG QUY TRÌNH TO-BE (BPMN 2.0)
-echo        Trường Đại học Kinh tế – Đại học Đà Nẵng
+echo        BAO LUU, PLEASE! - MO PHONG QUY TRINH TO-BE (BPMN 2.0)
+echo        Truong Dai hoc Kinh te - Dai hoc Da Nang
 echo ====================================================================
 echo.
 
-:: 1. Kiểm tra môi trường Node.js
 where node >nul 2>nul
 if %errorlevel% neq 0 (
-    color 0C
-    echo [LỖI] Máy tính của bạn chưa cài đặt Node.js!
-    echo Vui lòng tải và cài đặt Node.js từ: https://nodejs.org
-    echo Sau khi cài xong, vui lòng khởi động lại file này.
+    echo [LOI] May tinh chua cai dat Node.js!
+    echo Vui long cai dat Node.js tai: https://nodejs.org
     echo.
     pause
     exit /b 1
 )
 
-:: 2. Kiểm tra thư viện node_modules
 if not exist "node_modules\" (
-    echo [THÔNG BÁO] Phát hiện lần đầu chạy dự án.
-    echo Đang tự động cài đặt các thư viện cần thiết (npm install)...
-    echo Quá trình này chỉ diễn ra một lần duy nhất, vui lòng chờ trong giây lát...
-    echo.
+    echo [THONG BAO] Dang cai dat thu vien (npm install)...
     call npm install
-    if %errorlevel% neq 0 (
-        color 0C
-        echo.
-        echo [LỖI] Cài đặt thư viện thất bại! Vui lòng kiểm tra lại kết nối mạng.
-        pause
-        exit /b 1
-    )
-    echo.
-    echo [THÀNH CÔNG] Đã cài đặt xong thư viện!
-    echo.
 )
 
-:: 3. Mở tự động trình duyệt sau 2 giây
-start "" "http://localhost:5173"
-
-:: 4. Khởi động máy chủ phát triển
+echo [THONG BAO] Dang khoi dong may chu web tai: http://localhost:5173
+echo [THONG BAO] Trinh duyet se tu dong mo trong giay lat...
+echo.
+echo Meo thuyet trinh:
+echo   - Bam F11: Toan man hinh
+echo   - Bam D:   Bat che do Dao dien tu chay
+echo   - Bam B:   Xem Ban do BPMN toan man hinh
+echo   - Bam M:   Bat / tat am thanh
+echo.
 echo ====================================================================
-echo  [+] Đang khởi chạy máy chủ phát triển tại: http://localhost:5173
-echo  [+] Trình duyệt web sẽ tự động mở trong chốc lát...
-echo.
-echo  Mẹo thuyết trình:
-echo    - Bấm [ F11 ] để bật chế độ Toàn màn hình
-echo    - Bấm [ D ]   để bật chế độ Đạo diễn tự chạy thuyết minh
-echo    - Bấm [ B ]   để bật / tắt Bản đồ BPMN toàn màn hình
-echo    - Bấm [ M ]   để bật / tắt âm thanh văn phòng
-echo.
-echo  Để dừng máy chủ, hãy đóng cửa sổ này hoặc bấm Ctrl + C.
-echo ====================================================================
-echo.
 
+start http://localhost:5173
 call npm run dev -- --host
+
 if %errorlevel% neq 0 (
-    color 0C
     echo.
-    echo [LỖI] Máy chủ bị dừng đột ngột hoặc cổng 5173 đang bị chiếm dụng.
+    echo [LOI] Co loi xay ra khi khoi chay may chu.
     pause
 )
