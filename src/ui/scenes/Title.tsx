@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAppStore } from '../../store/useApp';
-import { useAuthStore } from '../../store/useAuth';
 import { screenVariants } from '../motion';
 import { sfx } from '../audio/sfx';
 
@@ -10,8 +9,6 @@ export const Title: React.FC = () => {
   const setSessionMode = useAppStore((s) => s.setSessionMode);
   const muted = useAppStore((s) => s.muted);
   const toggleMute = useAppStore((s) => s.toggleMute);
-  const toggleAsIs = useAppStore((s) => s.toggleAsIs);
-  const logout = useAuthStore((s) => s.logout);
 
   const [bootLines, setBootLines] = useState<string[]>([]);
   const fullLines = [
@@ -181,9 +178,8 @@ export const Title: React.FC = () => {
 
             <button
               onClick={() => {
-                logout();
-                setSessionMode('demo');
-                setScreen('scenario');
+                setSessionMode('portal');
+                setScreen('register');
               }}
               style={{
                 fontFamily: 'var(--font-paper)',
@@ -196,7 +192,10 @@ export const Title: React.FC = () => {
                 border: '2px solid var(--amber)',
                 boxShadow: 'var(--shadow-hard)',
                 cursor: 'var(--cursor-pointer)',
-                letterSpacing: '1px',
+                letterSpacing: '0.5px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
                 transition: 'transform 0.15s ease, background-color 0.15s ease',
               }}
               onMouseEnter={(e) => {
@@ -205,39 +204,10 @@ export const Title: React.FC = () => {
               onMouseLeave={(e) => {
                 e.currentTarget.style.backgroundColor = 'var(--desk-900)';
               }}
-              title="Xem và vận hành tổng thể toàn bộ các kịch bản mẫu"
+              title="Đăng ký tài khoản Sinh viên hoặc Cán bộ duyệt đơn mới"
             >
-              ▶ CHỌN KỊCH BẢN (DEMO TOÀN DIỆN)
-            </button>
-
-            <button
-              onClick={toggleAsIs}
-              style={{
-                fontFamily: 'var(--font-paper)',
-                fontSize: '17px',
-                fontWeight: 'bold',
-                backgroundColor: 'transparent',
-                color: 'var(--ink)',
-                padding: '14px 24px',
-                borderRadius: 'var(--radius-sm)',
-                border: '2px dashed var(--stamp-red)',
-                cursor: 'var(--cursor-pointer)',
-                letterSpacing: '0.5px',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                transition: 'background-color 0.15s ease',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(179, 38, 30, 0.08)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-              }}
-              title="Xem mô phỏng bối cảnh quy trình giấy cũ (22 ngày)"
-            >
-              <span>📂</span>
-              <span>XEM BẢN AS-IS (22 NGÀY)</span>
+              <span>📝</span>
+              <span>ĐĂNG KÝ TÀI KHOẢN MỚI</span>
             </button>
           </div>
 

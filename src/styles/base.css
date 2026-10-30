@@ -846,6 +846,78 @@ select.student-input option {
   margin-bottom: 2px;
 }
 
+.student-textarea {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.02);
+  border: 1px dashed var(--paper-line);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-paper);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink);
+  padding: 6px 8px;
+  resize: vertical;
+  min-height: 52px;
+}
+
+.student-textarea:focus {
+  outline: none;
+  border: 1px solid var(--amber);
+  background: rgba(217, 164, 65, 0.06);
+}
+
+.student-textarea:disabled {
+  color: var(--ink-soft);
+  background: transparent;
+  border-color: transparent;
+}
+
+.student-section-title {
+  font-family: var(--font-paper);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--stamp-blue);
+  background: rgba(15, 76, 129, 0.06);
+  border-left: 3px solid var(--stamp-blue);
+  padding: 4px 8px;
+  margin: 12px 0 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.student-subform-card {
+  background: rgba(255, 255, 255, 0.55);
+  background-image: var(--paper-texture);
+  border: 1px dashed #b8ac90;
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  margin-top: 4px;
+  margin-bottom: 6px;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.student-radio-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--paper-line);
+  border-radius: 14px;
+  background: var(--paper);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.student-radio-pill[data-selected='true'] {
+  border-color: var(--stamp-blue);
+  background: rgba(15, 76, 129, 0.08);
+  font-weight: 600;
+  color: var(--stamp-blue);
+}
+
 .student-tab {
   flex: 1;
   padding: 6px 4px;
@@ -1143,6 +1215,216 @@ select.student-input option {
 .plastic-card-action-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Nút dấu cộng (+) thêm minh chứng vào túi nhựa */
+.plastic-add-area {
+  padding: 8px 4px;
+  width: 100%;
+}
+
+.plastic-add-button {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 18px 10px;
+  background-color: var(--paper);
+  background-image:
+    var(--paper-texture),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, transparent 60%);
+  border: 2px dashed rgba(15, 76, 129, 0.55);
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.22);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  font-family: var(--font-paper);
+}
+
+.plastic-add-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  border-color: var(--stamp-blue);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.32);
+  background-color: #ffffff;
+}
+
+.plastic-add-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.plastic-add-plus {
+  font-size: 32px;
+  line-height: 1;
+  font-weight: 300;
+  color: var(--stamp-blue);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+.plastic-add-title {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--ink);
+}
+
+.plastic-add-sub {
+  font-size: 10px;
+  color: var(--ink-soft);
+  font-style: italic;
+}
+
+/* Nút phụ thêm hoặc đổi giấy tờ khi đã có minh chứng */
+.plastic-add-secondary-btn {
+  display: block;
+  width: 100%;
+  padding: 6px 8px;
+  margin-top: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px dashed rgba(255, 255, 255, 0.45);
+  border-radius: var(--radius-sm);
+  color: var(--paper);
+  font-family: var(--font-paper);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.plastic-add-secondary-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.8);
+  color: #ffffff;
+}
+
+/* Nút xóa giấy trên thẻ minh chứng */
+.plastic-card-remove-btn {
+  background: none;
+  border: none;
+  color: var(--ink-soft);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 0 2px;
+  line-height: 1;
+  border-radius: 2px;
+  transition: color 0.12s ease;
+}
+
+.plastic-card-remove-btn:hover {
+  color: var(--stamp-red);
+}
+
+/* Khung chọn các loại giấy tờ sau khi bấm dấu cộng */
+.plastic-picker-container {
+  background-color: var(--paper);
+  background-image:
+    var(--paper-texture),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0%, transparent 100%);
+  border: 1px solid var(--paper-line);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  padding: 10px 8px;
+  margin-bottom: 6px;
+  position: relative;
+  z-index: 10;
+  animation: pickerPop 0.15s ease-out;
+}
+
+@keyframes pickerPop {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(-3px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.plastic-picker-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 5px;
+  margin-bottom: 8px;
+  border-bottom: 1px dashed var(--paper-line);
+}
+
+.plastic-picker-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--stamp-blue);
+}
+
+.plastic-picker-close-btn {
+  background: none;
+  border: none;
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--ink-soft);
+  padding: 0 3px;
+  line-height: 1;
+}
+
+.plastic-picker-close-btn:hover {
+  color: var(--stamp-red);
+}
+
+.plastic-picker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.plastic-picker-opt-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  padding: 7px 9px;
+  background: #faf7ee;
+  border: 1px solid #dcd4be;
+  border-left: 3px solid var(--stamp-blue);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: transform 0.12s ease, background 0.12s ease, border-color 0.12s ease;
+  font-family: var(--font-paper);
+}
+
+.plastic-picker-opt-btn:hover {
+  background: #ffffff;
+  border-left-color: var(--stamp-green);
+  border-color: #b8ac90;
+  transform: translateX(2px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+.plastic-picker-opt-title {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.3;
+}
+
+.plastic-picker-opt-icon {
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.plastic-picker-opt-sub {
+  font-size: 9.5px;
+  color: var(--ink-soft);
+  margin-top: 2px;
+  padding-left: 18px;
+  line-height: 1.2;
 }
 
 /* Khay đính kèm kiểu ngăn đáy dập nhiệt của túi nhựa */

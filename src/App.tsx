@@ -296,7 +296,9 @@ export const App: React.FC = () => {
         <AnimatePresence mode="wait">
         {screen === 'title' && <Title key="title" />}
 
-        {screen === 'login' && <LoginPortal key="login" />}
+        {screen === 'login' && <LoginPortal key="login" initialMode="login" />}
+
+        {screen === 'register' && <LoginPortal key="register" initialMode="register" />}
 
         {screen === 'scenario' && <ScenarioPicker key="scenario" />}
 

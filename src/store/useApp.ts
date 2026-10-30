@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { AIStatus } from '../ai/provider';
 import { isLiveAvailable } from '../ai/live';
 
-export type Screen = 'title' | 'scenario' | 'desk' | 'report' | 'login';
+export type Screen = 'title' | 'scenario' | 'desk' | 'report' | 'login' | 'register';
 export type Role = 'student' | 'system' | 'advisor' | 'ctsv' | 'principal';
 export type PlayMode = 'play' | 'step' | 'director';
 export type AppSpeed = 0.5 | 1 | 2;
@@ -58,6 +58,7 @@ interface AppState {
 
   // Actions
   setScreen: (screen: Screen) => void;
+  setCaseCode: (caseCode: string) => void;
   setRole: (role: Role) => void;
   setSessionMode: (sessionMode: SessionMode) => void;
   setMode: (mode: PlayMode) => void;
@@ -114,6 +115,7 @@ export const useAppStore = create<AppState>((set) => ({
   sessionMode: 'demo',
 
   setScreen: (screen) => set({ screen }),
+  setCaseCode: (caseCode) => set({ caseCode }),
   setRole: (role) => set({ role }),
   setSessionMode: (sessionMode) => set({ sessionMode }),
   setMode: (mode) => set({ mode }),
