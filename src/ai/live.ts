@@ -161,3 +161,73 @@ export class LiveAIProvider implements AIProvider {
     return draft;
   }
 }
+
+/**
+ * Kiểm tra kết nối API Gemini thực tế (Health check & Latency test)
+ * Phục vụ mục 4.1 ">= 1 tích hợp bên ngoài" của đề cương báo cáo.
+ */
+export async function testGeminiConnection(
+  customKey?: string,
+  customModel?: string
+): Promise<{ success: boolean; latencyMs: number; message: string; modelUsed: string }> {
+  const env = typeof import.meta !== 'undefined' ? import.meta.env : ({} as Record<string, string>);
+  const key = (customKey || env?.VITE_GEMINI_API_KEY || '').trim();
+  const model = (customModel || env?.VITE_GEMINI_MODEL || 'gemini-1.5-flash').trim();
+
+  if (!key) {
+    return {
+      success: false,
+      latencyMs: 0,
+      message: 'Chưa cấu hình API Key (VITE_GEMINI_API_KEY trong .env.local hoặc nhập trực tiếp).',
+      modelUsed: model,
+    };
+  }
+
+  const cleanModel = model.replace(/^models\//, '');
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(cleanModel)}:generateContent`;
+  const startTime = Date.now();
+
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 6000);
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: 'Ping test. Reply "PONG" in 1 word.' }] }],
+        generationConfig: { maxOutputTokens: 10, temperature: 0.1 },
+      }),
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+    const latencyMs = Date.now() - startTime;
+
+    if (response.ok) {
+      const data = (await response.json()) as GeminiResponse;
+      const reply = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || 'OK';
+      return {
+        success: true,
+        latencyMs,
+        message: `Kết nối thành công! Phản hồi từ ${cleanModel}: "${reply}" (${latencyMs}ms)`,
+        modelUsed: cleanModel,
+      };
+    } else {
+      const errText = await response.text().catch(() => '');
+      return {
+        success: false,
+        latencyMs,
+        message: `Lỗi HTTP ${response.status}: ${errText.slice(0, 150)}`,
+        modelUsed: cleanModel,
+      };
+    }
+  } catch (err: unknown) {
+    const latencyMs = Date.now() - startTime;
+    const msg = err instanceof Error ? err.message : String(err);
+    return {
+      success: false,
+      latencyMs,
+      message: `Kết nối thất bại (${msg})`,
+      modelUsed: cleanModel,
+    };
+  }
+}

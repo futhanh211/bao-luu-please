@@ -1,11 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAppStore, AppSpeed } from '../../store/useApp';
 import { sfx } from '../audio/sfx';
+import { StorageManager } from './StorageManager';
 
 const SPEEDS: AppSpeed[] = [0.5, 1, 2];
 
-/** Hộp cài đặt: âm thanh, âm lượng ≤40%, giảm hiệu ứng, tốc độ. */
+type SettingsTab = 'preferences' | 'storage';
+
+/** Hộp cài đặt: âm thanh, âm lượng ≤40%, giảm hiệu ứng, tốc độ, quản lý lưu trữ bền vững. */
 export const Settings: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<SettingsTab>('preferences');
   const settingsOpen = useAppStore((s) => s.settingsOpen);
   const setSettingsOpen = useAppStore((s) => s.setSettingsOpen);
   const muted = useAppStore((s) => s.muted);
@@ -44,108 +48,171 @@ export const Settings: React.FC = () => {
         if (event.target === event.currentTarget) close();
       }}
     >
-      <section className="settings-card" role="dialog" aria-modal="true" aria-label="Cài đặt">
+      <section
+        className="settings-card"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Cài đặt"
+        style={{ maxWidth: activeTab === 'storage' ? '680px' : '520px', width: '100%', transition: 'max-width 0.2s ease' }}
+      >
         <header className="settings-head">
           <div>
-            <div className="settings-eyebrow">BẢNG ĐIỀU KHIỂN · CA LÀM VIỆC</div>
-            <h1 className="settings-title">Cài đặt</h1>
+            <div className="settings-eyebrow">BẢNG ĐIỀU KHIỂN HỆ THỐNG</div>
+            <h1 className="settings-title">Cài đặt & Hạ tầng</h1>
           </div>
           <button type="button" className="settings-close" onClick={close} title="Đóng (Esc)" aria-label="Đóng cài đặt">
             ✕
           </button>
         </header>
 
-        <div className="settings-body">
-          <div className="settings-row">
-            <div className="settings-row-main">
-              <span className="settings-label">Âm thanh</span>
-              <span className="settings-note">WebAudio tự sinh · không dùng file mp3 · mặc định tắt</span>
-            </div>
-            <button
-              type="button"
-              className="settings-toggle"
-              data-on={muted ? 'false' : 'true'}
-              aria-pressed={!muted}
-              onClick={handleSound}
-            >
-              {muted ? '🔇 TẮT' : '🔊 BẬT'}
-            </button>
-          </div>
+        {/* Tab Switcher */}
+        <div
+          style={{
+            display: 'flex',
+            borderBottom: '1px solid var(--paper-line)',
+            backgroundColor: 'var(--desk-900)',
+            padding: '4px 8px 0',
+            gap: '6px',
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => setActiveTab('preferences')}
+            style={{
+              padding: '8px 16px',
+              fontFamily: 'var(--font-paper)',
+              fontSize: '13px',
+              fontWeight: 'bold',
+              border: 'none',
+              borderBottom: activeTab === 'preferences' ? '3px solid var(--amber)' : '3px solid transparent',
+              backgroundColor: activeTab === 'preferences' ? 'var(--desk-800)' : 'transparent',
+              color: activeTab === 'preferences' ? 'var(--amber)' : 'var(--ink-soft)',
+              cursor: 'pointer',
+              borderTopLeftRadius: '4px',
+              borderTopRightRadius: '4px',
+            }}
+          >
+            ⚙️ Cài đặt chung & Âm thanh
+          </button>
 
-          <label className="settings-row settings-row-block">
-            <span className="settings-row-main">
-              <span className="settings-label">Âm lượng</span>
-              <span className="settings-note">Tối đa 40% để an toàn khi thuyết trình</span>
-            </span>
-            <span className="settings-slider">
-              <input
-                type="range"
-                min={0}
-                max={40}
-                step={5}
-                value={Math.round(volume * 100)}
-                onChange={(event) => handleVolume(Number(event.target.value))}
-                aria-label="Âm lượng tối đa 40 phần trăm"
-              />
-              <strong>{Math.round(volume * 100)}%</strong>
-            </span>
-          </label>
+          <button
+            type="button"
+            onClick={() => setActiveTab('storage')}
+            style={{
+              padding: '8px 16px',
+              fontFamily: 'var(--font-paper)',
+              fontSize: '13px',
+              fontWeight: 'bold',
+              border: 'none',
+              borderBottom: activeTab === 'storage' ? '3px solid var(--amber)' : '3px solid transparent',
+              backgroundColor: activeTab === 'storage' ? 'var(--desk-800)' : 'transparent',
+              color: activeTab === 'storage' ? 'var(--amber)' : 'var(--ink-soft)',
+              cursor: 'pointer',
+              borderTopLeftRadius: '4px',
+              borderTopRightRadius: '4px',
+            }}
+          >
+            💾 CSDL Bền vững & Tích hợp (4.1)
+          </button>
+        </div>
 
-          <div className="settings-row">
-            <div className="settings-row-main">
-              <span className="settings-label">Giảm hiệu ứng</span>
-              <span className="settings-note">
-                Tắt rung, mực loang, gõ chữ và chuyển cảnh. Tín hiệu vẫn đổi màu.
-              </span>
-            </div>
-            <button
-              type="button"
-              className="settings-toggle"
-              data-on={reducedMotion ? 'true' : 'false'}
-              aria-pressed={reducedMotion}
-              onClick={toggleReducedMotion}
-            >
-              {reducedMotion ? '◻ ĐANG BẬT' : '◼ ĐANG TẮT'}
-            </button>
-          </div>
-
-          <div className="settings-row">
-            <div className="settings-row-main">
-              <span className="settings-label">Con trỏ công sở</span>
-              <span className="settings-note">
-                Bộ trỏ retro độc bản: con dấu dập gỗ, ngòi bút BGH, kính lúp CTSV, chỉ tay manicule.
-              </span>
-            </div>
-            <button
-              type="button"
-              className="settings-toggle"
-              data-on={customCursor ? 'true' : 'false'}
-              aria-pressed={customCursor}
-              onClick={toggleCustomCursor}
-            >
-              {customCursor ? '◻ ĐANG BẬT' : '◼ ĐANG TẮT'}
-            </button>
-          </div>
-
-          <div className="settings-row settings-row-block">
-            <span className="settings-row-main">
-              <span className="settings-label">Tốc độ</span>
-              <span className="settings-note">Áp dụng cho animation, chữ AI và chuyển cảnh</span>
-            </span>
-            <span className="settings-speeds">
-              {SPEEDS.map((value) => (
+        <div className="settings-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+          {activeTab === 'storage' ? (
+            <StorageManager />
+          ) : (
+            <>
+              <div className="settings-row">
+                <div className="settings-row-main">
+                  <span className="settings-label">Âm thanh</span>
+                  <span className="settings-note">WebAudio tự sinh · không dùng file mp3 · mặc định tắt</span>
+                </div>
                 <button
-                  key={value}
                   type="button"
-                  className="settings-speed"
-                  data-active={speed === value ? 'true' : 'false'}
-                  onClick={() => setSpeed(value)}
+                  className="settings-toggle"
+                  data-on={muted ? 'false' : 'true'}
+                  aria-pressed={!muted}
+                  onClick={handleSound}
                 >
-                  {value}×
+                  {muted ? '🔇 TẮT' : '🔊 BẬT'}
                 </button>
-              ))}
-            </span>
-          </div>
+              </div>
+
+              <label className="settings-row settings-row-block">
+                <span className="settings-row-main">
+                  <span className="settings-label">Âm lượng</span>
+                  <span className="settings-note">Tối đa 40% để an toàn khi thuyết trình</span>
+                </span>
+                <span className="settings-slider">
+                  <input
+                    type="range"
+                    min={0}
+                    max={40}
+                    step={5}
+                    value={Math.round(volume * 100)}
+                    onChange={(event) => handleVolume(Number(event.target.value))}
+                    aria-label="Âm lượng tối đa 40 phần trăm"
+                  />
+                  <strong>{Math.round(volume * 100)}%</strong>
+                </span>
+              </label>
+
+              <div className="settings-row">
+                <div className="settings-row-main">
+                  <span className="settings-label">Giảm hiệu ứng</span>
+                  <span className="settings-note">
+                    Tắt rung, mực loang, gõ chữ và chuyển cảnh. Tín hiệu vẫn đổi màu.
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  className="settings-toggle"
+                  data-on={reducedMotion ? 'true' : 'false'}
+                  aria-pressed={reducedMotion}
+                  onClick={toggleReducedMotion}
+                >
+                  {reducedMotion ? '◻ ĐANG BẬT' : '◼ ĐANG TẮT'}
+                </button>
+              </div>
+
+              <div className="settings-row">
+                <div className="settings-row-main">
+                  <span className="settings-label">Con trỏ công sở</span>
+                  <span className="settings-note">
+                    Bộ trỏ retro độc bản: con dấu dập gỗ, ngòi bút BGH, kính lúp CTSV, chỉ tay manicule.
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  className="settings-toggle"
+                  data-on={customCursor ? 'true' : 'false'}
+                  aria-pressed={customCursor}
+                  onClick={toggleCustomCursor}
+                >
+                  {customCursor ? '◻ ĐANG BẬT' : '◼ ĐANG TẮT'}
+                </button>
+              </div>
+
+              <div className="settings-row settings-row-block">
+                <span className="settings-row-main">
+                  <span className="settings-label">Tốc độ</span>
+                  <span className="settings-note">Áp dụng cho animation, chữ AI và chuyển cảnh</span>
+                </span>
+                <span className="settings-speeds">
+                  {SPEEDS.map((value) => (
+                    <button
+                      key={value}
+                      type="button"
+                      className="settings-speed"
+                      data-active={speed === value ? 'true' : 'false'}
+                      onClick={() => setSpeed(value)}
+                    >
+                      {value}×
+                    </button>
+                  ))}
+                </span>
+              </div>
+            </>
+          )}
 
           <p className="settings-foot">
             Phím tắt: <strong>M</strong> âm thanh · <strong>+ / -</strong> tốc độ · <strong>Esc</strong> đóng.
