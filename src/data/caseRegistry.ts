@@ -223,8 +223,8 @@ export function updateCaseAdvisorDecision(
     new Date().toLocaleDateString('vi-VN') +
     ' ' +
     new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-  // Sau khi Cố vấn xác nhận, hồ sơ chuyển sang khâu CTSV thẩm tra (T5)
-  target.status = 'pending_ctsv';
+  // Sau khi Cố vấn xác nhận, hồ sơ chuyển sang khâu CTSV thẩm tra (T5); nếu Cố vấn từ chối, ca kết thúc từ chối
+  target.status = decision === 'declined' ? 'rejected' : 'pending_ctsv';
   if (notes) target.advisorNotes = notes;
 
   saveAllSubmittedCases(all);

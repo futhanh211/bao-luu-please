@@ -52,78 +52,66 @@ export const Settings: React.FC = () => {
         className="settings-card"
         role="dialog"
         aria-modal="true"
-        aria-label="Cài đặt"
-        style={{ maxWidth: activeTab === 'storage' ? '680px' : '520px', width: '100%', transition: 'max-width 0.2s ease' }}
+        aria-label="Cài đặt hệ thống"
+        style={{
+          maxWidth: activeTab === 'storage' ? '700px' : '560px',
+          width: '100%',
+          transition: 'max-width 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+        }}
       >
         <header className="settings-head">
           <div>
-            <div className="settings-eyebrow">BẢNG ĐIỀU KHIỂN HỆ THỐNG</div>
+            <div className="settings-eyebrow">BẢNG ĐIỀU KHIỂN HỆ THỐNG · MÃ HIỆU SYS-CFG-2026</div>
             <h1 className="settings-title">Cài đặt & Hạ tầng</h1>
           </div>
-          <button type="button" className="settings-close" onClick={close} title="Đóng (Esc)" aria-label="Đóng cài đặt">
+          <button
+            type="button"
+            className="settings-close"
+            onClick={close}
+            title="Đóng (Esc)"
+            aria-label="Đóng cài đặt"
+          >
             ✕
           </button>
         </header>
 
         {/* Tab Switcher */}
-        <div
-          style={{
-            display: 'flex',
-            borderBottom: '1px solid var(--paper-line)',
-            backgroundColor: 'var(--desk-900)',
-            padding: '4px 8px 0',
-            gap: '6px',
-          }}
-        >
+        <div className="settings-tabs" role="tablist">
           <button
             type="button"
+            role="tab"
+            aria-selected={activeTab === 'preferences'}
+            className="settings-tab"
+            data-active={activeTab === 'preferences' ? 'true' : 'false'}
             onClick={() => setActiveTab('preferences')}
-            style={{
-              padding: '8px 16px',
-              fontFamily: 'var(--font-paper)',
-              fontSize: '13px',
-              fontWeight: 'bold',
-              border: 'none',
-              borderBottom: activeTab === 'preferences' ? '3px solid var(--amber)' : '3px solid transparent',
-              backgroundColor: activeTab === 'preferences' ? 'var(--desk-800)' : 'transparent',
-              color: activeTab === 'preferences' ? 'var(--amber)' : 'var(--ink-soft)',
-              cursor: 'pointer',
-              borderTopLeftRadius: '4px',
-              borderTopRightRadius: '4px',
-            }}
           >
-            ⚙️ Cài đặt chung & Âm thanh
+            <span>⚙️</span> Cài đặt chung & Âm thanh
           </button>
 
           <button
             type="button"
+            role="tab"
+            aria-selected={activeTab === 'storage'}
+            className="settings-tab"
+            data-active={activeTab === 'storage' ? 'true' : 'false'}
             onClick={() => setActiveTab('storage')}
-            style={{
-              padding: '8px 16px',
-              fontFamily: 'var(--font-paper)',
-              fontSize: '13px',
-              fontWeight: 'bold',
-              border: 'none',
-              borderBottom: activeTab === 'storage' ? '3px solid var(--amber)' : '3px solid transparent',
-              backgroundColor: activeTab === 'storage' ? 'var(--desk-800)' : 'transparent',
-              color: activeTab === 'storage' ? 'var(--amber)' : 'var(--ink-soft)',
-              cursor: 'pointer',
-              borderTopLeftRadius: '4px',
-              borderTopRightRadius: '4px',
-            }}
           >
-            💾 CSDL Bền vững & Tích hợp (4.1)
+            <span>💾</span> CSDL Bền vững & Tích hợp (4.1)
           </button>
         </div>
 
-        <div className="settings-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+        <div className="settings-body">
           {activeTab === 'storage' ? (
             <StorageManager />
           ) : (
             <>
+              <div className="settings-section-divider">
+                I. ÂM THANH & PHẢN HỒI (AUDIO SYNTHESIS)
+              </div>
+
               <div className="settings-row">
                 <div className="settings-row-main">
-                  <span className="settings-label">Âm thanh</span>
+                  <span className="settings-label">Hiệu ứng âm thanh</span>
                   <span className="settings-note">WebAudio tự sinh · không dùng file mp3 · mặc định tắt</span>
                 </div>
                 <button
@@ -139,8 +127,8 @@ export const Settings: React.FC = () => {
 
               <label className="settings-row settings-row-block">
                 <span className="settings-row-main">
-                  <span className="settings-label">Âm lượng</span>
-                  <span className="settings-note">Tối đa 40% để an toàn khi thuyết trình</span>
+                  <span className="settings-label">Âm lượng hệ thống</span>
+                  <span className="settings-note">Khống chế tối đa 40% để an toàn khi thuyết trình</span>
                 </span>
                 <span className="settings-slider">
                   <input
@@ -156,11 +144,15 @@ export const Settings: React.FC = () => {
                 </span>
               </label>
 
+              <div className="settings-section-divider">
+                II. HIỂN THỊ & TỐC ĐỘ (DISPLAY & MOTION)
+              </div>
+
               <div className="settings-row">
                 <div className="settings-row-main">
-                  <span className="settings-label">Giảm hiệu ứng</span>
+                  <span className="settings-label">Giảm hiệu ứng động</span>
                   <span className="settings-note">
-                    Tắt rung, mực loang, gõ chữ và chuyển cảnh. Tín hiệu vẫn đổi màu.
+                    Tắt rung lắc bàn làm việc, loang mực và hoạt ảnh quét giấy.
                   </span>
                 </div>
                 <button
@@ -170,7 +162,7 @@ export const Settings: React.FC = () => {
                   aria-pressed={reducedMotion}
                   onClick={toggleReducedMotion}
                 >
-                  {reducedMotion ? '◻ ĐANG BẬT' : '◼ ĐANG TẮT'}
+                  {reducedMotion ? '✔ ĐANG BẬT' : 'TẮT'}
                 </button>
               </div>
 
@@ -178,7 +170,7 @@ export const Settings: React.FC = () => {
                 <div className="settings-row-main">
                   <span className="settings-label">Con trỏ công sở</span>
                   <span className="settings-note">
-                    Bộ trỏ retro độc bản: con dấu dập gỗ, ngòi bút BGH, kính lúp CTSV, chỉ tay manicule.
+                    Bộ trỏ retro: con dấu dập gỗ, ngòi bút BGH, kính lúp CTSV, chỉ tay manicule.
                   </span>
                 </div>
                 <button
@@ -188,14 +180,14 @@ export const Settings: React.FC = () => {
                   aria-pressed={customCursor}
                   onClick={toggleCustomCursor}
                 >
-                  {customCursor ? '◻ ĐANG BẬT' : '◼ ĐANG TẮT'}
+                  {customCursor ? '✔ ĐANG BẬT' : 'TẮT'}
                 </button>
               </div>
 
               <div className="settings-row settings-row-block">
                 <span className="settings-row-main">
-                  <span className="settings-label">Tốc độ</span>
-                  <span className="settings-note">Áp dụng cho animation, chữ AI và chuyển cảnh</span>
+                  <span className="settings-label">Tốc độ mô phỏng</span>
+                  <span className="settings-note">Áp dụng cho animation, dòng chữ AI và chuyển cảnh</span>
                 </span>
                 <span className="settings-speeds">
                   {SPEEDS.map((value) => (
@@ -213,11 +205,6 @@ export const Settings: React.FC = () => {
               </div>
             </>
           )}
-
-          <p className="settings-foot">
-            Phím tắt: <strong>M</strong> âm thanh · <strong>+ / -</strong> tốc độ · <strong>Esc</strong> đóng.
-            Dữ liệu sinh viên là giả lập.
-          </p>
         </div>
       </section>
     </div>

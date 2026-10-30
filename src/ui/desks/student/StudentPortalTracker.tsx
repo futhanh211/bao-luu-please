@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { EngineEvent, DecisionDoc } from '../../../engine/types';
 import { useAuthStore } from '../../../store/useAuth';
 import { useAppStore } from '../../../store/useApp';
@@ -34,36 +34,129 @@ export const StudentPortalTracker: React.FC<StudentPortalTrackerProps> = ({
   const regCase = getSubmittedCaseByMssv(mssv) || getSubmittedCaseById(caseCode);
   const activeDoc = decisionDoc || regCase?.decisionDoc;
 
-  // Phân tích trạng thái kết thúc ca
+  // Phân tích trạng thái kết thúc ca từ log engine (nếu có)
   const endEvent = [...log].reverse().find((e) => e.type === 'case.ended') as
     | { type: 'case.ended'; endEventId: string; outcome: string }
     | undefined;
 
-  const t4Done =
-    log.some((e) => e.type === 'task.completed' && e.taskId === 'T4') ||
-    Boolean(regCase?.advisorDecision);
-  const t5Done =
-    log.some((e) => e.type === 'task.completed' && e.taskId === 'T5') ||
-    Boolean(regCase?.ctsvDecision);
+  // 1. Phân tích kết quả của Cố vấn học tập (T4)
+  const t4CompletedEvent = [...log].reverse().find(
+    (e) => e.type === 'task.completed' && e.taskId === 'T4'
+  );
+  const t4Outcome =
+    t4CompletedEvent && t4CompletedEvent.type === 'task.completed'
+      ? (typeof t4CompletedEvent.outcome === 'object' && t4CompletedEvent.outcome !== null && 'status' in t4CompletedEvent.outcome
+          ? (t4CompletedEvent.outcome as { status?: string }).status
+          : (t4CompletedEvent.outcome as string))
+      : undefined;
+
+  const advisorStatus: 'confirmed' | 'declined' | 'pending' =
+    regCase?.advisorDecision ||
+    (t4Outcome === 'confirmed' ? 'confirmed' : t4Outcome === 'declined' ? 'declined' : 'pending');
+
+  const advisorConfirmed = advisorStatus === 'confirmed';
+  const advisorDeclined = advisorStatus === 'declined';
+
+  // 2. Phân tích kết quả của CTSV (T5)
+  const t5CompletedEvent = [...log].reverse().find(
+    (e) => e.type === 'task.completed' && e.taskId === 'T5'
+  );
+  const t5Outcome =
+    t5CompletedEvent && t5CompletedEvent.type === 'task.completed'
+      ? (typeof t5CompletedEvent.outcome === 'object' && t5CompletedEvent.outcome !== null && 'status' in t5CompletedEvent.outcome
+          ? (t5CompletedEvent.outcome as { status?: string }).status
+          : (t5CompletedEvent.outcome as string))
+      : undefined;
+
+  const ctsvStatus: 'valid' | 'invalid' | 'pending' =
+    regCase?.ctsvDecision ||
+    (t5Outcome === 'valid' ? 'valid' : t5Outcome === 'invalid' ? 'invalid' : 'pending');
+
+  const ctsvValid = ctsvStatus === 'valid';
+  const ctsvInvalid = ctsvStatus === 'invalid';
+
+  // 3. Phân tích kết quả Ban Giám hiệu ký số (T9)
   const t9Done =
     log.some((e) => e.type === 'task.completed' && e.taskId === 'T9') ||
     Boolean(regCase?.principalSigned);
 
-  const isApproved = t9Done || endEvent?.endEventId === 'E_END_OK';
-  const isRejected =
-    regCase?.ctsvDecision === 'invalid' || endEvent?.endEventId === 'E_END_REJECTED';
+  // 4. Trạng thái kết quả tổng thể
   const isReturned =
-    regCase?.advisorDecision === 'declined' || endEvent?.endEventId === 'E_END_RETURNED';
+    endEvent?.endEventId === 'E_END_RETURNED' || regCase?.status === 'returned';
+
+  const isRejected =
+    advisorDeclined ||
+    ctsvInvalid ||
+    endEvent?.endEventId === 'E_END_REJECTED' ||
+    regCase?.status === 'rejected';
+
+  const isApproved =
+    !isRejected &&
+    !isReturned &&
+    (t9Done || endEvent?.endEventId === 'E_END_OK' || regCase?.status === 'completed');
+
   const isFinished = isApproved || isRejected || isReturned;
 
-  // Lấy thư thông báo nếu có (MF2 hoặc MF3)
+  // Lấy thư thông báo nếu có từ log (MF2, MF3, MF4)
   const lastMsg = [...log].reverse().find(
     (e) => e.type === 'message.sent' && ['MF2', 'MF3', 'MF4'].includes(e.flowId)
   );
-  const letter: LetterDoc | null =
+  const rawLetter: LetterDoc | null =
     lastMsg && lastMsg.type === 'message.sent'
       ? composeLetter(lastMsg.flowId, lastMsg.payload)
       : null;
+
+  // Tổng hợp thư thông báo hiển thị (nếu chưa có thư từ engine nhưng ca đã từ chối/trả về)
+  const letter: LetterDoc | null = useMemo(() => {
+    if (rawLetter) return rawLetter;
+    if (isRejected) {
+      const conditionLines: string[] = [];
+      if (advisorDeclined) {
+        conditionLines.push('• Cố vấn học tập không xác nhận nguyện vọng xin bảo lưu của sinh viên.');
+        if (regCase?.advisorNotes) {
+          conditionLines.push(`• Ghi chú Cố vấn: ${regCase.advisorNotes}`);
+        }
+      }
+      if (ctsvInvalid) {
+        conditionLines.push('• Phòng Công tác sinh viên thẩm định minh chứng lý do nghỉ học không hợp lệ.');
+        if (regCase?.ctsvNotes) {
+          conditionLines.push(`• Ghi chú CTSV: ${regCase.ctsvNotes}`);
+        }
+      }
+      if (conditionLines.length === 0) {
+        conditionLines.push('• Hồ sơ không đáp ứng điều kiện bảo lưu theo Quy chế đào tạo và quản lý sinh viên.');
+      }
+
+      return {
+        id: `rejected-${caseCode}`,
+        flowId: 'MF3',
+        title: 'Thông báo từ chối giải quyết hồ sơ',
+        recipientLine: `Kính gửi: Sinh viên ${studentName}`,
+        intro: advisorDeclined
+          ? 'Căn cứ kết quả xem xét của Cố vấn học tập và quy định hiện hành, Nhà trường thông báo hồ sơ xin nghỉ học tạm thời của bạn không đủ điều kiện phê duyệt.'
+          : 'Hội đồng xét duyệt và Phòng Công tác sinh viên đã thẩm định hồ sơ xin nghỉ học tạm thời của bạn nhưng không đủ điều kiện phê duyệt theo Quy định hiện hành.',
+        sections: [
+          {
+            heading: 'Lý do từ chối',
+            lines: conditionLines,
+          },
+          {
+            heading: 'Hướng dẫn / Hướng xử lý',
+            lines: [
+              '1. Liên hệ với Cố vấn học tập hoặc Văn phòng Khoa để được hỗ trợ giải đáp cụ thể.',
+              '2. Hoàn thiện các điều kiện theo quy chế trước khi tiến hành nộp đơn mới.',
+            ],
+          },
+        ],
+        footer: 'Trân trọng,\nHệ thống Một cửa số — Trường ĐH Kinh tế, ĐH Đà Nẵng',
+        attachments: [],
+        day,
+        signed: false,
+        aiGenerated: false,
+      };
+    }
+    return null;
+  }, [rawLetter, isRejected, advisorDeclined, ctsvInvalid, regCase, caseCode, studentName, day]);
 
   const handleLogout = () => {
     sfx.play('paper');
@@ -82,36 +175,60 @@ export const StudentPortalTracker: React.FC<StudentPortalTrackerProps> = ({
     {
       title: 'Xác nhận nguyện vọng',
       actor: 'Cố vấn học tập',
-      status: t4Done
+      status: advisorConfirmed
         ? ('done' as const)
-        : isReturned
+        : advisorDeclined
         ? ('fail' as const)
+        : isReturned
+        ? ('pending' as const)
         : ('waiting' as const),
-      tag: t4Done ? 'Đã duyệt' : isReturned ? 'Trả đơn' : 'Đang duyệt',
+      tag: advisorConfirmed
+        ? 'Đã duyệt'
+        : advisorDeclined
+        ? 'Từ chối'
+        : isReturned
+        ? 'Đã dừng'
+        : 'Đang duyệt',
     },
     {
       title: 'Thẩm định hồ sơ',
       actor: 'Phòng CTSV',
-      status: t5Done
+      status: ctsvValid
         ? ('done' as const)
-        : isRejected && !t5Done
+        : ctsvInvalid
         ? ('fail' as const)
-        : t4Done
+        : advisorDeclined || isReturned
+        ? ('pending' as const)
+        : advisorConfirmed
         ? ('waiting' as const)
         : ('pending' as const),
-      tag: t5Done ? 'Hợp lệ' : isRejected && !t5Done ? 'Từ chối' : t4Done ? 'Đang thẩm định' : 'Chờ',
+      tag: ctsvValid
+        ? 'Hợp lệ'
+        : ctsvInvalid
+        ? 'Từ chối'
+        : advisorDeclined || isReturned
+        ? 'Đã dừng'
+        : advisorConfirmed
+        ? 'Đang thẩm định'
+        : 'Chờ',
     },
     {
       title: 'Ký số Quyết định',
       actor: 'Ban Giám hiệu',
       status: t9Done
         ? ('done' as const)
-        : isRejected
-        ? ('fail' as const)
-        : t5Done
+        : isRejected || isReturned
+        ? ('pending' as const)
+        : ctsvValid
         ? ('waiting' as const)
         : ('pending' as const),
-      tag: t9Done ? 'Đã ký số' : isRejected ? 'Đã dừng' : t5Done ? 'Trình ký' : 'Chờ',
+      tag: t9Done
+        ? 'Đã ký số'
+        : isRejected || isReturned
+        ? 'Đã dừng'
+        : ctsvValid
+        ? 'Trình ký'
+        : 'Chờ',
     },
     {
       title: 'Kết quả Một cửa',
@@ -123,7 +240,13 @@ export const StudentPortalTracker: React.FC<StudentPortalTrackerProps> = ({
         : isReturned
         ? ('return' as const)
         : ('pending' as const),
-      tag: isApproved ? 'Thành công' : isRejected ? 'Từ chối' : isReturned ? 'Trả hồ sơ' : 'Chờ hoàn tất',
+      tag: isApproved
+        ? 'Thành công'
+        : isRejected
+        ? 'Từ chối'
+        : isReturned
+        ? 'Trả hồ sơ'
+        : 'Chờ hoàn tất',
     },
   ];
 
@@ -150,8 +273,10 @@ export const StudentPortalTracker: React.FC<StudentPortalTrackerProps> = ({
               {!isFinished && 'Hồ sơ xin bảo lưu của bạn đang được các phòng ban thụ lý'}
             </h2>
             <p style={{ margin: 0, fontSize: 13.5, color: 'var(--ink-soft)', lineHeight: 1.5, maxWidth: 650 }}>
-              {isApproved && `Quyết định số ${decisionDoc?.number || 'BL-2001/QĐ-ĐHKT'} đã được Ban Giám hiệu ký số chính thức. Bạn có thể xem toàn văn văn bản ngay bên dưới.`}
-              {isRejected && 'Hồ sơ không đáp ứng điều kiện theo Quy chế đào tạo (nợ học phí hoặc minh chứng y tế không hợp lệ). Xem chi tiết lý do bên dưới.'}
+              {isApproved && `Quyết định số ${decisionDoc?.number || regCase?.decisionDoc?.number || 'BL-2001/QĐ-ĐHKT'} đã được Ban Giám hiệu ký số chính thức. Bạn có thể xem toàn văn văn bản ngay bên dưới.`}
+              {isRejected && (advisorDeclined
+                ? 'Hồ sơ không được Cố vấn học tập xác nhận nguyện vọng bảo lưu. Xem chi tiết lý do và hướng xử lý bên dưới.'
+                : 'Hồ sơ không đáp ứng điều kiện theo Quy chế đào tạo (nợ học phí hoặc minh chứng y tế không hợp lệ). Xem chi tiết lý do bên dưới.')}
               {isReturned && 'Hồ sơ thiếu minh chứng bắt buộc theo quy định tiếp nhận của Nhà trường. Vui lòng kiểm tra hướng dẫn nộp bổ sung.'}
               {!isFinished && `Hồ sơ ${caseCode} của sinh viên ${studentName} (${mssv} · ${faculty}) đang trong luồng xử lý.`}
             </p>
@@ -226,7 +351,9 @@ export const StudentPortalTracker: React.FC<StudentPortalTrackerProps> = ({
                 TRƯỜNG ĐẠI HỌC KINH TẾ – ĐẠI HỌC ĐÀ NẴNG
               </div>
               <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 2 }}>
-                HỆ THỐNG MỘT CỬA SỐ · BỘ PHẬN TIẾP NHẬN & TRẢ KẾT QUẢ
+                {isRejected && advisorDeclined
+                  ? 'HỆ THỐNG MỘT CỬA SỐ · KHOA / CỐ VẤN HỌC TẬP'
+                  : 'HỆ THỐNG MỘT CỬA SỐ · BỘ PHẬN TIẾP NHẬN & TRẢ KẾT QUẢ'}
               </div>
               <h2 style={{ fontFamily: 'var(--font-paper)', fontSize: 20, textTransform: 'uppercase', color: isRejected ? 'var(--stamp-red)' : 'var(--amber)', margin: '10px 0 4px 0' }}>
                 {isRejected ? 'THÔNG BÁO TỪ CHỐI GIẢI QUYẾT HỒ SƠ' : 'PHIẾU HƯỚNG DẪN BỔ SUNG HỒ SƠ'}
@@ -242,7 +369,9 @@ export const StudentPortalTracker: React.FC<StudentPortalTrackerProps> = ({
               </p>
               <p>
                 {letter?.intro || (isRejected
-                  ? 'Hội đồng xét duyệt và Phòng Công tác sinh viên đã thẩm định hồ sơ xin nghỉ học tạm thời của bạn nhưng không đủ điều kiện phê duyệt theo Quy định hiện hành.'
+                  ? (advisorDeclined
+                    ? 'Căn cứ kết quả xem xét của Cố vấn học tập và quy định hiện hành, Nhà trường thông báo hồ sơ xin nghỉ học tạm thời của bạn không đủ điều kiện phê duyệt.'
+                    : 'Hội đồng xét duyệt và Phòng Công tác sinh viên đã thẩm định hồ sơ xin nghỉ học tạm thời của bạn nhưng không đủ điều kiện phê duyệt theo Quy định hiện hành.')
                   : 'Hồ sơ xin nghỉ học tạm thời của bạn chưa đáp ứng yêu cầu tiếp nhận. Vui lòng bổ sung minh chứng và nộp lại.')}
               </p>
 
@@ -267,9 +396,13 @@ export const StudentPortalTracker: React.FC<StudentPortalTrackerProps> = ({
                 </div>
                 <div style={{ textAlign: 'center', fontFamily: 'var(--font-paper)', minWidth: 200 }}>
                   <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Đà Nẵng, ngày giải quyết thứ {day}</div>
-                  <div style={{ fontWeight: 'bold', fontSize: 13, marginTop: 4 }}>BỘ PHẬN MỘT CỬA CTSV</div>
+                  <div style={{ fontWeight: 'bold', fontSize: 13, marginTop: 4 }}>
+                    {isRejected && advisorDeclined ? 'KHOA / CỐ VẤN HỌC TẬP' : 'BỘ PHẬN MỘT CỬA CTSV'}
+                  </div>
                   <div style={{ height: 40 }} />
-                  <div style={{ fontWeight: 'bold', fontSize: 13 }}>ThS. Nguyễn Thị Mai</div>
+                  <div style={{ fontWeight: 'bold', fontSize: 13 }}>
+                    {isRejected && advisorDeclined ? 'Cố vấn học tập' : 'ThS. Nguyễn Thị Mai'}
+                  </div>
                 </div>
               </div>
             </div>

@@ -88,7 +88,11 @@ const PrincipalCaseDocketList: React.FC<{
         {cases.map((c) => {
           const isSelected = c.id === selectedId;
           const isSigned = Boolean(c.principalSigned);
-          const isReadyToSign = !isSigned && c.ctsvDecision === 'valid';
+          const isDeclined =
+            c.advisorDecision === 'declined' ||
+            c.ctsvDecision === 'invalid' ||
+            c.status === 'rejected';
+          const isReadyToSign = !isSigned && !isDeclined && c.ctsvDecision === 'valid';
 
           return (
             <button
@@ -141,11 +145,15 @@ const PrincipalCaseDocketList: React.FC<{
                     borderRadius: 3,
                     backgroundColor: isSigned
                       ? 'var(--wash-green)'
+                      : isDeclined
+                      ? 'var(--wash-red)'
                       : isReadyToSign
                       ? 'var(--amber)'
                       : 'rgba(0,0,0,0.06)',
                     color: isSigned
                       ? 'var(--stamp-green)'
+                      : isDeclined
+                      ? 'var(--stamp-red)'
                       : isReadyToSign
                       ? 'var(--desk-900)'
                       : 'var(--ink-soft)',
@@ -153,6 +161,8 @@ const PrincipalCaseDocketList: React.FC<{
                 >
                   {isSigned
                     ? '✓ ĐÃ KÝ SỐ BAN HÀNH'
+                    : isDeclined
+                    ? '✗ ĐÃ TỪ CHỐI'
                     : isReadyToSign
                     ? '⏳ CHỜ BGH KÝ SỐ (T9)'
                     : '⏳ CHỜ CTSV THẨM ĐỊNH'}
@@ -316,6 +326,47 @@ export const PrincipalDesk: React.FC = () => {
   };
 
   const isCaseSigned = Boolean(selectedCase.principalSigned);
+  const isDeclined =
+    selectedCase.advisorDecision === 'declined' ||
+    selectedCase.ctsvDecision === 'invalid' ||
+    selectedCase.status === 'rejected';
+
+  // Nếu hồ sơ đã bị từ chối ở bước trước thì không trình ký
+  if (isDeclined && !isCaseSigned) {
+    return (
+      <div
+        className="desk-page principal-portal-page"
+        style={{
+          width: '100%',
+          maxWidth: '980px',
+          margin: '0 auto',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 16,
+        }}
+      >
+        <PrincipalCaseDocketList
+          cases={submittedCases}
+          selectedId={selectedCase.id}
+          onSelect={handleSelectCase}
+        />
+        <Paper className="portal-docket-paper" elevated width="100%" style={{ padding: 24, borderLeft: '5px solid var(--stamp-red)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ fontSize: 28 }}>🛑</div>
+            <div>
+              <h3 style={{ margin: 0, fontFamily: 'var(--font-paper)', fontSize: 18, color: 'var(--stamp-red)' }}>
+                Hồ sơ không đủ điều kiện trình ký (Đã từ chối)
+              </h3>
+              <p style={{ margin: '6px 0 0 0', fontSize: 13.5, color: 'var(--ink-soft)', lineHeight: 1.5 }}>
+                Hồ sơ <strong>{selectedCase.caseCode}</strong> của sinh viên {selectedCase.studentName} đã bị từ chối ở bước trước{' '}
+                ({selectedCase.advisorDecision === 'declined' ? 'Cố vấn học tập không xác nhận' : 'Phòng CTSV thẩm định minh chứng không hợp lệ'}). Không khởi tạo dự thảo quyết định và không trình Ban Giám hiệu ký số.
+              </p>
+            </div>
+          </div>
+        </Paper>
+      </div>
+    );
+  }
 
   // Khi hồ sơ đã được BGH ký số hoàn tất
   if (isCaseSigned) {

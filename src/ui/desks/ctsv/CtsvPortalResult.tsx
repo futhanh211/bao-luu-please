@@ -131,42 +131,48 @@ export const CtsvPortalResult: React.FC<CtsvPortalResultProps> = ({
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '6px',
-              padding: '8px 16px',
-              fontSize: '13.5px',
-              fontWeight: 'bold',
+              gap: '8px',
+              padding: '10px 20px',
+              fontSize: '14px',
+              fontWeight: 700,
               cursor: 'pointer',
-              backgroundColor: showEvidence ? 'var(--amber)' : 'var(--desk-800)',
-              color: showEvidence ? 'var(--desk-900)' : 'var(--paper)',
-              border: '1px solid var(--paper-line)',
-              borderRadius: '4px',
+              backgroundColor: showEvidence ? '#f59e0b' : '#1e293b',
+              color: showEvidence ? '#0f172a' : '#fbbf24',
+              border: showEvidence ? '2px solid #b45309' : '2px solid #0f172a',
+              borderRadius: '5px',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.25)',
+              transition: 'all 0.15s ease',
             }}
           >
             <span>{showEvidence ? '📂' : '🔍'}</span>
-            <span>{showEvidence ? 'Thu gọn hồ sơ & minh chứng' : 'Xem chi tiết hồ sơ & minh chứng đã duyệt'}</span>
+            <span style={{ color: showEvidence ? '#0f172a' : '#fbbf24' }}>
+              {showEvidence ? 'Thu gọn hồ sơ & minh chứng' : 'Xem chi tiết hồ sơ & minh chứng đã duyệt'}
+            </span>
           </button>
 
           <button
             type="button"
-            className="portal-btn-secondary"
+            className="portal-btn-logout"
             onClick={handleLogout}
             title="Đăng xuất khỏi Cổng Cán bộ / CTSV"
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '6px',
-              padding: '8px 16px',
-              fontSize: '13.5px',
-              fontWeight: 'bold',
+              gap: '8px',
+              padding: '10px 20px',
+              fontSize: '14px',
+              fontWeight: 700,
               cursor: 'pointer',
-              backgroundColor: 'var(--desk-800)',
-              color: 'var(--paper)',
-              border: '1px solid var(--paper-line)',
-              borderRadius: '4px',
+              backgroundColor: '#334155',
+              color: '#ffffff',
+              border: '2px solid #1e293b',
+              borderRadius: '5px',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
+              transition: 'all 0.15s ease',
             }}
           >
             <span>🚪</span>
-            <span>Đăng xuất tài khoản</span>
+            <span style={{ color: '#ffffff' }}>Đăng xuất tài khoản</span>
           </button>
         </div>
       </Paper>

@@ -71,13 +71,25 @@ export const AdvisorPortalResult: React.FC<AdvisorPortalResultProps> = ({
             </div>
 
             <h2 className="portal-main-heading">
-              Ý kiến Cố vấn học tập đã được đóng dấu niêm phong
+              {isConfirmed
+                ? 'Ý kiến Cố vấn học tập đã được đóng dấu niêm phong'
+                : 'Cố vấn học tập không xác nhận nguyện vọng bảo lưu'}
             </h2>
 
             <p className="portal-main-desc">
-              Thầy/Cô đã hoàn tất bước xác nhận nguyện vọng bảo lưu của sinh viên{' '}
-              <strong style={{ color: 'var(--ink)' }}>{form.fullName}</strong> (MSSV: {form.mssv}). Hồ sơ đã được
-              chuyển tự động lên <strong>Phòng Công tác sinh viên (CTSV)</strong> để thẩm định minh chứng tiếp theo.
+              {isConfirmed ? (
+                <>
+                  Thầy/Cô đã hoàn tất bước xác nhận nguyện vọng bảo lưu của sinh viên{' '}
+                  <strong style={{ color: 'var(--ink)' }}>{form.fullName}</strong> (MSSV: {form.mssv}). Hồ sơ đã được
+                  chuyển tự động lên <strong>Phòng Công tác sinh viên (CTSV)</strong> để thẩm định minh chứng tiếp theo.
+                </>
+              ) : (
+                <>
+                  Thầy/Cô đã từ chối xác nhận nguyện vọng bảo lưu của sinh viên{' '}
+                  <strong style={{ color: 'var(--ink)' }}>{form.fullName}</strong> (MSSV: {form.mssv}). Hồ sơ đã dừng
+                  xử lý và hệ thống Một cửa số đã thông báo từ chối tới Cổng Sinh viên.
+                </>
+              )}
             </p>
           </div>
 
@@ -110,9 +122,9 @@ export const AdvisorPortalResult: React.FC<AdvisorPortalResultProps> = ({
 
           <div className="portal-docket-cell">
             <span className="portal-docket-label">Bước tiếp theo trong BPMN:</span>
-            <span className="portal-next-hop-badge">
-              <span>➔</span>
-              <span>Lane L3: Phòng CTSV thẩm định</span>
+            <span className="portal-next-hop-badge" style={{ backgroundColor: isConfirmed ? undefined : 'var(--wash-red)', color: isConfirmed ? undefined : 'var(--stamp-red)', borderColor: isConfirmed ? undefined : 'rgba(179,38,30,0.3)' }}>
+              <span>{isConfirmed ? '➔' : '🛑'}</span>
+              <span>{isConfirmed ? 'Lane L3: Phòng CTSV thẩm định' : 'Hệ thống: Từ chối hồ sơ (T7 / MF3)'}</span>
             </span>
           </div>
         </div>
@@ -129,42 +141,48 @@ export const AdvisorPortalResult: React.FC<AdvisorPortalResultProps> = ({
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '6px',
-              padding: '8px 16px',
-              fontSize: '13.5px',
-              fontWeight: 'bold',
+              gap: '8px',
+              padding: '10px 20px',
+              fontSize: '14px',
+              fontWeight: 700,
               cursor: 'pointer',
-              backgroundColor: showDocument ? 'var(--amber)' : 'var(--desk-800)',
-              color: showDocument ? 'var(--desk-900)' : 'var(--paper)',
-              border: '1px solid var(--paper-line)',
-              borderRadius: '4px',
+              backgroundColor: showDocument ? '#f59e0b' : '#1e293b',
+              color: showDocument ? '#0f172a' : '#fbbf24',
+              border: showDocument ? '2px solid #b45309' : '2px solid #0f172a',
+              borderRadius: '5px',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.25)',
+              transition: 'all 0.15s ease',
             }}
           >
             <span>{showDocument ? '📂' : '📄'}</span>
-            <span>{showDocument ? 'Thu gọn hồ sơ' : 'Xem chi tiết hồ sơ gốc đã đóng dấu'}</span>
+            <span style={{ color: showDocument ? '#0f172a' : '#fbbf24' }}>
+              {showDocument ? 'Thu gọn hồ sơ lưu trữ' : 'Xem chi tiết hồ sơ gốc đã đóng dấu'}
+            </span>
           </button>
 
           <button
             type="button"
-            className="portal-btn-secondary"
+            className="portal-btn-logout"
             onClick={handleLogout}
             title="Đăng xuất khỏi Cổng Cán bộ / Cố vấn học tập"
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '6px',
-              padding: '8px 16px',
-              fontSize: '13.5px',
-              fontWeight: 'bold',
+              gap: '8px',
+              padding: '10px 20px',
+              fontSize: '14px',
+              fontWeight: 700,
               cursor: 'pointer',
-              backgroundColor: 'var(--desk-800)',
-              color: 'var(--paper)',
-              border: '1px solid var(--paper-line)',
-              borderRadius: '4px',
+              backgroundColor: '#334155',
+              color: '#ffffff',
+              border: '2px solid #1e293b',
+              borderRadius: '5px',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
+              transition: 'all 0.15s ease',
             }}
           >
             <span>🚪</span>
-            <span>Đăng xuất tài khoản</span>
+            <span style={{ color: '#ffffff' }}>Đăng xuất tài khoản</span>
           </button>
         </div>
       </Paper>

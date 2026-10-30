@@ -11,6 +11,34 @@ Mỗi session thêm một mục theo mẫu:
 
 ---
 
+## 2026-10-30 · Nâng cấp Toàn diện Giao diện Cài đặt & Hạ tầng (Settings & StorageManager UI Overhaul)
+- Đã làm:
+  - **Tái thiết kế toàn bộ giao diện Bảng điều khiển Cài đặt & Hạ tầng (`Settings.tsx` & `StorageManager.tsx`):**
+    - Loại bỏ hoàn toàn thanh tab màu đen thô cứng chắp vá và các inline styles lộn xộn, chuyển đổi sang phong cách **Tai hồ sơ lưu trữ hành chính (Dossier Tabs)** đồng bộ 100% với phong cách "Paper, Please" (tông kem giấy `--paper`, mực đen `--ink`, đường viền chắc chắn).
+    - Khắc phục triệt để lỗi tương phản màu nghiêm trọng (chữ trắng/kem `var(--paper)` nằm trên nền kem dẫn tới vô hình ở số liệu hồ sơ, tài khoản và các nút thao tác Export/Import).
+    - Quy hoạch lại bảng màu chuẩn theo Design Tokens (`tokens.css`): không còn các khối màu neon cam hay viền hồng lạc quẻ; toàn bộ nhãn, chỉ số, thẻ trạng thái dùng bảng màu tem dấu mực công sở (`--ink`, `--ink-soft`, `--stamp-blue`, `--stamp-green`, `--stamp-red`, `--wash-green`, `--wash-amber`, `--wash-red`).
+    - Nâng cấp thẻ thống kê 3 ô (Hồ sơ bảo lưu, Tài khoản đã đăng ký, Phiên đăng nhập) với chỉ số lớn rõ nét, dễ đọc trên máy chiếu.
+    - Chuẩn hóa danh sách hồ sơ với thẻ tag trạng thái Việt hóa rõ ràng (`Chờ Cố vấn`, `Chờ CTSV`, `Chờ BGH ký số`, `Đã phê duyệt`, `Đã từ chối`).
+    - Đồng bộ các nút thao tác sao lưu (`Xuất JSON`, `Nhập JSON`, `Đặt lại mẫu`, `Xóa sạch bộ nhớ`) theo phong cách phím dập nổi retro tactile.
+    - Cải thiện trực quan ô tích hợp Gemini Live REST API và Chữ ký số PKI SHA-256: nhãn trạng thái X.509 rõ nét, ô nhập liệu giấy viền mực cổ điển, nút Ping kiểm tra kết nối tương phản cao.
+    - Khắc phục lỗi type narrowing ở `StudentPortalTracker.tsx` và phân nhánh kịch bản chuẩn S1-S6 ở `mock.ts`.
+- File chính:
+  - `src/styles/m8-polish.css`
+  - `src/ui/shell/Settings.tsx`
+  - `src/ui/shell/StorageManager.tsx`
+  - `src/ui/desks/student/StudentPortalTracker.tsx`
+  - `src/ai/mock.ts`
+  - `docs/PROGRESS.md`
+- ASSUMPTION:
+  - Không thay đổi logic nghiệp vụ của CSDL LocalStorage hay luồng xử lý AI/PKI, chỉ chuẩn hóa visual design và layout.
+- Nợ / việc dở:
+  - Không có.
+- Đã chạy:
+  - `npm test`: PASS (206/206 tests trong 35 test suites).
+  - `npm run build`: PASS (TypeScript tsc & Vite build thành công sạch sẽ trong 7.4s).
+
+---
+
 ## 2026-10-30 · Hoàn thiện Toàn diện Yêu cầu Báo cáo Chương 3 & Chương 4 (IDEA Framework & 6 Yêu cầu Kỹ thuật)
 - Đã làm:
   - **Rà soát toàn diện và đối chiếu yêu cầu môn học cho đề cương Báo cáo Chương 3 & Chương 4:**
@@ -476,3 +504,36 @@ Mỗi session thêm một mục theo mẫu:
 - Đã chạy:
   - `npm test`: PASS (141/141 tests).
   - `npm run build`: PASS (Vite production build thành công).
+
+---
+
+## 2026-10-30 · Sửa lỗi hiển thị sai tiến trình và văn bản khi hồ sơ bị Cố vấn từ chối
+- Đã làm:
+  - **Khắc phục triệt để lỗi logic đánh giá trạng thái Cố vấn từ chối (`advisorDecision === 'declined'`):**
+    - Sửa lỗi trong `StudentPortalTracker.tsx`: trước đó `Boolean(regCase?.advisorDecision)` được gán thành `t4Done`, dẫn đến bước 2 (Cố vấn) hiển thị nhầm thành `✓ Đã duyệt` màu xanh ngay cả khi Cố vấn đã đóng dấu "KHÔNG XÁC NHẬN".
+    - Sửa lỗi phân loại: `regCase?.advisorDecision === 'declined'` trước đó bị nhầm thành `isReturned` ("Trả hồ sơ" / Phiếu hướng dẫn bổ sung hồ sơ) thay vì `isRejected` ("Từ chối").
+    - Cập nhật 5 bước tiến độ khi Cố vấn từ chối:
+      - Bước 1 (Sinh viên): `✓ Ngày 0`
+      - Bước 2 (Cố vấn học tập): `✗ Từ chối` (icon ✗ đỏ)
+      - Bước 3 (Phòng CTSV): `3 Đã dừng` (icon 3 xám, không chạy vào "Đang thẩm định")
+      - Bước 4 (Ban Giám hiệu): `4 Đã dừng` (icon 4 xám)
+      - Bước 5 (Kết quả Một cửa): `✗ Từ chối` (icon ✗ đỏ)
+  - **Chuẩn hóa văn bản kết quả hiển thị cho sinh viên:**
+    - Thay thế "PHIẾU HƯỚNG DẪN BỔ SUNG HỒ SƠ" và con dấu "TRẢ HỒ SƠ" thành đúng "THÔNG BÁO TỪ CHỐI GIẢI QUYẾT HỒ SƠ" và con dấu "TỪ CHỐI".
+    - Hiển thị rõ lý do Cố vấn không xác nhận nguyện vọng bảo lưu (kèm ghi chú của Cố vấn nếu có), ký tên chức danh Cố vấn học tập / Khoa thay vì Cán bộ tiếp nhận Một cửa.
+  - **Đồng bộ hóa luồng nghiệp vụ trên các bàn cán bộ:**
+    - Cập nhật `caseRegistry.ts`: khi `updateCaseAdvisorDecision(id, 'declined')` được gọi, trạng thái ca cập nhật chính xác là `'rejected'`.
+    - Cập nhật `CtsvDesk.tsx`: ưu tiên lọc hồ sơ Cố vấn đã duyệt (`c.advisorDecision === 'confirmed'`); nếu chọn hồ sơ đã bị Cố vấn từ chối, hiển thị cảnh báo hồ sơ đã dừng và vô hiệu hóa thẩm định.
+    - Cập nhật `PrincipalDesk.tsx`: hiển thị tag "✗ ĐÃ TỪ CHỐI" cho hồ sơ bị từ chối ở bước trước và thông báo không đủ điều kiện trình ký BGH.
+    - Cập nhật `AdvisorPortalResult.tsx`: phản ánh đúng trạng thái khi Cố vấn từ chối (bước tiếp theo là Từ chối T7/MF3, không chuyển CTSV).
+  - Viết unit test xác thực `src/ui/desks/student/studentPortalTracker.test.tsx`.
+- File chính:
+  - `src/ui/desks/student/StudentPortalTracker.tsx`
+  - `src/data/caseRegistry.ts`
+  - `src/ui/desks/CtsvDesk.tsx`
+  - `src/ui/desks/PrincipalDesk.tsx`
+  - `src/ui/desks/advisor/AdvisorPortalResult.tsx`
+  - `src/ui/desks/student/studentPortalTracker.test.tsx`
+- Đã chạy:
+  - `npm test`: PASS (207/207 tests).
+  - `npm run build`: PASS (Vite production build thành công trong 2.71s).

@@ -105,7 +105,8 @@ const CtsvCaseDocketList: React.FC<{
           const isSelected = c.id === selectedId;
           const isCtsvValid = c.ctsvDecision === 'valid';
           const isCtsvInvalid = c.ctsvDecision === 'invalid';
-          const isPendingCtsv = !c.ctsvDecision && Boolean(c.advisorDecision);
+          const isPendingCtsv = !c.ctsvDecision && c.advisorDecision === 'confirmed';
+          const isAdvisorDeclined = c.advisorDecision === 'declined';
 
           return (
             <button
@@ -158,14 +159,14 @@ const CtsvCaseDocketList: React.FC<{
                     borderRadius: 3,
                     backgroundColor: isCtsvValid
                       ? 'var(--wash-green)'
-                      : isCtsvInvalid
+                      : isCtsvInvalid || isAdvisorDeclined
                       ? 'var(--wash-red)'
                       : isPendingCtsv
                       ? 'var(--amber)'
                       : 'rgba(0,0,0,0.06)',
                     color: isCtsvValid
                       ? 'var(--stamp-green)'
-                      : isCtsvInvalid
+                      : isCtsvInvalid || isAdvisorDeclined
                       ? 'var(--stamp-red)'
                       : isPendingCtsv
                       ? 'var(--desk-900)'
@@ -176,6 +177,8 @@ const CtsvCaseDocketList: React.FC<{
                     ? '✓ HỢP LỆ (TRÌNH BGH)'
                     : isCtsvInvalid
                     ? '✗ KHÔNG HỢP LỆ'
+                    : isAdvisorDeclined
+                    ? '✗ CỐ VẤN TỪ CHỐI'
                     : isPendingCtsv
                     ? '⏳ CHỜ THẨM ĐỊNH (T5)'
                     : '⏳ CHỜ CỐ VẤN (T4)'}
@@ -244,7 +247,7 @@ export const CtsvDesk: React.FC = () => {
   const [selectedCaseId, setSelectedCaseId] = useState<string>(() => {
     const all = getAllSubmittedCases();
     // Ưu tiên chọn hồ sơ Cố vấn đã duyệt và đang chờ CTSV thẩm định
-    const pendingCtsv = all.find((c) => Boolean(c.advisorDecision) && !c.ctsvDecision);
+    const pendingCtsv = all.find((c) => c.advisorDecision === 'confirmed' && !c.ctsvDecision);
     if (pendingCtsv) return pendingCtsv.id;
     return all[0]?.id || '';
   });
@@ -260,7 +263,7 @@ export const CtsvDesk: React.FC = () => {
     setSubmittedCases(all);
     if (all.length > 0) {
       if (!selectedCaseId || !all.some((c) => c.id === selectedCaseId)) {
-        const pendingCtsv = all.find((c) => Boolean(c.advisorDecision) && !c.ctsvDecision);
+        const pendingCtsv = all.find((c) => c.advisorDecision === 'confirmed' && !c.ctsvDecision);
         const targetId = pendingCtsv ? pendingCtsv.id : all[0].id;
         setSelectedCaseId(targetId);
         const target = all.find((c) => c.id === targetId);
@@ -382,6 +385,42 @@ export const CtsvDesk: React.FC = () => {
   };
 
   const isCaseProcessed = Boolean(selectedCase.ctsvDecision);
+
+  // Nếu hồ sơ đã bị Cố vấn từ chối thì dừng luồng thẩm định CTSV
+  if (selectedCase.advisorDecision === 'declined' && !selectedCase.ctsvDecision) {
+    return (
+      <div
+        className="desk-page ctsv-portal-page"
+        style={{
+          width: '100%',
+          maxWidth: '980px',
+          margin: '0 auto',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 16,
+        }}
+      >
+        <CtsvCaseDocketList
+          cases={submittedCases}
+          selectedId={selectedCase.id}
+          onSelect={handleSelectCase}
+        />
+        <Paper className="portal-docket-paper" elevated width="100%" style={{ padding: 24, borderLeft: '5px solid var(--stamp-red)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ fontSize: 28 }}>🛑</div>
+            <div>
+              <h3 style={{ margin: 0, fontFamily: 'var(--font-paper)', fontSize: 18, color: 'var(--stamp-red)' }}>
+                Hồ sơ đã dừng xử lý (Cố vấn học tập không xác nhận)
+              </h3>
+              <p style={{ margin: '6px 0 0 0', fontSize: 13.5, color: 'var(--ink-soft)', lineHeight: 1.5 }}>
+                Cố vấn học tập đã đóng dấu <strong>KHÔNG XÁC NHẬN</strong> cho hồ sơ <strong>{selectedCase.caseCode}</strong> của sinh viên {selectedCase.studentName}. Theo quy trình Một cửa số, hồ sơ đã bị từ chối và thông báo về Cổng Sinh viên, Bộ phận CTSV không cần thực hiện thẩm định minh chứng.
+              </p>
+            </div>
+          </div>
+        </Paper>
+      </div>
+    );
+  }
 
   // Khi hồ sơ đã được CTSV thẩm định xong
   if (isCaseProcessed) {
