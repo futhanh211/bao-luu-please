@@ -95,6 +95,14 @@ export interface EvidenceItem {
   issueNotes?: string;
   /** Các trường đọc được trên tờ minh chứng (M4 · bàn CTSV soi từng trường). */
   fields?: EvidenceField[];
+  /** Tệp đính kèm tải lên từ máy tính (ảnh, scan, PDF) */
+  fileData?: {
+    name: string;
+    size: number;
+    type: string;
+    dataUrl?: string;
+    lastModified?: number;
+  };
 }
 
 // Payload sinh viên nộp qua MF1. `attachedEvidenceIds` trỏ tới minh chứng

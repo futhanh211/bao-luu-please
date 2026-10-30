@@ -4,6 +4,7 @@ import {
   StudentApplicationForm,
   StudentRecord,
   ReviewerBrief,
+  EvidenceItem,
 } from '../../engine/types';
 import { ScenarioConfig } from '../../data/scenarios';
 import { StudentChatContext } from '../../data/knowledge-base';
@@ -60,9 +61,13 @@ export interface PlaybackStoreState {
       email?: string;
       phone?: string;
     },
-    scenarioId?: string
+    scenarioId?: string,
+    evidencePreset?: CustomTestDataConfig['evidencePreset']
   ) => void;
   applyCustomTestData: (config: CustomTestDataConfig) => void;
+  addEvidenceItem: (item: EvidenceItem, autoAttach?: boolean) => void;
+  removeEvidenceItem: (itemId: string) => void;
+  setEvidenceList: (items: EvidenceItem[], autoAttach?: boolean) => void;
   start: () => Promise<void>;
   startDirector: () => Promise<void>;
   submitApplication: (options?: SubmitOptions) => Promise<void>;

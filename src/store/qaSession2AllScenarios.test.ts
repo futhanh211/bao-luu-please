@@ -238,7 +238,7 @@ describe('QA Session 2: Test và catch bug toàn bộ 6 kịch bản BPMN', () =
 
       // Đăng nhập cổng sinh viên
       useAuthStore.getState().loginAsStudent(customStudent.mssv, customStudent);
-      pb().initStudentSession(customStudent);
+      pb().initStudentSession(customStudent, undefined, 'valid_medical');
 
       expect(pb().isCustomCase).toBe(true);
       expect(pb().scenario?.studentName).toBe('Võ Hoàng Yến');

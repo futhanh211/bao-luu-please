@@ -27,6 +27,12 @@ import {
   syncCustomTestDataToDatabases,
   CustomTestDataConfig,
 } from '../../data/customTestData';
+import { getStudentFormData } from '../../data/studentFormData';
+import {
+  saveSubmittedCase,
+  getSubmittedCaseByMssv,
+  getNextCaseCode,
+} from '../../data/caseRegistry';
 
 export type { PlaybackStoreState } from './types';
 
@@ -143,32 +149,56 @@ export const usePlaybackStore = create<PlaybackStoreState>((set, get) => ({
     });
   },
 
-  initStudentSession: (student, scenarioId) => {
+  initStudentSession: (student, scenarioId, evidencePreset = 'none') => {
     if (scenarioId && scenarioId !== 's6') {
       get().initScenario(scenarioId);
       useAppStore.getState().setScenario(scenarioId);
       return;
     }
 
+    // Kiểm tra nếu sinh viên này đã nộp hồ sơ trước đó thì phục hồi trạng thái ca của họ
+    const existingCase = getSubmittedCaseByMssv(student.mssv);
+    if (existingCase) {
+      get().initScenario('s6');
+      useAppStore.getState().setScenario('s6');
+      useAppStore.getState().setCaseCode(existingCase.caseCode);
+      const sc = get().scenario;
+      if (sc && existingCase.evidence.length > 0) {
+        sc.evidence = [...existingCase.evidence];
+      }
+      set({
+        submissionDraft: {
+          form: { ...existingCase.form },
+          attachedEvidenceIds: [...existingCase.attachedEvidenceIds],
+        },
+        submitted: true,
+        isCustomCase: true,
+      });
+      return;
+    }
+
     get().initScenario('s6');
     useAppStore.getState().setScenario('s6');
+    useAppStore.getState().setCaseCode(getNextCaseCode());
+
+    const saved = getStudentFormData(student.mssv, student);
 
     const config: CustomTestDataConfig = {
       fullName: student.name,
       mssv: student.mssv,
       className: student.className,
       faculty: student.faculty,
-      phone: student.phone || '0905123456',
-      email: student.email || `${student.mssv}@due.udn.vn`,
-      reason: 'Ốm đau/tai nạn điều trị dài',
-      semesterCount: 1,
-      startSemester: 'Học kỳ 1 năm học 2026–2027',
-      commitment: true,
+      phone: student.phone || saved.phone || '0905123456',
+      email: student.email || saved.email || `${student.mssv}@due.udn.vn`,
+      reason: saved.reason || 'Ốm đau/tai nạn điều trị dài',
+      semesterCount: saved.semesterCount || 1,
+      startSemester: saved.startSemester || 'Học kỳ 1 năm học 2026–2027',
+      commitment: saved.commitment ?? true,
       semestersCompleted: 3,
       discipline: 'none',
       tuitionDebt: 0,
       forcedWithdrawal: false,
-      evidencePreset: 'valid_medical',
+      evidencePreset,
     };
 
     get().applyCustomTestData(config);
@@ -179,12 +209,12 @@ export const usePlaybackStore = create<PlaybackStoreState>((set, get) => ({
           mssv: student.mssv,
           className: student.className,
           faculty: student.faculty,
-          phone: student.phone || '0905123456',
-          email: student.email || `${student.mssv}@due.udn.vn`,
-          reason: 'Ốm đau/tai nạn điều trị dài',
-          semesterCount: 1,
-          startSemester: 'Học kỳ 1 năm học 2026–2027',
-          commitment: true,
+          phone: student.phone || saved.phone || '0905123456',
+          email: student.email || saved.email || `${student.mssv}@due.udn.vn`,
+          reason: saved.reason || 'Ốm đau/tai nạn điều trị dài',
+          semesterCount: saved.semesterCount || 1,
+          startSemester: saved.startSemester || 'Học kỳ 1 năm học 2026–2027',
+          commitment: saved.commitment ?? true,
         },
         attachedEvidenceIds: [],
       },
@@ -309,6 +339,28 @@ export const usePlaybackStore = create<PlaybackStoreState>((set, get) => ({
     await engine.start({ form, attachedEvidenceIds });
     mark('submit:engine-start-done');
 
+    // Lưu vào Sổ tiếp nhận hồ sơ Một Cửa Số (Case Registry)
+    const currentCode = useAppStore.getState().caseCode || getNextCaseCode();
+    saveSubmittedCase({
+      id: currentCode,
+      caseCode: currentCode,
+      studentMssv: form.mssv,
+      studentName: form.fullName,
+      studentClass: form.className,
+      studentFaculty: form.faculty,
+      studentPhone: form.phone,
+      studentEmail: form.email,
+      form: { ...form },
+      evidence: scenario.evidence ? [...scenario.evidence] : [],
+      attachedEvidenceIds: [...attachedEvidenceIds],
+      submittedAt:
+        new Date().toLocaleDateString('vi-VN') +
+        ' ' +
+        new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+      day: get().mapState.counters.day || 0,
+      status: 'pending_advisor',
+    });
+
     await processQueue(get, set);
     mark('submit:queue-blocked');
     measure('submit:start->engine-start', 'submit:start', 'submit:engine-start-done');
@@ -340,6 +392,73 @@ export const usePlaybackStore = create<PlaybackStoreState>((set, get) => ({
       submissionDraft: {
         ...submissionDraft,
         attachedEvidenceIds: submissionDraft.attachedEvidenceIds.filter((id) => id !== evidenceId),
+      },
+    });
+  },
+
+  addEvidenceItem: (item, autoAttach = false) => {
+    const { scenario, submissionDraft, engine, submitted } = get();
+    if (submitted || !scenario) return;
+
+    const existing = scenario.evidence || [];
+    const nextEvidence = [...existing.filter((e) => e.id !== item.id), item];
+    scenario.evidence = nextEvidence;
+
+    if (engine) {
+      engine.state.evidence = [...nextEvidence];
+    }
+
+    const nextAttachedIds = autoAttach
+      ? Array.from(new Set([...(submissionDraft?.attachedEvidenceIds || []), item.id]))
+      : (submissionDraft?.attachedEvidenceIds || []);
+
+    set({
+      submissionDraft: {
+        form: submissionDraft?.form ?? scenario.form,
+        attachedEvidenceIds: nextAttachedIds,
+      },
+    });
+  },
+
+  removeEvidenceItem: (itemId: string) => {
+    const { scenario, submissionDraft, engine, submitted } = get();
+    if (submitted || !scenario) return;
+
+    const nextEvidence = (scenario.evidence || []).filter((e) => e.id !== itemId);
+    scenario.evidence = nextEvidence;
+
+    if (engine) {
+      engine.state.evidence = [...nextEvidence];
+    }
+
+    const nextAttachedIds = (submissionDraft?.attachedEvidenceIds || []).filter((id) => id !== itemId);
+
+    set({
+      submissionDraft: {
+        form: submissionDraft?.form ?? scenario.form,
+        attachedEvidenceIds: nextAttachedIds,
+      },
+    });
+  },
+
+  setEvidenceList: (items, autoAttach = false) => {
+    const { scenario, submissionDraft, engine, submitted } = get();
+    if (submitted || !scenario) return;
+
+    scenario.evidence = [...items];
+
+    if (engine) {
+      engine.state.evidence = [...items];
+    }
+
+    const nextAttachedIds = autoAttach
+      ? items.map((i) => i.id)
+      : (submissionDraft?.attachedEvidenceIds || []).filter((id) => items.some((i) => i.id === id));
+
+    set({
+      submissionDraft: {
+        form: submissionDraft?.form ?? scenario.form,
+        attachedEvidenceIds: nextAttachedIds,
       },
     });
   },
