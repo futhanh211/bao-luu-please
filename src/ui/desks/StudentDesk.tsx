@@ -51,6 +51,7 @@ export const StudentDesk: React.FC = () => {
   const setEvidenceList = usePlaybackStore((s) => s.setEvidenceList);
   const removeEvidenceItem = usePlaybackStore((s) => s.removeEvidenceItem);
   const studentRecord = usePlaybackStore((s) => s.studentRecord);
+  const initScenario = usePlaybackStore((s) => s.initScenario);
 
   const [tab, setTab] = useState<DeskTab>('inbox');
   const [readIds, setReadIds] = useState<string[]>([]);
@@ -82,6 +83,14 @@ export const StudentDesk: React.FC = () => {
     });
     setDetailedFormData(loaded);
   }, [studentMssv, studentRecord?.name, studentRecord?.className, studentRecord?.faculty]);
+
+  // Tự động nạp kịch bản nếu scenario hoặc draft chưa sẵn sàng khi vào bàn
+  useEffect(() => {
+    if (!scenario || !submissionDraft) {
+      const targetScenario = useAppStore.getState().scenarioId || 's1';
+      initScenario(targetScenario);
+    }
+  }, [scenario, submissionDraft, initScenario]);
 
   const handleStartFillOption = (key: StudentEvidenceOptionKey) => {
     setFillOptionKey(key);

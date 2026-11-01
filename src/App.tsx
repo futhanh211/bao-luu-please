@@ -85,8 +85,8 @@ export const App: React.FC = () => {
     if (screen === 'desk') {
       const pbState = usePlaybackStore.getState();
       const targetScenario = scenarioId || 's1';
-      // Chỉ khởi tạo lại khi chưa có engine hoặc người dùng đổi kịch bản khác
-      if (!pbState.engine || pbState.scenario?.id !== targetScenario) {
+      // Chỉ khởi tạo lại khi chưa có engine, chưa có kịch bản/draft hoặc người dùng đổi kịch bản khác
+      if (!pbState.engine || !pbState.scenario || !pbState.submissionDraft || pbState.scenario.id !== targetScenario) {
         initScenario(targetScenario);
       }
       if (mode === 'director') {

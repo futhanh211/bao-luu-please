@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useAppStore } from '../../store/useApp';
+import { usePlaybackStore } from '../../store/playback';
 import { SCENARIOS } from '../../data/scenarios';
 import { ensureScenarioInCaseRegistry } from '../../data/caseRegistry';
 import { screenVariants } from '../motion';
@@ -8,6 +9,7 @@ import { screenVariants } from '../motion';
 export const ScenarioPicker: React.FC = () => {
   const setScenario = useAppStore((s) => s.setScenario);
   const setScreen = useAppStore((s) => s.setScreen);
+  const initScenario = usePlaybackStore((s) => s.initScenario);
 
   return (
     <motion.div
@@ -77,6 +79,7 @@ export const ScenarioPicker: React.FC = () => {
             onClick={() => {
               ensureScenarioInCaseRegistry(sc);
               useAppStore.getState().setCaseCode(`BL-2026-${sc.id.toUpperCase()}`);
+              initScenario(sc.id);
               setScenario(sc.id);
             }}
             style={{
