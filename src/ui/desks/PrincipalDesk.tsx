@@ -216,7 +216,6 @@ export const PrincipalDesk: React.FC = () => {
   const completeUserTask = usePlaybackStore((s) => s.completeUserTask);
   const speed = useAppStore((s) => s.speed);
   const reducedMotion = useAppStore((s) => s.reducedMotion);
-  const sessionMode = useAppStore((s) => s.sessionMode);
 
   const [submittedCases, setSubmittedCases] = useState<SubmittedCase[]>(() =>
     getPrincipalCases()
@@ -371,37 +370,9 @@ export const PrincipalDesk: React.FC = () => {
 
   // Khi hồ sơ đã được BGH ký số hoàn tất
   if (isCaseSigned) {
-    if (sessionMode === 'portal') {
-      return (
-        <div
-          className="desk-page principal-portal-page"
-          style={{
-            width: '100%',
-            maxWidth: '980px',
-            margin: '0 auto',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 16,
-          }}
-        >
-          <PrincipalCaseDocketList
-            cases={submittedCases}
-            selectedId={selectedCase.id}
-            onSelect={handleSelectCase}
-          />
-          <PrincipalPortalResult
-            doc={doc}
-            signerName={selectedCase.principalSignerName ?? signerName}
-            caseCode={selectedCase.caseCode}
-            day={selectedCase.day || view.day || 0}
-          />
-        </div>
-      );
-    }
-
     return (
       <div
-        className="desk-page principal-page"
+        className="desk-page principal-portal-page"
         style={{
           width: '100%',
           maxWidth: '980px',
@@ -416,25 +387,12 @@ export const PrincipalDesk: React.FC = () => {
           selectedId={selectedCase.id}
           onSelect={handleSelectCase}
         />
-        <div className="principal-grid">
-          <DecisionDraft
-            doc={doc}
-            signing="signed"
-            signerName={selectedCase.principalSignerName ?? signerName}
-            mode="decision"
-            autoStamp={false}
-          />
-          <div className="signing-done">
-            <div className="signing-kicker">ĐÃ HOÀN TẤT T9</div>
-            <h3 className="signing-title">Quyết định đã ký số</h3>
-            <p className="signing-sub">
-              Hệ thống đã chuyển quyết định sang DO3 và gửi thông báo cho sinh viên.
-            </p>
-            <div className="signing-done-name">
-              {selectedCase.principalSignerName ?? signerName}
-            </div>
-          </div>
-        </div>
+        <PrincipalPortalResult
+          doc={doc}
+          signerName={selectedCase.principalSignerName ?? signerName}
+          caseCode={selectedCase.caseCode}
+          day={selectedCase.day || view.day || 0}
+        />
       </div>
     );
   }

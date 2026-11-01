@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAppStore } from '../../store/useApp';
+import { useAuthStore } from '../../store/useAuth';
 import { screenVariants } from '../motion';
-import { sfx } from '../audio/sfx';
 
 export const Title: React.FC = () => {
   const setScreen = useAppStore((s) => s.setScreen);
   const setSessionMode = useAppStore((s) => s.setSessionMode);
-  const muted = useAppStore((s) => s.muted);
-  const toggleMute = useAppStore((s) => s.toggleMute);
+  const toggleAsIs = useAppStore((s) => s.toggleAsIs);
+  const logout = useAuthStore((s) => s.logout);
 
   const [bootLines, setBootLines] = useState<string[]>([]);
   const fullLines = [
@@ -142,7 +142,7 @@ export const Title: React.FC = () => {
           Mô phỏng vận hành quy trình To-Be: "Giải quyết thủ tục nghỉ học tạm thời / bảo lưu kết quả học tập" theo chuẩn BPMN 2.0 có phối hợp con người & AI.
         </p>
 
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap', justifyContent: 'center' }}>
             <button
               onClick={() => {
@@ -166,7 +166,7 @@ export const Title: React.FC = () => {
                 gap: '8px',
                 transition: 'transform 0.15s ease, background-color 0.15s ease',
               }}
-              title="Đăng nhập cổng Sinh viên (tạo đơn) hoặc Cổng Giáo viên (duyệt đơn)"
+              title="Đăng nhập cổng Sinh viên (tạo đơn) hoặc Cổng Cán bộ (duyệt đơn)"
             >
               <span>🔐</span>
               <span>CỔNG ĐĂNG NHẬP</span>
@@ -174,8 +174,9 @@ export const Title: React.FC = () => {
 
             <button
               onClick={() => {
-                setSessionMode('portal');
-                setScreen('register');
+                logout();
+                setSessionMode('demo');
+                setScreen('scenario');
               }}
               style={{
                 fontFamily: 'var(--font-paper)',
@@ -200,30 +201,71 @@ export const Title: React.FC = () => {
               onMouseLeave={(e) => {
                 e.currentTarget.style.backgroundColor = 'var(--desk-900)';
               }}
+              title="Vận hành trực tiếp toàn bộ 5 bàn nghiệp vụ với 6 kịch bản mẫu không cần đăng nhập"
+            >
+              <span>▶</span>
+              <span>CHỌN KỊCH BẢN (DEMO TOÀN DIỆN)</span>
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
+            <button
+              onClick={() => {
+                setSessionMode('portal');
+                setScreen('register');
+              }}
+              style={{
+                fontFamily: 'var(--font-paper)',
+                fontSize: '15px',
+                fontWeight: 'bold',
+                backgroundColor: 'var(--desk-700)',
+                color: 'var(--paper)',
+                padding: '10px 20px',
+                borderRadius: 'var(--radius-sm)',
+                border: '1.5px solid var(--desk-500)',
+                boxShadow: 'var(--shadow-hard)',
+                cursor: 'var(--cursor-pointer)',
+                letterSpacing: '0.5px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                transition: 'background-color 0.15s ease',
+              }}
               title="Đăng ký tài khoản Sinh viên hoặc Cán bộ duyệt đơn mới"
             >
               <span>📝</span>
               <span>ĐĂNG KÝ TÀI KHOẢN MỚI</span>
             </button>
-          </div>
 
-          <div
-            onClick={() => {
-              sfx.setEnabled(muted);
-              toggleMute();
-            }}
-            style={{
-              fontSize: '15px',
-              color: 'var(--ink-soft)',
-              fontFamily: 'var(--font-paper)',
-              cursor: 'var(--cursor-pointer)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-            }}
-          >
-            <span>{muted ? '🔇' : '🔊'}</span>
-            <span>Gợi ý: <strong>Bấm M để bật âm thanh</strong> ({muted ? 'Hiện đang tắt' : 'Đang bật'})</span>
+            <button
+              onClick={toggleAsIs}
+              style={{
+                fontFamily: 'var(--font-paper)',
+                fontSize: '15px',
+                fontWeight: 'bold',
+                backgroundColor: 'transparent',
+                color: 'var(--ink)',
+                padding: '10px 20px',
+                borderRadius: 'var(--radius-sm)',
+                border: '2px dashed var(--stamp-red)',
+                cursor: 'var(--cursor-pointer)',
+                letterSpacing: '0.5px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                transition: 'background-color 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(179, 38, 30, 0.08)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }}
+              title="Xem mô phỏng bối cảnh quy trình giấy cũ (22 ngày)"
+            >
+              <span>📂</span>
+              <span>XEM BẢN AS-IS (22 NGÀY)</span>
+            </button>
           </div>
         </div>
       </div>

@@ -15,7 +15,7 @@ import { ApplicationCard } from './ctsv/ApplicationCard';
 import { LookupCard } from './ctsv/LookupCard';
 import { EvidencePaper } from './ctsv/EvidencePaper';
 import { EvidenceZoom } from './ctsv/EvidenceZoom';
-import { CtsvResult, InspectionResult } from './ctsv/InspectionResult';
+import { CtsvResult } from './ctsv/InspectionResult';
 import { CtsvPortalResult } from './ctsv/CtsvPortalResult';
 import {
   getCtsvCases,
@@ -424,38 +424,9 @@ export const CtsvDesk: React.FC = () => {
 
   // Khi hồ sơ đã được CTSV thẩm định xong
   if (isCaseProcessed) {
-    if (sessionMode === 'portal') {
-      return (
-        <div
-          className="desk-page ctsv-portal-page"
-          style={{
-            width: '100%',
-            maxWidth: '980px',
-            margin: '0 auto',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 16,
-          }}
-        >
-          <CtsvCaseDocketList
-            cases={submittedCases}
-            selectedId={selectedCase.id}
-            onSelect={handleSelectCase}
-          />
-          <CtsvPortalResult
-            result={result}
-            form={currentForm}
-            evidence={currentEvidence}
-            caseCode={selectedCase.caseCode}
-            day={selectedCase.day || view.day || 0}
-          />
-        </div>
-      );
-    }
-
     return (
       <div
-        className="desk-page"
+        className="desk-page ctsv-portal-page"
         style={{
           width: '100%',
           maxWidth: '980px',
@@ -470,11 +441,13 @@ export const CtsvDesk: React.FC = () => {
           selectedId={selectedCase.id}
           onSelect={handleSelectCase}
         />
-        {result ? (
-          <InspectionResult result={result} />
-        ) : (
-          <DeskEmpty deskName="Bàn Phòng CTSV" reason="done" />
-        )}
+        <CtsvPortalResult
+          result={result}
+          form={currentForm}
+          evidence={currentEvidence}
+          caseCode={selectedCase.caseCode}
+          day={selectedCase.day || view.day || 0}
+        />
       </div>
     );
   }
