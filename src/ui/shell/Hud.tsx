@@ -314,7 +314,7 @@ export const Hud: React.FC = () => {
                 setScreen('login');
               }}
               className="hud-login-btn"
-              title="Mở cổng đăng nhập phân vai"
+              title="Mở cổng đăng nhập"
             >
               🔐 ĐĂNG NHẬP
             </button>

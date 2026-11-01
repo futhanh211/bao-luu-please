@@ -137,7 +137,7 @@ export const LoginPortal: React.FC<Props> = ({ initialMode = 'login' }) => {
                 letterSpacing: '0.5px',
               }}
             >
-              {portalMode === 'login' ? 'CỔNG ĐĂNG NHẬP PHÂN VAI' : 'CỔNG ĐĂNG KÝ TÀI KHOẢN MỚI'}
+              {portalMode === 'login' ? 'CỔNG ĐĂNG NHẬP' : 'CỔNG ĐĂNG KÝ TÀI KHOẢN MỚI'}
             </h2>
           </div>
 

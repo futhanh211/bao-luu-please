@@ -90,24 +90,6 @@ export const Title: React.FC = () => {
           position: 'relative',
         }}
       >
-        <div
-          style={{
-            position: 'absolute',
-            top: '16px',
-            right: '16px',
-            fontSize: '12px',
-            fontWeight: 'bold',
-            border: '1px solid var(--stamp-red)',
-            color: 'var(--stamp-red)',
-            padding: '2px 8px',
-            textTransform: 'uppercase',
-            letterSpacing: '1px',
-            fontFamily: 'var(--font-paper)',
-          }}
-        >
-          Dữ liệu giả lập
-        </div>
-
         <h1
           style={{
             fontFamily: 'var(--font-paper)',
@@ -127,11 +109,25 @@ export const Title: React.FC = () => {
             fontFamily: 'var(--font-paper)',
             fontSize: '20px',
             color: 'var(--ink-soft)',
-            marginBottom: '16px',
+            marginBottom: '6px',
             fontWeight: 500,
           }}
         >
           Phòng Một Cửa Số — Trường ĐH Kinh tế – ĐH Đà Nẵng
+        </p>
+
+        <p
+          style={{
+            fontFamily: 'var(--font-paper)',
+            fontSize: '16px',
+            color: 'var(--amber)',
+            fontWeight: 700,
+            letterSpacing: '1px',
+            marginBottom: '16px',
+            textTransform: 'uppercase',
+          }}
+        >
+          Lớp MIS3047_2
         </p>
 
         <p
@@ -173,7 +169,7 @@ export const Title: React.FC = () => {
               title="Đăng nhập cổng Sinh viên (tạo đơn) hoặc Cổng Giáo viên (duyệt đơn)"
             >
               <span>🔐</span>
-              <span>CỔNG ĐĂNG NHẬP PHÂN VAI</span>
+              <span>CỔNG ĐĂNG NHẬP</span>
             </button>
 
             <button
