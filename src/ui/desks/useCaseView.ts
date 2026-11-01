@@ -62,17 +62,32 @@ export function useCaseView(desk: DeskKey): CaseView {
   const assignedDay = findTaskAssignedDay(log, eventDays, DESK_TASK[desk]);
   const waitedDays = computeSlaDays(assignedDay, day);
 
-  return {
-    scenario,
-    engine,
-    phase,
-    submitted,
-    waitingTaskId,
-    log,
-    eventDays,
-    day,
-    waitedDays,
-    studentRecord,
-    completedTaskIds,
-  };
+  return useMemo(
+    () => ({
+      scenario,
+      engine,
+      phase,
+      submitted,
+      waitingTaskId,
+      log,
+      eventDays,
+      day,
+      waitedDays,
+      studentRecord,
+      completedTaskIds,
+    }),
+    [
+      scenario,
+      engine,
+      phase,
+      submitted,
+      waitingTaskId,
+      log,
+      eventDays,
+      day,
+      waitedDays,
+      studentRecord,
+      completedTaskIds,
+    ]
+  );
 }

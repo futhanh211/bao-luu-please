@@ -351,11 +351,14 @@ export const CtsvDesk: React.FC = () => {
   const [zoomId, setZoomId] = useState<string | null>(null);
   const resolved = useRef(false);
 
+  const scenarioId = view.scenario?.id;
+  const logLength = view.log.length;
+
   useEffect(() => {
     const cases = getCtsvCases();
     setSubmittedCases(cases);
     if (cases.length > 0) {
-      const appScenarioId = (useAppStore.getState().scenarioId || view.scenario?.id || '').toUpperCase();
+      const appScenarioId = (scenarioId || '').toUpperCase();
       const targetScenarioCode = appScenarioId ? `BL-2026-${appScenarioId}` : '';
       const scenarioCase = cases.find(
         (c) =>
@@ -363,18 +366,14 @@ export const CtsvDesk: React.FC = () => {
           (view.scenario?.form.mssv && c.studentMssv === view.scenario.form.mssv)
       );
 
-      if (scenarioCase && (!selectedCaseId || selectedCaseId !== scenarioCase.id)) {
-        setSelectedCaseId(scenarioCase.id);
-        useAppStore.getState().setCaseCode(scenarioCase.caseCode);
-      } else if (!selectedCaseId || !cases.some((c) => c.id === selectedCaseId)) {
+      setSelectedCaseId((prev) => {
+        if (scenarioCase) return scenarioCase.id;
+        if (prev && cases.some((c) => c.id === prev)) return prev;
         const pendingCtsv = cases.find((c) => !c.ctsvDecision);
-        const targetId = pendingCtsv ? pendingCtsv.id : cases[0].id;
-        setSelectedCaseId(targetId);
-        const target = cases.find((c) => c.id === targetId);
-        if (target) useAppStore.getState().setCaseCode(target.caseCode);
-      }
+        return pendingCtsv ? pendingCtsv.id : cases[0].id;
+      });
     }
-  }, [view]);
+  }, [scenarioId, logLength]);
 
   useEffect(() => {
     setBrief(null);

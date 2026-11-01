@@ -326,11 +326,14 @@ export const PrincipalDesk: React.FC = () => {
   const [signing, setSigning] = useState<SigningState>('idle');
   const resolved = useRef(false);
 
+  const scenarioId = view.scenario?.id;
+  const logLength = view.log.length;
+
   useEffect(() => {
     const cases = getPrincipalCases();
     setSubmittedCases(cases);
     if (cases.length > 0) {
-      const appScenarioId = (useAppStore.getState().scenarioId || view.scenario?.id || '').toUpperCase();
+      const appScenarioId = (scenarioId || '').toUpperCase();
       const targetScenarioCode = appScenarioId ? `BL-2026-${appScenarioId}` : '';
       const scenarioCase = cases.find(
         (c) =>
@@ -338,20 +341,16 @@ export const PrincipalDesk: React.FC = () => {
           (view.scenario?.form.mssv && c.studentMssv === view.scenario.form.mssv)
       );
 
-      if (scenarioCase && (!selectedCaseId || selectedCaseId !== scenarioCase.id)) {
-        setSelectedCaseId(scenarioCase.id);
-        useAppStore.getState().setCaseCode(scenarioCase.caseCode);
-      } else if (!selectedCaseId || !cases.some((c) => c.id === selectedCaseId)) {
+      setSelectedCaseId((prev) => {
+        if (scenarioCase) return scenarioCase.id;
+        if (prev && cases.some((c) => c.id === prev)) return prev;
         const pendingBgh = cases.find((c) => !c.principalSigned);
-        const targetId = pendingBgh ? pendingBgh.id : cases[0].id;
-        setSelectedCaseId(targetId);
-        const target = cases.find((c) => c.id === targetId);
-        if (target) useAppStore.getState().setCaseCode(target.caseCode);
-      }
+        return pendingBgh ? pendingBgh.id : cases[0].id;
+      });
     } else {
       setSelectedCaseId('');
     }
-  }, [view]);
+  }, [scenarioId, logLength]);
 
   useEffect(() => {
     setSigning('idle');
