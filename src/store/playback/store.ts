@@ -33,6 +33,7 @@ import {
   getSubmittedCaseByMssv,
   getSubmittedCaseById,
   getNextCaseCode,
+  ensureScenarioInCaseRegistry,
 } from '../../data/caseRegistry';
 
 export type { PlaybackStoreState } from './types';
@@ -117,6 +118,10 @@ export const usePlaybackStore = create<PlaybackStoreState>((set, get) => ({
         initialCustomConfig.fullName
       );
     }
+
+    // Đảm bảo kịch bản Demo xuất hiện ngay trong Sổ tiếp nhận hồ sơ Một Cửa để cán bộ duyệt
+    const scCase = ensureScenarioInCaseRegistry(scenario);
+    useAppStore.getState().setCaseCode(scCase.caseCode);
 
     const engine = createEngine(PROCESS_DEF, scenario, deps);
     engine.subscribe(enqueueEvent);

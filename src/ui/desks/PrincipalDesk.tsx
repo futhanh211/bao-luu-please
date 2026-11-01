@@ -27,6 +27,19 @@ const PrincipalCaseDocketList: React.FC<{
   selectedId: string;
   onSelect: (id: string) => void;
 }> = ({ cases, selectedId, onSelect }) => {
+  const pendingCases = cases.filter((c) => !c.principalSigned);
+  const resolvedCases = cases.filter((c) => Boolean(c.principalSigned));
+
+  // Mặc định chọn tab "Chờ ký số" nếu có hồ sơ chờ, ngược lại tab "Tất cả"
+  const [filter, setFilter] = useState<'pending' | 'resolved' | 'all'>('pending');
+
+  const displayedCases =
+    filter === 'pending'
+      ? pendingCases
+      : filter === 'resolved'
+      ? resolvedCases
+      : [...pendingCases, ...resolvedCases];
+
   return (
     <Paper
       className="portal-docket-paper"
@@ -45,8 +58,8 @@ const PrincipalCaseDocketList: React.FC<{
           justifyContent: 'space-between',
           alignItems: 'center',
           flexWrap: 'wrap',
-          gap: 10,
-          marginBottom: 12,
+          gap: 12,
+          marginBottom: 14,
         }}
       >
         <div>
@@ -70,29 +83,103 @@ const PrincipalCaseDocketList: React.FC<{
               color: 'var(--ink)',
             }}
           >
-            📁 DANH SÁCH HỒ SƠ TRÌNH KÝ QUYẾT ĐỊNH ({cases.length} HỒ SƠ)
+            📁 HỒ SƠ TRÌNH KÝ QUYẾT ĐỊNH ({cases.length} HỒ SƠ)
           </h3>
         </div>
-        <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
-          Bấm chọn từng hồ sơ để cắm Token USB và ký số Quyết định ban hành (T9)
+
+        {/* Thanh Tab chuyển bộ lọc: Chờ ký số vs Đã ban hành */}
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            onClick={() => setFilter('pending')}
+            style={{
+              padding: '5px 12px',
+              fontSize: 12.5,
+              fontWeight: 'bold',
+              fontFamily: 'var(--font-paper)',
+              cursor: 'pointer',
+              borderRadius: 'var(--radius-sm)',
+              border: filter === 'pending' ? '1.5px solid var(--amber)' : '1px solid var(--paper-line)',
+              backgroundColor: filter === 'pending' ? 'var(--desk-900)' : 'var(--paper-dim)',
+              color: filter === 'pending' ? 'var(--amber)' : 'var(--ink)',
+              transition: 'all 120ms ease',
+            }}
+          >
+            ⏳ Chờ ký số ({pendingCases.length})
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setFilter('resolved')}
+            style={{
+              padding: '5px 12px',
+              fontSize: 12.5,
+              fontWeight: 'bold',
+              fontFamily: 'var(--font-paper)',
+              cursor: 'pointer',
+              borderRadius: 'var(--radius-sm)',
+              border: filter === 'resolved' ? '1.5px solid var(--amber)' : '1px solid var(--paper-line)',
+              backgroundColor: filter === 'resolved' ? 'var(--desk-900)' : 'var(--paper-dim)',
+              color: filter === 'resolved' ? 'var(--amber)' : 'var(--ink)',
+              transition: 'all 120ms ease',
+            }}
+          >
+            ✓ Đã ban hành ({resolvedCases.length})
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setFilter('all')}
+            style={{
+              padding: '5px 12px',
+              fontSize: 12.5,
+              fontWeight: 'bold',
+              fontFamily: 'var(--font-paper)',
+              cursor: 'pointer',
+              borderRadius: 'var(--radius-sm)',
+              border: filter === 'all' ? '1.5px solid var(--amber)' : '1px solid var(--paper-line)',
+              backgroundColor: filter === 'all' ? 'var(--desk-900)' : 'var(--paper-dim)',
+              color: filter === 'all' ? 'var(--amber)' : 'var(--ink)',
+              transition: 'all 120ms ease',
+            }}
+          >
+            📁 Tất cả ({cases.length})
+          </button>
         </div>
       </div>
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))',
-          gap: 10,
-        }}
-      >
-        {cases.map((c) => {
-          const isSelected = c.id === selectedId;
-          const isSigned = Boolean(c.principalSigned);
-          const isDeclined =
-            c.advisorDecision === 'declined' ||
-            c.ctsvDecision === 'invalid' ||
-            c.status === 'rejected';
-          const isReadyToSign = !isSigned && !isDeclined && c.ctsvDecision === 'valid';
+      {displayedCases.length === 0 ? (
+        <div
+          style={{
+            padding: '24px 16px',
+            textAlign: 'center',
+            color: 'var(--ink-soft)',
+            fontStyle: 'italic',
+            fontSize: 13.5,
+            border: '1px dashed var(--paper-line)',
+            borderRadius: 'var(--radius-sm)',
+          }}
+        >
+          {filter === 'pending'
+            ? '✓ Không có hồ sơ nào đang chờ ký số. Mọi Quyết định đã được ban hành!'
+            : 'Chưa có hồ sơ nào trong mục này.'}
+        </div>
+      ) : (
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))',
+            gap: 10,
+          }}
+        >
+          {displayedCases.map((c) => {
+            const isSelected = c.id === selectedId;
+            const isSigned = Boolean(c.principalSigned);
+            const isDeclined =
+              c.advisorDecision === 'declined' ||
+              c.ctsvDecision === 'invalid' ||
+              c.status === 'rejected';
+            const isReadyToSign = !isSigned && !isDeclined && c.ctsvDecision === 'valid';
 
           return (
             <button
@@ -207,6 +294,7 @@ const PrincipalCaseDocketList: React.FC<{
           );
         })}
       </div>
+      )}
     </Paper>
   );
 };
@@ -222,6 +310,11 @@ export const PrincipalDesk: React.FC = () => {
   );
   const [selectedCaseId, setSelectedCaseId] = useState<string>(() => {
     const cases = getPrincipalCases();
+    const appScenarioId = (useAppStore.getState().scenarioId || '').toUpperCase();
+    const targetScenarioCode = appScenarioId ? `BL-2026-${appScenarioId}` : '';
+    const matching = cases.find((c) => c.id === targetScenarioCode || c.caseCode === targetScenarioCode);
+    if (matching) return matching.id;
+
     // Ưu tiên chọn hồ sơ đang chờ BGH ký số
     const pendingBgh = cases.find((c) => !c.principalSigned);
     if (pendingBgh) return pendingBgh.id;
@@ -237,7 +330,18 @@ export const PrincipalDesk: React.FC = () => {
     const cases = getPrincipalCases();
     setSubmittedCases(cases);
     if (cases.length > 0) {
-      if (!selectedCaseId || !cases.some((c) => c.id === selectedCaseId)) {
+      const appScenarioId = (useAppStore.getState().scenarioId || view.scenario?.id || '').toUpperCase();
+      const targetScenarioCode = appScenarioId ? `BL-2026-${appScenarioId}` : '';
+      const scenarioCase = cases.find(
+        (c) =>
+          (targetScenarioCode && (c.id === targetScenarioCode || c.caseCode === targetScenarioCode)) ||
+          (view.scenario?.form.mssv && c.studentMssv === view.scenario.form.mssv)
+      );
+
+      if (scenarioCase && (!selectedCaseId || selectedCaseId !== scenarioCase.id)) {
+        setSelectedCaseId(scenarioCase.id);
+        useAppStore.getState().setCaseCode(scenarioCase.caseCode);
+      } else if (!selectedCaseId || !cases.some((c) => c.id === selectedCaseId)) {
         const pendingBgh = cases.find((c) => !c.principalSigned);
         const targetId = pendingBgh ? pendingBgh.id : cases[0].id;
         setSelectedCaseId(targetId);

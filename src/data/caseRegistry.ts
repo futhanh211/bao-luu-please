@@ -1,6 +1,7 @@
 import { EvidenceItem, StudentApplicationForm, DecisionDoc, EngineEvent } from '../engine/types';
 import { getStorageItem, setStorageItem } from './userRegistry';
 import { getStudentFormData, buildEvidenceItemsFromFormData } from './studentFormData';
+import { ScenarioConfig, SCENARIOS } from './scenarios';
 
 export type CaseStatus =
   | 'pending_advisor'
@@ -136,6 +137,29 @@ function createInitialCases(force = false): SubmittedCase[] {
     advisorDecision: 'confirmed',
     advisorDecisionAt: '30/10/2026 12:18',
   });
+
+  // Tự động khởi tạo sẵn các ca kịch bản chuẩn (S1 - S5) ở trạng thái chờ Cố vấn duyệt
+  for (const sc of SCENARIOS) {
+    if (sc.id === 's6') continue;
+    const caseId = `BL-2026-${sc.id.toUpperCase()}`;
+    const ev = sc.evidence ? sc.evidence.map((e) => ({ ...e })) : [];
+    cases.unshift({
+      id: caseId,
+      caseCode: caseId,
+      studentMssv: sc.mssv,
+      studentName: sc.studentName,
+      studentClass: sc.form.className || '47K12.1',
+      studentFaculty: sc.form.faculty || 'Khoa Công nghệ thông tin kinh doanh',
+      studentPhone: sc.form.phone || '0905123456',
+      studentEmail: sc.form.email || `${sc.mssv}@due.edu.vn`,
+      form: { ...sc.form },
+      evidence: ev,
+      attachedEvidenceIds: ev.map((e) => e.id),
+      submittedAt: '01/11/2026 08:00',
+      day: 0,
+      status: 'pending_advisor',
+    });
+  }
 
   return cases;
 }
@@ -355,9 +379,62 @@ export function updateCasePrincipalSign(
 }
 
 /**
+ * Đảm bảo một kịch bản Demo (S1 - S6) đã được nạp vào Sổ tiếp nhận hồ sơ.
+ * Giúp các bàn nghiệp vụ (Cố vấn, CTSV, BGH) thấy ngay hồ sơ của kịch bản đang chọn
+ * để thẩm định và phê duyệt trực tiếp.
+ */
+export function ensureScenarioInCaseRegistry(scenario: ScenarioConfig): SubmittedCase {
+  const all = getAllSubmittedCases();
+  const caseId = `BL-2026-${scenario.id.toUpperCase()}`;
+  const existingIdx = all.findIndex(
+    (c) => c.id === caseId || c.studentMssv === scenario.mssv || c.caseCode === caseId
+  );
+
+  const formCopy: StudentApplicationForm = { ...scenario.form };
+  const evidenceCopy = scenario.evidence ? scenario.evidence.map((e) => ({ ...e })) : [];
+
+  if (existingIdx >= 0) {
+    const existing = all[existingIdx];
+    // Nếu ca chưa qua bước Cố vấn duyệt, cập nhật dữ liệu mới nhất từ scenario
+    if (!existing.advisorDecision) {
+      existing.form = formCopy;
+      existing.evidence = evidenceCopy;
+      existing.attachedEvidenceIds = evidenceCopy.map((e) => e.id);
+      saveAllSubmittedCases(all);
+    }
+    return existing;
+  }
+
+  const newCase: SubmittedCase = {
+    id: caseId,
+    caseCode: caseId,
+    studentMssv: scenario.mssv,
+    studentName: scenario.studentName,
+    studentClass: scenario.form.className || '47K12.1',
+    studentFaculty: scenario.form.faculty || 'Khoa Công nghệ thông tin kinh doanh',
+    studentPhone: scenario.form.phone || '0905123456',
+    studentEmail: scenario.form.email || `${scenario.mssv}@due.edu.vn`,
+    form: formCopy,
+    evidence: evidenceCopy,
+    attachedEvidenceIds: evidenceCopy.map((e) => e.id),
+    submittedAt:
+      new Date().toLocaleDateString('vi-VN') +
+      ' ' +
+      new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+    day: 0,
+    status: 'pending_advisor',
+  };
+
+  all.unshift(newCase);
+  saveAllSubmittedCases(all);
+  return newCase;
+}
+
+/**
  * Danh sách hồ sơ dành cho Bàn Cố vấn học tập (Lane L2 / T4):
  * - Hiển thị tất cả hồ sơ nộp tới Cố vấn.
  * - Ưu tiên ca đang chờ duyệt (chưa có advisorDecision) lên trước.
+ * - Ca đã duyệt / từ chối luôn bị đẩy xuống dưới cùng.
  */
 export function getAdvisorCases(): SubmittedCase[] {
   const all = getAllSubmittedCases();
@@ -366,15 +443,16 @@ export function getAdvisorCases(): SubmittedCase[] {
     .sort((a, b) => {
       const aPending = !a.advisorDecision ? 0 : 1;
       const bPending = !b.advisorDecision ? 0 : 1;
-      return aPending - bPending;
+      if (aPending !== bPending) return aPending - bPending;
+      return (b.id || '').localeCompare(a.id || '');
     });
 }
 
 /**
  * Danh sách hồ sơ chuyển sang Bàn CTSV (Lane L3 / T5):
  * - CHỈ NHỮNG HỒ SƠ ĐÃ ĐƯỢC CỐ VẤN DUYỆT (advisorDecision === 'confirmed') mới xuất hiện!
- * - Hồ sơ bị Cố vấn từ chối (advisorDecision === 'declined') BỊ DỪNG HOÀN TOÀN ("bay luôn"),
- *   không bao giờ xuất hiện ở Bàn CTSV.
+ * - Ưu tiên ca chưa thẩm định (chưa có ctsvDecision) lên trước.
+ * - Ca đã thẩm định bị đẩy xuống dưới cùng.
  */
 export function getCtsvCases(): SubmittedCase[] {
   const all = getAllSubmittedCases();
@@ -383,7 +461,8 @@ export function getCtsvCases(): SubmittedCase[] {
     .sort((a, b) => {
       const aPending = !a.ctsvDecision ? 0 : 1;
       const bPending = !b.ctsvDecision ? 0 : 1;
-      return aPending - bPending;
+      if (aPending !== bPending) return aPending - bPending;
+      return (b.id || '').localeCompare(a.id || '');
     });
 }
 
@@ -393,8 +472,8 @@ export function getCtsvCases(): SubmittedCase[] {
  *   1. Cố vấn xác nhận (advisorDecision === 'confirmed')
  *   2. CTSV thẩm định hợp lệ (ctsvDecision === 'valid')
  *   mới đủ điều kiện xuất hiện trên bàn BGH để ký số!
- * - Hồ sơ bị từ chối từ bất kỳ bước nào phía trước BỊ DỪNG HOÀN TOÀN ("bay luôn"),
- *   tuyệt đối không bao giờ xuất hiện trên bàn BGH.
+ * - Ưu tiên ca chưa ký số (!c.principalSigned) lên trước.
+ * - Ca đã ký số ban hành bị đẩy xuống dưới cùng.
  */
 export function getPrincipalCases(): SubmittedCase[] {
   const all = getAllSubmittedCases();
@@ -403,7 +482,8 @@ export function getPrincipalCases(): SubmittedCase[] {
     .sort((a, b) => {
       const aPending = !a.principalSigned ? 0 : 1;
       const bPending = !b.principalSigned ? 0 : 1;
-      return aPending - bPending;
+      if (aPending !== bPending) return aPending - bPending;
+      return (b.id || '').localeCompare(a.id || '');
     });
 }
 

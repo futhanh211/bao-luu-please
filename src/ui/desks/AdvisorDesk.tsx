@@ -35,6 +35,20 @@ const AdvisorCaseDocketList: React.FC<{
   selectedId: string;
   onSelect: (id: string) => void;
 }> = ({ cases, selectedId, onSelect }) => {
+  const pendingCases = cases.filter((c) => !c.advisorDecision);
+  const resolvedCases = cases.filter((c) => Boolean(c.advisorDecision));
+
+  // Mặc định chọn tab "Chờ duyệt" nếu có hồ sơ chờ, ngược lại tab "Tất cả"
+  const [filter, setFilter] = useState<'pending' | 'resolved' | 'all'>('pending');
+
+  // Danh sách hiển thị theo tab lọc; ca chưa duyệt luôn được xếp lên trên cùng
+  const displayedCases =
+    filter === 'pending'
+      ? pendingCases
+      : filter === 'resolved'
+      ? resolvedCases
+      : [...pendingCases, ...resolvedCases];
+
   return (
     <Paper
       className="portal-docket-paper"
@@ -53,8 +67,8 @@ const AdvisorCaseDocketList: React.FC<{
           justifyContent: 'space-between',
           alignItems: 'center',
           flexWrap: 'wrap',
-          gap: 10,
-          marginBottom: 12,
+          gap: 12,
+          marginBottom: 14,
         }}
       >
         <div>
@@ -78,26 +92,100 @@ const AdvisorCaseDocketList: React.FC<{
               color: 'var(--ink)',
             }}
           >
-            📁 DANH SÁCH HỒ SƠ SINH VIÊN NỘP CHO CỐ VẤN ({cases.length} HỒ SƠ)
+            📁 HỒ SƠ SINH VIÊN NỘP CHO CỐ VẤN ({cases.length} HỒ SƠ)
           </h3>
         </div>
-        <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
-          Bấm chọn từng hồ sơ để xem xét và đóng dấu phê duyệt
+
+        {/* Thanh Tab chuyển bộ lọc: Chờ duyệt vs Đã giải quyết */}
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            onClick={() => setFilter('pending')}
+            style={{
+              padding: '5px 12px',
+              fontSize: 12.5,
+              fontWeight: 'bold',
+              fontFamily: 'var(--font-paper)',
+              cursor: 'pointer',
+              borderRadius: 'var(--radius-sm)',
+              border: filter === 'pending' ? '1.5px solid var(--amber)' : '1px solid var(--paper-line)',
+              backgroundColor: filter === 'pending' ? 'var(--desk-900)' : 'var(--paper-dim)',
+              color: filter === 'pending' ? 'var(--amber)' : 'var(--ink)',
+              transition: 'all 120ms ease',
+            }}
+          >
+            ⏳ Chờ duyệt ({pendingCases.length})
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setFilter('resolved')}
+            style={{
+              padding: '5px 12px',
+              fontSize: 12.5,
+              fontWeight: 'bold',
+              fontFamily: 'var(--font-paper)',
+              cursor: 'pointer',
+              borderRadius: 'var(--radius-sm)',
+              border: filter === 'resolved' ? '1.5px solid var(--amber)' : '1px solid var(--paper-line)',
+              backgroundColor: filter === 'resolved' ? 'var(--desk-900)' : 'var(--paper-dim)',
+              color: filter === 'resolved' ? 'var(--amber)' : 'var(--ink)',
+              transition: 'all 120ms ease',
+            }}
+          >
+            ✓ Đã giải quyết ({resolvedCases.length})
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setFilter('all')}
+            style={{
+              padding: '5px 12px',
+              fontSize: 12.5,
+              fontWeight: 'bold',
+              fontFamily: 'var(--font-paper)',
+              cursor: 'pointer',
+              borderRadius: 'var(--radius-sm)',
+              border: filter === 'all' ? '1.5px solid var(--amber)' : '1px solid var(--paper-line)',
+              backgroundColor: filter === 'all' ? 'var(--desk-900)' : 'var(--paper-dim)',
+              color: filter === 'all' ? 'var(--amber)' : 'var(--ink)',
+              transition: 'all 120ms ease',
+            }}
+          >
+            📁 Tất cả ({cases.length})
+          </button>
         </div>
       </div>
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))',
-          gap: 10,
-        }}
-      >
-        {cases.map((c) => {
-          const isSelected = c.id === selectedId;
-          const isConfirmed = c.advisorDecision === 'confirmed';
-          const isDeclined = c.advisorDecision === 'declined';
-          const isPending = !c.advisorDecision;
+      {displayedCases.length === 0 ? (
+        <div
+          style={{
+            padding: '24px 16px',
+            textAlign: 'center',
+            color: 'var(--ink-soft)',
+            fontStyle: 'italic',
+            fontSize: 13.5,
+            border: '1px dashed var(--paper-line)',
+            borderRadius: 'var(--radius-sm)',
+          }}
+        >
+          {filter === 'pending'
+            ? '✓ Không có hồ sơ nào đang chờ duyệt. Mọi hồ sơ đã được xử lý xong!'
+            : 'Chưa có hồ sơ nào trong mục này.'}
+        </div>
+      ) : (
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))',
+            gap: 10,
+          }}
+        >
+          {displayedCases.map((c) => {
+            const isSelected = c.id === selectedId;
+            const isConfirmed = c.advisorDecision === 'confirmed';
+            const isDeclined = c.advisorDecision === 'declined';
+            const isPending = !c.advisorDecision;
 
           return (
             <button
@@ -206,6 +294,7 @@ const AdvisorCaseDocketList: React.FC<{
           );
         })}
       </div>
+      )}
     </Paper>
   );
 };
@@ -227,6 +316,11 @@ export const AdvisorDesk: React.FC = () => {
   );
   const [selectedCaseId, setSelectedCaseId] = useState<string>(() => {
     const cases = getAdvisorCases();
+    const appScenarioId = (useAppStore.getState().scenarioId || '').toUpperCase();
+    const targetScenarioCode = appScenarioId ? `BL-2026-${appScenarioId}` : '';
+    const matching = cases.find((c) => c.id === targetScenarioCode || c.caseCode === targetScenarioCode);
+    if (matching) return matching.id;
+
     const pending = cases.find((c) => !c.advisorDecision);
     return pending ? pending.id : cases[0]?.id || '';
   });
@@ -247,7 +341,19 @@ export const AdvisorDesk: React.FC = () => {
     const cases = getAdvisorCases();
     setSubmittedCases(cases);
     if (cases.length > 0) {
-      if (!selectedCaseId || !cases.some((c) => c.id === selectedCaseId)) {
+      const appScenarioId = (useAppStore.getState().scenarioId || view.scenario?.id || '').toUpperCase();
+      const targetScenarioCode = appScenarioId ? `BL-2026-${appScenarioId}` : '';
+      const scenarioCase = cases.find(
+        (c) =>
+          (targetScenarioCode && (c.id === targetScenarioCode || c.caseCode === targetScenarioCode)) ||
+          (view.scenario?.form.mssv && c.studentMssv === view.scenario.form.mssv)
+      );
+
+      // Nếu có kịch bản đang chọn và chưa được chọn ở bàn thì ưu tiên chọn kịch bản đó
+      if (scenarioCase && (!selectedCaseId || selectedCaseId !== scenarioCase.id)) {
+        setSelectedCaseId(scenarioCase.id);
+        useAppStore.getState().setCaseCode(scenarioCase.caseCode);
+      } else if (!selectedCaseId || !cases.some((c) => c.id === selectedCaseId)) {
         const pending = cases.find((c) => !c.advisorDecision);
         const targetId = pending ? pending.id : cases[0].id;
         setSelectedCaseId(targetId);

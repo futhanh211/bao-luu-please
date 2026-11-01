@@ -69,21 +69,28 @@ export class MockAIProvider implements AIProvider {
     const summary = asCaseSummary(ctx);
     const scripted = role === 'advisor' ? this.script?.advisorBrief : this.script?.ctsvBrief;
 
-    // Nếu có dữ liệu ca truyền vào và là ca tùy biến (không phải 6 kịch bản chuẩn S1-S6),
-    // ưu tiên sinh Brief động theo đúng thông tin hồ sơ của sinh viên đang được duyệt!
-    const STANDARD_SCENARIO_NAMES = [
+    // Danh sách tên sinh viên thuộc các kịch bản chuẩn định sẵn (S1 - S6)
+    const STANDARD_SCENARIOS = [
+      'Nguyễn Minh Khoa',
+      'Trần Thu Hà',
+      'Lê Tuấn Kiệt',
+      'Phạm Ngọc Anh',
+      'Hoàng Khánh Linh',
+      'Đỗ Mai Lan',
       'Nguyễn Văn An',
       'Trần Thị Mai',
       'Lê Hoàng Long',
-      'Phạm Ngọc Anh',
-      'Hoàng Khánh Linh',
       'Vũ Hải Đăng',
     ];
+
     if (summary && scripted) {
-      if (!STANDARD_SCENARIO_NAMES.includes(summary.form.fullName)) {
-        return buildFallbackBrief(role, summary);
+      // Nếu hồ sơ đang xem thuộc về kịch bản mẫu chuẩn định sẵn -> dùng scripted brief
+      if (STANDARD_SCENARIOS.includes(summary.form.fullName.trim())) {
+        return scripted;
       }
-      return scripted;
+      // Ngược lại nếu là hồ sơ do người dùng nộp qua cổng Một Cửa (ví dụ Thanhz Lam, Phạm Minh Khôi...)
+      // -> Luôn sinh Brief động theo đúng thông tin hồ sơ của sinh viên đó!
+      return buildFallbackBrief(role, summary);
     }
 
     if (scripted) return scripted;

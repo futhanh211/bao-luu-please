@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { useAppStore } from '../../store/useApp';
 import { SCENARIOS } from '../../data/scenarios';
+import { ensureScenarioInCaseRegistry } from '../../data/caseRegistry';
 import { screenVariants } from '../motion';
 
 export const ScenarioPicker: React.FC = () => {
@@ -73,7 +74,11 @@ export const ScenarioPicker: React.FC = () => {
           <div
             key={sc.id}
             className="scenario-card"
-            onClick={() => setScenario(sc.id)}
+            onClick={() => {
+              ensureScenarioInCaseRegistry(sc);
+              useAppStore.getState().setCaseCode(`BL-2026-${sc.id.toUpperCase()}`);
+              setScenario(sc.id);
+            }}
             style={{
               backgroundColor: 'var(--paper)',
               color: 'var(--ink)',
