@@ -158,7 +158,7 @@
 
 .asis-odometer-fill {
   height: 100%;
-  background: linear-gradient(90deg, #52c41a, var(--amber), var(--stamp-red));
+  background: var(--amber);
   transition: width 0.3s ease;
 }
 
@@ -211,8 +211,8 @@
 
 /* ---------- Active Station Spotlight (Phiếu luân chuyển) ---------- */
 .asis-spotlight {
-  background: #fffdf5;
-  border: 2px solid var(--desk-700);
+  background: #f7f3e8;
+  border: 1.5px solid var(--desk-700);
   border-radius: var(--radius-sm);
   padding: 14px 18px;
   box-shadow: var(--shadow-paper);
@@ -220,11 +220,6 @@
   flex-direction: column;
   gap: 10px;
   position: relative;
-  background-image: repeating-linear-gradient(
-    0deg,
-    transparent 0 23px,
-    rgba(185, 176, 147, 0.15) 23px 24px
-  );
 }
 
 .asis-spotlight-head {
@@ -244,22 +239,23 @@
 }
 
 .asis-station-badge {
-  background: var(--stamp-red);
-  color: #ffffff;
+  background: var(--desk-900);
+  color: var(--amber);
+  border: 1px solid var(--amber);
   font-family: var(--font-paper);
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.5px;
   padding: 3px 8px;
   border-radius: var(--radius-sm);
-  box-shadow: var(--shadow-stamp);
+  box-shadow: var(--shadow-hard);
   flex-shrink: 0;
 }
 
 .asis-station-name {
   margin: 0;
   font-family: var(--font-paper);
-  font-size: 17px;
+  font-size: 16.5px;
   font-weight: 800;
   color: var(--ink);
   line-height: 1.2;
@@ -272,16 +268,16 @@
 
 .asis-location-pill {
   font-family: var(--font-paper);
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 600;
   color: var(--ink);
   background: var(--paper-dim);
   border: 1px solid var(--paper-line);
   padding: 3px 10px;
-  border-radius: 12px;
+  border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   flex-shrink: 0;
 }
 
@@ -300,9 +296,9 @@
 
 /* Thao tác nghiệp vụ bên trái */
 .asis-action-card {
-  background: var(--paper);
+  background: #f0ebd9;
   border: 1px solid var(--paper-line);
-  border-left: 4px solid var(--amber);
+  border-left: 4px solid var(--desk-700);
   padding: 10px 14px;
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   display: flex;
@@ -319,16 +315,17 @@
 
 .asis-delay-stamp {
   font-family: var(--font-hud);
-  font-size: 16px;
+  font-size: 15px;
   background: var(--desk-900);
   color: var(--amber);
+  border: 1px solid var(--desk-700);
   padding: 4px 8px;
   border-radius: var(--radius-sm);
   display: inline-flex;
   align-items: center;
   gap: 4px;
   flex-shrink: 0;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--shadow-hard);
 }
 
 .asis-action-detail {
@@ -340,7 +337,7 @@
 
 .asis-action-detail strong {
   font-family: var(--font-paper);
-  font-size: 12px;
+  font-size: 11.5px;
   color: var(--ink-soft);
   text-transform: uppercase;
   display: block;
@@ -354,18 +351,23 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  border-top: 1px dotted var(--paper-line);
+  border-top: 1px dashed var(--paper-line);
   padding-top: 6px;
 }
 
-/* Giấy note vàng ghi điểm nghẽn thực tế bên phải */
+.asis-legwork-bullet {
+  color: var(--amber);
+  font-size: 9px;
+}
+
+/* Giấy ghi chú điểm nghẽn thực tế bên phải */
 .asis-sticky-note {
-  background: #fff9c4;
-  border: 1px solid #e6d366;
+  background: #efe9d7;
+  border: 1px solid #c9bea7;
   border-left: 4px solid var(--stamp-red);
   padding: 10px 14px;
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.08);
+  box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.06);
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -384,11 +386,19 @@
   letter-spacing: 0.5px;
 }
 
+.asis-sticky-tag {
+  background: var(--stamp-red);
+  color: #ffffff;
+  font-size: 9.5px;
+  padding: 1px 6px;
+  border-radius: 2px;
+}
+
 .asis-sticky-body {
   font-family: var(--font-read);
   font-size: 13.5px;
   line-height: 1.45;
-  color: #791e17;
+  color: #3b2b20;
   font-style: italic;
   display: flex;
   align-items: flex-start;
@@ -396,11 +406,12 @@
 }
 
 .asis-sticky-quote-icon {
-  font-size: 18px;
+  font-size: 20px;
   line-height: 1;
   font-style: normal;
   flex-shrink: 0;
-  opacity: 0.8;
+  color: var(--stamp-red);
+  opacity: 0.85;
 }
 
 /* ---------- Pipeline Conveyor Section (8 Trạm kết nối) ---------- */
@@ -466,32 +477,47 @@
   border-color: var(--desk-700);
 }
 
-/* Trạng thái đã qua */
+/* Trạng thái đã qua: Màu xanh lục mộc retro (tem kiểm duyệt) */
 .asis-station-card[data-status='passed'] {
-  background: #f4faed;
-  border-color: #8bc34a;
+  background: #edf3e9;
+  border-color: #b0c9af;
 }
 
 .asis-station-card[data-status='passed'] .asis-card-status {
-  color: #43a047;
+  color: var(--stamp-green);
+  font-weight: 700;
 }
 
-/* Trạng thái đang xử lý */
+/* Trạng thái đang xử lý: Nền tối bàn làm việc, viền vàng hổ phách nảy bật */
 .asis-station-card[data-status='active'] {
-  background: #fffdf0;
+  background: var(--desk-900);
   border: 2px solid var(--amber);
-  box-shadow: 0 3px 10px rgba(217, 164, 65, 0.28), var(--shadow-paper);
+  box-shadow: var(--shadow-paper-lg);
   transform: translateY(-2px);
 }
 
 .asis-station-card[data-status='active'] .asis-card-status {
-  color: #b27b16;
+  color: var(--amber);
   font-weight: 800;
+}
+
+.asis-station-card[data-status='active'] .asis-card-name {
+  color: #ffffff;
+}
+
+.asis-station-card[data-status='active'] .asis-card-role {
+  color: var(--paper-dim);
+}
+
+.asis-station-card[data-status='active'] .asis-card-delay {
+  background: var(--desk-700);
+  color: var(--amber);
+  border: 1px solid var(--desk-500);
 }
 
 /* Trạng thái sắp tới */
 .asis-station-card[data-status='future'] {
-  opacity: 0.85;
+  opacity: 0.75;
 }
 
 .asis-card-top-row {
@@ -545,15 +571,16 @@
   background: var(--amber);
   color: var(--desk-900);
   font-family: var(--font-paper);
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 800;
-  padding: 1px 6px;
+  padding: 2px 6px;
   border-radius: 2px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
   z-index: 2;
+  letter-spacing: 0.3px;
 }
 
 /* Connector indicator giữa các card */
@@ -577,8 +604,8 @@
   color: var(--paper);
   border-radius: var(--radius-sm);
   padding: 12px 16px;
-  border: 1px solid var(--desk-700);
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
+  border: 1.5px solid var(--desk-700);
+  box-shadow: var(--shadow-hard);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -596,7 +623,7 @@
 
 .asis-comparison-title {
   font-family: var(--font-paper);
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 800;
   color: var(--amber);
   letter-spacing: 1px;
@@ -619,6 +646,7 @@
   font-size: 10.5px;
   background: var(--desk-700);
   border: 1px solid var(--desk-500);
+  color: var(--paper);
   padding: 2px 8px;
   border-radius: var(--radius-sm);
   display: inline-flex;
@@ -627,7 +655,7 @@
 }
 
 .asis-metric-pill strong {
-  color: #52c41a;
+  color: var(--amber);
 }
 
 .asis-comparison-cols {
@@ -642,9 +670,10 @@
   }
 }
 
-/* Cột As-Is */
+/* Cột As-Is: Đỏ son cổ điển trầm, không chói */
 .asis-col-asis {
-  background: rgba(179, 38, 30, 0.14);
+  background: rgba(179, 38, 30, 0.12);
+  border: 1px solid rgba(179, 38, 30, 0.25);
   border-left: 3px solid var(--stamp-red);
   padding: 10px 12px;
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
@@ -656,18 +685,20 @@
 .asis-col-title-asis {
   font-family: var(--font-paper);
   font-weight: 800;
-  font-size: 12.5px;
-  color: #ff7875;
+  font-size: 12px;
+  color: #ff9b97;
   display: flex;
   align-items: center;
   gap: 6px;
   margin-bottom: 3px;
+  letter-spacing: 0.5px;
 }
 
-/* Cột To-Be */
+/* Cột To-Be: Xanh lục kiểm duyệt trầm, thanh lịch */
 .asis-col-tobe {
-  background: rgba(46, 107, 58, 0.22);
-  border-left: 3px solid #52c41a;
+  background: rgba(46, 107, 58, 0.18);
+  border: 1px solid rgba(46, 107, 58, 0.3);
+  border-left: 3px solid var(--stamp-green);
   padding: 10px 12px;
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   display: flex;
@@ -678,18 +709,19 @@
 .asis-col-title-tobe {
   font-family: var(--font-paper);
   font-weight: 800;
-  font-size: 12.5px;
-  color: #95de64;
+  font-size: 12px;
+  color: #8edc9e;
   display: flex;
   align-items: center;
   gap: 6px;
   margin-bottom: 3px;
+  letter-spacing: 0.5px;
 }
 
 .asis-bullet-row {
   display: flex;
   align-items: baseline;
-  gap: 6px;
+  gap: 8px;
   font-family: var(--font-read);
   font-size: 12.5px;
   line-height: 1.45;
@@ -702,16 +734,18 @@
   color: #ffffff;
 }
 
-.asis-bullet-icon {
-  font-size: 13px;
+.asis-bullet-dot {
+  font-size: 7px;
+  color: var(--amber);
   flex-shrink: 0;
+  transform: translateY(-2px);
 }
 
 /* ---------- Footer Controls ---------- */
 .asis-footer {
   padding: 10px 20px;
   background-color: var(--paper-dim);
-  border-top: 1px solid var(--paper-line);
+  border-top: 1.5px solid var(--paper-line);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -728,25 +762,105 @@
 }
 
 .asis-btn-primary {
-  padding: 6px 14px;
+  padding: 7px 16px;
   font-family: var(--font-paper);
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 800;
-  background: var(--desk-900);
-  color: var(--paper);
-  border: 1px solid var(--desk-700);
+  background: var(--amber);
+  color: var(--desk-900);
+  border: 2px solid var(--desk-900);
   border-radius: var(--radius-sm);
+  box-shadow: 2px 2px 0px #11110e;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  transition: all 0.15s ease;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  transition: all 0.12s ease;
+}
+
+.asis-btn-primary:hover {
+  background: #e5b252;
+  transform: translateY(-1px);
+  box-shadow: 3px 3px 0px #11110e;
 }
 
 .asis-btn-primary[data-playing='true'] {
-  background: var(--amber);
-  color: var(--desk-900);
-  border-color: #b27b16;
+  background: var(--desk-900);
+  color: var(--amber);
+  border-color: var(--amber);
+}
+
+.asis-btn-step {
+  padding: 7px 14px;
+  font-family: var(--font-paper);
+  font-size: 12px;
+  font-weight: 700;
+  background: var(--desk-700);
+  color: var(--paper);
+  border: 1.5px solid var(--desk-500);
+  border-radius: var(--radius-sm);
+  box-shadow: 1px 1px 0px #11110e;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.asis-btn-step:hover:not(:disabled) {
+  background: var(--desk-500);
+  border-color: var(--amber);
+  color: var(--amber);
+}
+
+.asis-btn-step:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.asis-btn-replay {
+  padding: 7px 14px;
+  font-family: var(--font-paper);
+  font-size: 12px;
+  font-weight: 700;
+  background: transparent;
+  color: var(--ink);
+  border: 1px dashed var(--paper-line);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.asis-btn-replay:hover {
+  background: rgba(0, 0, 0, 0.05);
+  border-color: var(--desk-700);
+}
+
+.asis-keyboard-hint {
+  font-family: var(--font-paper);
+  font-size: 10.5px;
+  color: var(--ink-soft);
+  margin-left: 4px;
+}
+
+.asis-btn-close {
+  padding: 7px 16px;
+  font-family: var(--font-paper);
+  font-size: 12.5px;
+  font-weight: 800;
+  background: var(--desk-900);
+  color: var(--paper);
+  border: 1.5px solid var(--desk-700);
+  border-radius: var(--radius-sm);
+  box-shadow: 2px 2px 0px #11110e;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  transition: all 0.12s ease;
+}
+
+.asis-btn-close:hover {
+  background: var(--stamp-red);
+  border-color: var(--stamp-red);
+  color: #ffffff;
 }
 
 .asis-btn-primary:hover {
