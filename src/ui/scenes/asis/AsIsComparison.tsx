@@ -54,7 +54,7 @@ export const AsIsComparison: React.FC = () => {
         <div className="asis-col-tobe">
           <div className="asis-col-title-tobe">
             <span>✓</span>
-            <span>QUY TRÌNH TO-BE (HỆ THỐNG "BẢO LƯU, PLEASE")</span>
+            <span>QUY TRÌNH TO-BE (HỆ THỐNG MỘT CỬA)</span>
           </div>
           <div className="asis-bullet-row">
             <span className="asis-bullet-dot">■</span>
