@@ -17,6 +17,8 @@ interface CtsvPortalResultProps {
   evidence: EvidenceItem[];
   caseCode: string;
   day: number;
+  remainingPendingCount?: number;
+  onContinueNext?: () => void;
 }
 
 export const CtsvPortalResult: React.FC<CtsvPortalResultProps> = ({
@@ -25,6 +27,8 @@ export const CtsvPortalResult: React.FC<CtsvPortalResultProps> = ({
   evidence,
   caseCode,
   day,
+  remainingPendingCount,
+  onContinueNext,
 }) => {
   const [showEvidence, setShowEvidence] = useState(false);
   const logout = useAuthStore((s) => s.logout);
@@ -140,6 +144,22 @@ export const CtsvPortalResult: React.FC<CtsvPortalResultProps> = ({
 
         {/* Thanh công cụ tác vụ chuyên môn */}
         <div className="portal-actions-row">
+          {onContinueNext && remainingPendingCount !== undefined && remainingPendingCount > 0 && (
+            <button
+              type="button"
+              className="portal-btn-primary"
+              onClick={onContinueNext}
+              style={{
+                backgroundColor: 'var(--amber)',
+                color: 'var(--desk-900)',
+                border: '1.5px solid var(--amber)',
+                fontWeight: 'bold',
+              }}
+            >
+              <span>➔ Thẩm định hồ sơ tiếp theo (còn {remainingPendingCount} hồ sơ chờ)</span>
+            </button>
+          )}
+
           <button
             type="button"
             className={`portal-btn-primary ${showEvidence ? 'active' : ''}`}

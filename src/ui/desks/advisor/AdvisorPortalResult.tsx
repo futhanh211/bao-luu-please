@@ -15,6 +15,8 @@ interface AdvisorPortalResultProps {
   advisorStatus: 'confirmed' | 'declined';
   caseCode: string;
   day: number;
+  remainingPendingCount?: number;
+  onContinueNext?: () => void;
 }
 
 export const AdvisorPortalResult: React.FC<AdvisorPortalResultProps> = ({
@@ -23,6 +25,8 @@ export const AdvisorPortalResult: React.FC<AdvisorPortalResultProps> = ({
   advisorStatus,
   caseCode,
   day,
+  remainingPendingCount,
+  onContinueNext,
 }) => {
   const [showDocument, setShowDocument] = useState(false);
   const logout = useAuthStore((s) => s.logout);
@@ -132,6 +136,22 @@ export const AdvisorPortalResult: React.FC<AdvisorPortalResultProps> = ({
 
         {/* Thanh công cụ tác vụ chuyên môn */}
         <div className="portal-actions-row">
+          {onContinueNext && remainingPendingCount !== undefined && remainingPendingCount > 0 && (
+            <button
+              type="button"
+              className="portal-btn-primary"
+              onClick={onContinueNext}
+              style={{
+                backgroundColor: 'var(--amber)',
+                color: 'var(--desk-900)',
+                border: '1.5px solid var(--amber)',
+                fontWeight: 'bold',
+              }}
+            >
+              <span>➔ Duyệt hồ sơ tiếp theo (còn {remainingPendingCount} hồ sơ chờ)</span>
+            </button>
+          )}
+
           <button
             type="button"
             className={`portal-btn-primary ${showDocument ? 'active' : ''}`}

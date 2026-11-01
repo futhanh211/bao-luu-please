@@ -33,13 +33,12 @@ const soundedReminderIds = new Set<string>();
 const AdvisorCaseDocketList: React.FC<{
   cases: SubmittedCase[];
   selectedId: string;
+  filter: 'pending' | 'resolved' | 'all';
+  onFilterChange: (filter: 'pending' | 'resolved' | 'all') => void;
   onSelect: (id: string) => void;
-}> = ({ cases, selectedId, onSelect }) => {
+}> = ({ cases, selectedId, filter, onFilterChange, onSelect }) => {
   const pendingCases = cases.filter((c) => !c.advisorDecision);
   const resolvedCases = cases.filter((c) => Boolean(c.advisorDecision));
-
-  // Mặc định chọn tab "Chờ duyệt" nếu có hồ sơ chờ, ngược lại tab "Tất cả"
-  const [filter, setFilter] = useState<'pending' | 'resolved' | 'all'>('pending');
 
   // Danh sách hiển thị theo tab lọc; ca chưa duyệt luôn được xếp lên trên cùng
   const displayedCases =
@@ -100,7 +99,7 @@ const AdvisorCaseDocketList: React.FC<{
         <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
           <button
             type="button"
-            onClick={() => setFilter('pending')}
+            onClick={() => onFilterChange('pending')}
             style={{
               padding: '5px 12px',
               fontSize: 12.5,
@@ -119,7 +118,7 @@ const AdvisorCaseDocketList: React.FC<{
 
           <button
             type="button"
-            onClick={() => setFilter('resolved')}
+            onClick={() => onFilterChange('resolved')}
             style={{
               padding: '5px 12px',
               fontSize: 12.5,
@@ -138,7 +137,7 @@ const AdvisorCaseDocketList: React.FC<{
 
           <button
             type="button"
-            onClick={() => setFilter('all')}
+            onClick={() => onFilterChange('all')}
             style={{
               padding: '5px 12px',
               fontSize: 12.5,
@@ -314,14 +313,16 @@ export const AdvisorDesk: React.FC = () => {
   const [submittedCases, setSubmittedCases] = useState<SubmittedCase[]>(() =>
     getAdvisorCases()
   );
+  const [filter, setFilter] = useState<'pending' | 'resolved' | 'all'>('pending');
   const [selectedCaseId, setSelectedCaseId] = useState<string>(() => {
     const cases = getAdvisorCases();
     const appScenarioId = (useAppStore.getState().scenarioId || '').toUpperCase();
     const targetScenarioCode = appScenarioId ? `BL-2026-${appScenarioId}` : '';
-    const matching = cases.find((c) => c.id === targetScenarioCode || c.caseCode === targetScenarioCode);
-    if (matching) return matching.id;
-
     const pending = cases.find((c) => !c.advisorDecision);
+    if (targetScenarioCode) {
+      const matchScenario = cases.find((c) => c.id === targetScenarioCode || c.caseCode === targetScenarioCode);
+      if (matchScenario) return matchScenario.id;
+    }
     return pending ? pending.id : cases[0]?.id || '';
   });
 
@@ -353,6 +354,7 @@ export const AdvisorDesk: React.FC = () => {
       );
 
       setSelectedCaseId((prev) => {
+        // Nếu kịch bản đang chọn có trong danh sách thì ưu tiên ca đó
         if (scenarioCase) return scenarioCase.id;
         if (prev && cases.some((c) => c.id === prev)) return prev;
         const pending = cases.find((c) => !c.advisorDecision);
@@ -383,6 +385,34 @@ export const AdvisorDesk: React.FC = () => {
     return () => clearTimeout(timer);
   }, [reminder?.id, reducedMotion, bellMs, reminder]);
 
+  const pendingCases = submittedCases.filter((c) => !c.advisorDecision);
+  const resolvedCases = submittedCases.filter((c) => Boolean(c.advisorDecision));
+
+  // Xác định hồ sơ đang được chọn xử lý trên bàn làm việc
+  let activeCase: SubmittedCase | null = null;
+  if (filter === 'pending') {
+    if (pendingCases.length > 0) {
+      const appScenarioId = (scenarioId || '').toUpperCase();
+      const targetScenarioCode = appScenarioId ? `BL-2026-${appScenarioId}` : '';
+      activeCase =
+        pendingCases.find((c) => c.id === selectedCaseId) ||
+        (targetScenarioCode ? pendingCases.find((c) => c.id === targetScenarioCode || c.caseCode === targetScenarioCode) : null) ||
+        pendingCases[0];
+    }
+  } else if (filter === 'resolved') {
+    if (resolvedCases.length > 0) {
+      const appScenarioId = (scenarioId || '').toUpperCase();
+      const targetScenarioCode = appScenarioId ? `BL-2026-${appScenarioId}` : '';
+      activeCase =
+        resolvedCases.find((c) => c.id === selectedCaseId) ||
+        (targetScenarioCode ? resolvedCases.find((c) => c.id === targetScenarioCode || c.caseCode === targetScenarioCode) : null) ||
+        resolvedCases[0];
+    }
+  } else {
+    activeCase =
+      submittedCases.find((c) => c.id === selectedCaseId) || submittedCases[0] || null;
+  }
+
   const handleSelectCase = (id: string) => {
     sfx.playPaper();
     setSelectedCaseId(id);
@@ -391,6 +421,29 @@ export const AdvisorDesk: React.FC = () => {
     const target = submittedCases.find((c) => c.id === id);
     if (target) {
       useAppStore.getState().setCaseCode(target.caseCode);
+      if (filter === 'pending' && target.advisorDecision) {
+        setFilter('resolved');
+      } else if (filter === 'resolved' && !target.advisorDecision) {
+        setFilter('pending');
+      }
+    }
+  };
+
+  const handleFilterChange = (newFilter: 'pending' | 'resolved' | 'all') => {
+    sfx.playPaper();
+    setFilter(newFilter);
+    if (newFilter === 'pending') {
+      const pending = submittedCases.filter((c) => !c.advisorDecision);
+      if (pending.length > 0 && !pending.some((c) => c.id === selectedCaseId)) {
+        setSelectedCaseId(pending[0].id);
+        useAppStore.getState().setCaseCode(pending[0].caseCode);
+      }
+    } else if (newFilter === 'resolved') {
+      const resolved = submittedCases.filter((c) => Boolean(c.advisorDecision));
+      if (resolved.length > 0 && !resolved.some((c) => c.id === selectedCaseId)) {
+        setSelectedCaseId(resolved[0].id);
+        useAppStore.getState().setCaseCode(resolved[0].caseCode);
+      }
     }
   };
 
@@ -399,8 +452,7 @@ export const AdvisorDesk: React.FC = () => {
     return <DeskEmpty deskName="Bàn Cố vấn học tập" reason="not-submitted" />;
   }
 
-  const selectedCase =
-    submittedCases.find((c) => c.id === selectedCaseId) || submittedCases[0];
+  const selectedCase = activeCase || submittedCases[0];
 
   const handleAsk = useCallback(async () => {
     if (!selectedCase) return;
@@ -448,11 +500,10 @@ export const AdvisorDesk: React.FC = () => {
   };
 
   const isCaseProcessed =
-    selectedCase.advisorDecision === 'confirmed' ||
-    selectedCase.advisorDecision === 'declined';
+    Boolean(selectedCase.advisorDecision);
 
   // Khi hồ sơ đã được Cố vấn đóng dấu xử lý xong
-  if (isCaseProcessed) {
+  if (isCaseProcessed && filter !== 'pending') {
     const safeAdvisorStatus: 'confirmed' | 'declined' =
       selectedCase.advisorDecision === 'declined' ? 'declined' : 'confirmed';
 
@@ -471,6 +522,8 @@ export const AdvisorDesk: React.FC = () => {
         <AdvisorCaseDocketList
           cases={submittedCases}
           selectedId={selectedCase.id}
+          filter={filter}
+          onFilterChange={handleFilterChange}
           onSelect={handleSelectCase}
         />
 
@@ -480,7 +533,80 @@ export const AdvisorDesk: React.FC = () => {
           advisorStatus={safeAdvisorStatus}
           caseCode={selectedCase.caseCode}
           day={selectedCase.day || view.day || 0}
+          remainingPendingCount={pendingCases.length}
+          onContinueNext={
+            pendingCases.length > 0
+              ? () => {
+                  handleFilterChange('pending');
+                  handleSelectCase(pendingCases[0].id);
+                }
+              : undefined
+          }
         />
+      </div>
+    );
+  }
+
+  // Trường hợp tab Chờ duyệt nhưng không còn hồ sơ nào chờ
+  if (filter === 'pending' && pendingCases.length === 0) {
+    return (
+      <div
+        className="desk-page advisor-portal-page"
+        style={{
+          width: '100%',
+          maxWidth: '980px',
+          margin: '0 auto',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 16,
+        }}
+      >
+        <AdvisorCaseDocketList
+          cases={submittedCases}
+          selectedId=""
+          filter={filter}
+          onFilterChange={handleFilterChange}
+          onSelect={handleSelectCase}
+        />
+
+        <Paper
+          className="portal-docket-paper"
+          elevated
+          width="100%"
+          style={{
+            padding: '36px 24px',
+            textAlign: 'center',
+            background: 'var(--paper)',
+            borderLeft: '5px solid var(--stamp-green)',
+          }}
+        >
+          <div style={{ fontSize: 36, marginBottom: 8 }}>✓</div>
+          <h3 style={{ fontFamily: 'var(--font-paper)', fontSize: 18, color: 'var(--ink)', margin: '0 0 8px' }}>
+            ĐÃ HOÀN TẤT TOÀN BỘ HỒ SƠ CHỜ DUYỆT
+          </h3>
+          <p style={{ color: 'var(--ink-soft)', fontSize: 14, maxWidth: 500, margin: '0 auto 18px', lineHeight: 1.5 }}>
+            Hiện không có hồ sơ nào đang chờ Cố vấn học tập xem xét. Mọi hồ sơ đã được thẩm tra và chuyển tiếp đúng quy trình BPMN 2.0.
+          </p>
+          {resolvedCases.length > 0 && (
+            <button
+              type="button"
+              onClick={() => handleFilterChange('resolved')}
+              style={{
+                padding: '8px 18px',
+                backgroundColor: 'var(--desk-900)',
+                color: 'var(--amber)',
+                border: '1.5px solid var(--amber)',
+                borderRadius: 'var(--radius-sm)',
+                fontFamily: 'var(--font-paper)',
+                fontWeight: 'bold',
+                fontSize: 14,
+                cursor: 'var(--cursor-pointer)',
+              }}
+            >
+              📁 Xem danh sách hồ sơ đã giải quyết ({resolvedCases.length})
+            </button>
+          )}
+        </Paper>
       </div>
     );
   }
@@ -503,6 +629,8 @@ export const AdvisorDesk: React.FC = () => {
       <AdvisorCaseDocketList
         cases={submittedCases}
         selectedId={selectedCase.id}
+        filter={filter}
+        onFilterChange={handleFilterChange}
         onSelect={handleSelectCase}
       />
 

@@ -25,13 +25,12 @@ const DEFAULT_SIGNER = 'PGS.TS. Trần Đình Khôi - Hiệu trưởng';
 const PrincipalCaseDocketList: React.FC<{
   cases: SubmittedCase[];
   selectedId: string;
+  filter: 'pending' | 'resolved' | 'all';
+  onFilterChange: (filter: 'pending' | 'resolved' | 'all') => void;
   onSelect: (id: string) => void;
-}> = ({ cases, selectedId, onSelect }) => {
+}> = ({ cases, selectedId, filter, onFilterChange, onSelect }) => {
   const pendingCases = cases.filter((c) => !c.principalSigned);
   const resolvedCases = cases.filter((c) => Boolean(c.principalSigned));
-
-  // Mặc định chọn tab "Chờ ký số" nếu có hồ sơ chờ, ngược lại tab "Tất cả"
-  const [filter, setFilter] = useState<'pending' | 'resolved' | 'all'>('pending');
 
   const displayedCases =
     filter === 'pending'
@@ -91,7 +90,7 @@ const PrincipalCaseDocketList: React.FC<{
         <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
           <button
             type="button"
-            onClick={() => setFilter('pending')}
+            onClick={() => onFilterChange('pending')}
             style={{
               padding: '5px 12px',
               fontSize: 12.5,
@@ -110,7 +109,7 @@ const PrincipalCaseDocketList: React.FC<{
 
           <button
             type="button"
-            onClick={() => setFilter('resolved')}
+            onClick={() => onFilterChange('resolved')}
             style={{
               padding: '5px 12px',
               fontSize: 12.5,
@@ -129,7 +128,7 @@ const PrincipalCaseDocketList: React.FC<{
 
           <button
             type="button"
-            onClick={() => setFilter('all')}
+            onClick={() => onFilterChange('all')}
             style={{
               padding: '5px 12px',
               fontSize: 12.5,
@@ -308,17 +307,17 @@ export const PrincipalDesk: React.FC = () => {
   const [submittedCases, setSubmittedCases] = useState<SubmittedCase[]>(() =>
     getPrincipalCases()
   );
+  const [filter, setFilter] = useState<'pending' | 'resolved' | 'all'>('pending');
   const [selectedCaseId, setSelectedCaseId] = useState<string>(() => {
     const cases = getPrincipalCases();
     const appScenarioId = (useAppStore.getState().scenarioId || '').toUpperCase();
     const targetScenarioCode = appScenarioId ? `BL-2026-${appScenarioId}` : '';
-    const matching = cases.find((c) => c.id === targetScenarioCode || c.caseCode === targetScenarioCode);
-    if (matching) return matching.id;
-
-    // Ưu tiên chọn hồ sơ đang chờ BGH ký số
     const pendingBgh = cases.find((c) => !c.principalSigned);
-    if (pendingBgh) return pendingBgh.id;
-    return cases[0]?.id || '';
+    if (targetScenarioCode) {
+      const match = cases.find((c) => c.id === targetScenarioCode || c.caseCode === targetScenarioCode);
+      if (match) return match.id;
+    }
+    return pendingBgh ? pendingBgh.id : cases[0]?.id || '';
   });
 
   const signerName = view.scenario?.directorPlan.principalSigner ?? DEFAULT_SIGNER;
@@ -382,6 +381,34 @@ export const PrincipalDesk: React.FC = () => {
     setSigning((s) => nextSigningState(s, action));
   }, []);
 
+  const pendingCases = submittedCases.filter((c) => !c.principalSigned);
+  const resolvedCases = submittedCases.filter((c) => Boolean(c.principalSigned));
+
+  // Xác định hồ sơ đang chọn hiển thị trên bàn làm việc
+  let activeCase: SubmittedCase | null = null;
+  if (filter === 'pending') {
+    if (pendingCases.length > 0) {
+      const appScenarioId = (scenarioId || '').toUpperCase();
+      const targetScenarioCode = appScenarioId ? `BL-2026-${appScenarioId}` : '';
+      activeCase =
+        pendingCases.find((c) => c.id === selectedCaseId) ||
+        (targetScenarioCode ? pendingCases.find((c) => c.id === targetScenarioCode || c.caseCode === targetScenarioCode) : null) ||
+        pendingCases[0];
+    }
+  } else if (filter === 'resolved') {
+    if (resolvedCases.length > 0) {
+      const appScenarioId = (scenarioId || '').toUpperCase();
+      const targetScenarioCode = appScenarioId ? `BL-2026-${appScenarioId}` : '';
+      activeCase =
+        resolvedCases.find((c) => c.id === selectedCaseId) ||
+        (targetScenarioCode ? resolvedCases.find((c) => c.id === targetScenarioCode || c.caseCode === targetScenarioCode) : null) ||
+        resolvedCases[0];
+    }
+  } else {
+    activeCase =
+      submittedCases.find((c) => c.id === selectedCaseId) || submittedCases[0] || null;
+  }
+
   const handleSelectCase = (id: string) => {
     sfx.playPaper();
     setSelectedCaseId(id);
@@ -390,6 +417,29 @@ export const PrincipalDesk: React.FC = () => {
     const target = submittedCases.find((c) => c.id === id);
     if (target) {
       useAppStore.getState().setCaseCode(target.caseCode);
+      if (filter === 'pending' && target.principalSigned) {
+        setFilter('resolved');
+      } else if (filter === 'resolved' && !target.principalSigned) {
+        setFilter('pending');
+      }
+    }
+  };
+
+  const handleFilterChange = (newFilter: 'pending' | 'resolved' | 'all') => {
+    sfx.playPaper();
+    setFilter(newFilter);
+    if (newFilter === 'pending') {
+      const pending = submittedCases.filter((c) => !c.principalSigned);
+      if (pending.length > 0 && !pending.some((c) => c.id === selectedCaseId)) {
+        setSelectedCaseId(pending[0].id);
+        useAppStore.getState().setCaseCode(pending[0].caseCode);
+      }
+    } else if (newFilter === 'resolved') {
+      const resolved = submittedCases.filter((c) => Boolean(c.principalSigned));
+      if (resolved.length > 0 && !resolved.some((c) => c.id === selectedCaseId)) {
+        setSelectedCaseId(resolved[0].id);
+        useAppStore.getState().setCaseCode(resolved[0].caseCode);
+      }
     }
   };
 
@@ -397,8 +447,7 @@ export const PrincipalDesk: React.FC = () => {
     return <DeskEmpty deskName="Bàn Ban Giám hiệu" reason="upcoming" />;
   }
 
-  const selectedCase =
-    submittedCases.find((c) => c.id === selectedCaseId) || submittedCases[0];
+  const selectedCase = activeCase || submittedCases[0];
 
   // Chuẩn bị DecisionDoc cho hồ sơ
   const doc: DecisionDoc = selectedCase.decisionDoc ?? {
@@ -451,6 +500,8 @@ export const PrincipalDesk: React.FC = () => {
         <PrincipalCaseDocketList
           cases={submittedCases}
           selectedId={selectedCase.id}
+          filter={filter}
+          onFilterChange={handleFilterChange}
           onSelect={handleSelectCase}
         />
         <Paper className="portal-docket-paper" elevated width="100%" style={{ padding: 24, borderLeft: '5px solid var(--stamp-red)' }}>
@@ -472,7 +523,7 @@ export const PrincipalDesk: React.FC = () => {
   }
 
   // Khi hồ sơ đã được BGH ký số hoàn tất
-  if (isCaseSigned) {
+  if (isCaseSigned && filter !== 'pending') {
     return (
       <div
         className="desk-page principal-portal-page"
@@ -488,6 +539,8 @@ export const PrincipalDesk: React.FC = () => {
         <PrincipalCaseDocketList
           cases={submittedCases}
           selectedId={selectedCase.id}
+          filter={filter}
+          onFilterChange={handleFilterChange}
           onSelect={handleSelectCase}
         />
         <PrincipalPortalResult
@@ -495,7 +548,80 @@ export const PrincipalDesk: React.FC = () => {
           signerName={selectedCase.principalSignerName ?? signerName}
           caseCode={selectedCase.caseCode}
           day={selectedCase.day || view.day || 0}
+          remainingPendingCount={pendingCases.length}
+          onContinueNext={
+            pendingCases.length > 0
+              ? () => {
+                  handleFilterChange('pending');
+                  handleSelectCase(pendingCases[0].id);
+                }
+              : undefined
+          }
         />
+      </div>
+    );
+  }
+
+  // Trường hợp tab Chờ ký số nhưng không còn hồ sơ nào chờ
+  if (filter === 'pending' && pendingCases.length === 0) {
+    return (
+      <div
+        className="desk-page principal-portal-page"
+        style={{
+          width: '100%',
+          maxWidth: '980px',
+          margin: '0 auto',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 16,
+        }}
+      >
+        <PrincipalCaseDocketList
+          cases={submittedCases}
+          selectedId=""
+          filter={filter}
+          onFilterChange={handleFilterChange}
+          onSelect={handleSelectCase}
+        />
+
+        <Paper
+          className="portal-docket-paper"
+          elevated
+          width="100%"
+          style={{
+            padding: '36px 24px',
+            textAlign: 'center',
+            background: 'var(--paper)',
+            borderLeft: '5px solid var(--stamp-green)',
+          }}
+        >
+          <div style={{ fontSize: 36, marginBottom: 8 }}>✓</div>
+          <h3 style={{ fontFamily: 'var(--font-paper)', fontSize: 18, color: 'var(--ink)', margin: '0 0 8px' }}>
+            ĐÃ BAN HÀNH TOÀN BỘ QUYẾT ĐỊNH
+          </h3>
+          <p style={{ color: 'var(--ink-soft)', fontSize: 14, maxWidth: 500, margin: '0 auto 18px', lineHeight: 1.5 }}>
+            Hiện không có hồ sơ nào đang chờ Ban Giám hiệu ký số Quyết định. Mọi văn bản đã được chứng thực PKI và ban hành về Cổng Sinh viên.
+          </p>
+          {resolvedCases.length > 0 && (
+            <button
+              type="button"
+              onClick={() => handleFilterChange('resolved')}
+              style={{
+                padding: '8px 18px',
+                backgroundColor: 'var(--desk-900)',
+                color: 'var(--amber)',
+                border: '1.5px solid var(--amber)',
+                borderRadius: 'var(--radius-sm)',
+                fontFamily: 'var(--font-paper)',
+                fontWeight: 'bold',
+                fontSize: 14,
+                cursor: 'var(--cursor-pointer)',
+              }}
+            >
+              📁 Xem danh sách Quyết định đã ban hành ({resolvedCases.length})
+            </button>
+          )}
+        </Paper>
       </div>
     );
   }
@@ -516,6 +642,8 @@ export const PrincipalDesk: React.FC = () => {
       <PrincipalCaseDocketList
         cases={submittedCases}
         selectedId={selectedCase.id}
+        filter={filter}
+        onFilterChange={handleFilterChange}
         onSelect={handleSelectCase}
       />
 

@@ -77,7 +77,7 @@ export const ScenarioPicker: React.FC = () => {
             key={sc.id}
             className="scenario-card"
             onClick={() => {
-              ensureScenarioInCaseRegistry(sc);
+              ensureScenarioInCaseRegistry(sc, true);
               useAppStore.getState().setCaseCode(`BL-2026-${sc.id.toUpperCase()}`);
               initScenario(sc.id);
               setScenario(sc.id);

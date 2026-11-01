@@ -382,8 +382,9 @@ export function updateCasePrincipalSign(
  * Đảm bảo một kịch bản Demo (S1 - S6) đã được nạp vào Sổ tiếp nhận hồ sơ.
  * Giúp các bàn nghiệp vụ (Cố vấn, CTSV, BGH) thấy ngay hồ sơ của kịch bản đang chọn
  * để thẩm định và phê duyệt trực tiếp.
+ * @param resetToPending Nếu true, sẽ đặt lại ca này về trạng thái chờ duyệt mới nhất (dùng khi người dùng chọn kịch bản trong Demo).
  */
-export function ensureScenarioInCaseRegistry(scenario: ScenarioConfig): SubmittedCase {
+export function ensureScenarioInCaseRegistry(scenario: ScenarioConfig, resetToPending = false): SubmittedCase {
   const all = getAllSubmittedCases();
   const caseId = `BL-2026-${scenario.id.toUpperCase()}`;
   const existingIdx = all.findIndex(
@@ -395,13 +396,29 @@ export function ensureScenarioInCaseRegistry(scenario: ScenarioConfig): Submitte
 
   if (existingIdx >= 0) {
     const existing = all[existingIdx];
-    // Nếu ca chưa qua bước Cố vấn duyệt, cập nhật dữ liệu mới nhất từ scenario
-    if (!existing.advisorDecision) {
-      existing.form = formCopy;
-      existing.evidence = evidenceCopy;
-      existing.attachedEvidenceIds = evidenceCopy.map((e) => e.id);
-      saveAllSubmittedCases(all);
+    existing.form = formCopy;
+    existing.evidence = evidenceCopy;
+    existing.attachedEvidenceIds = evidenceCopy.map((e) => e.id);
+
+    if (resetToPending) {
+      existing.status = 'pending_advisor';
+      delete existing.advisorDecision;
+      delete existing.advisorDecisionAt;
+      delete existing.advisorNotes;
+      delete existing.ctsvDecision;
+      delete existing.ctsvDecisionAt;
+      delete existing.ctsvMarks;
+      delete existing.ctsvNotes;
+      existing.principalSigned = false;
+      delete existing.principalSignedAt;
+      delete existing.principalSignerName;
+      delete existing.decisionDoc;
     }
+
+    // Đẩy ca kịch bản đang chọn lên đầu danh sách để dễ theo dõi
+    all.splice(existingIdx, 1);
+    all.unshift(existing);
+    saveAllSubmittedCases(all);
     return existing;
   }
 

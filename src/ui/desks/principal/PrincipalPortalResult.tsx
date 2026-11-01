@@ -12,6 +12,8 @@ interface PrincipalPortalResultProps {
   signerName: string;
   caseCode: string;
   day: number;
+  remainingPendingCount?: number;
+  onContinueNext?: () => void;
 }
 
 export const PrincipalPortalResult: React.FC<PrincipalPortalResultProps> = ({
@@ -19,6 +21,8 @@ export const PrincipalPortalResult: React.FC<PrincipalPortalResultProps> = ({
   signerName,
   caseCode,
   day,
+  remainingPendingCount,
+  onContinueNext,
 }) => {
   const [showDocument, setShowDocument] = useState(true);
   const logout = useAuthStore((s) => s.logout);
@@ -128,6 +132,22 @@ export const PrincipalPortalResult: React.FC<PrincipalPortalResultProps> = ({
 
         {/* Thanh công cụ tác vụ của Ban Giám hiệu */}
         <div className="portal-actions-row">
+          {onContinueNext && remainingPendingCount !== undefined && remainingPendingCount > 0 && (
+            <button
+              type="button"
+              className="portal-btn-primary"
+              onClick={onContinueNext}
+              style={{
+                backgroundColor: 'var(--amber)',
+                color: 'var(--desk-900)',
+                border: '1.5px solid var(--amber)',
+                fontWeight: 'bold',
+              }}
+            >
+              <span>➔ Ký số Quyết định tiếp theo (còn {remainingPendingCount} hồ sơ chờ)</span>
+            </button>
+          )}
+
           <button
             type="button"
             className={`portal-btn-primary ${showDocument ? 'active' : ''}`}
