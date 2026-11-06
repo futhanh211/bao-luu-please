@@ -58,7 +58,7 @@ export function isLiveAvailable(): boolean {
   const env = import.meta.env;
   const customKey = getCustomGeminiKey();
   const key = (customKey || (env?.VITE_GEMINI_API_KEY ?? '')).trim();
-  const model = (env?.VITE_GEMINI_MODEL ?? 'gemini-1.5-flash').trim();
+  const model = (env?.VITE_GEMINI_MODEL ?? 'gemini-3-flash-preview').trim();
   return key.length > 0 && model.length > 0;
 }
 
@@ -67,7 +67,7 @@ export function createLiveAIFromEnv(): LiveAIProvider | null {
   const env = import.meta.env;
   const customKey = getCustomGeminiKey();
   const key = (customKey || (env?.VITE_GEMINI_API_KEY ?? '')).trim();
-  const model = (env?.VITE_GEMINI_MODEL ?? 'gemini-1.5-flash').trim();
+  const model = (env?.VITE_GEMINI_MODEL ?? 'gemini-3-flash-preview').trim();
   return new LiveAIProvider(key, model);
 }
 
@@ -229,8 +229,8 @@ export async function testGeminiConnection(
   customModel?: string
 ): Promise<{ success: boolean; latencyMs: number; message: string; modelUsed: string }> {
   const env = typeof import.meta !== 'undefined' ? import.meta.env : ({} as Record<string, string>);
-  const key = (customKey || env?.VITE_GEMINI_API_KEY || '').trim();
-  const model = (customModel || env?.VITE_GEMINI_MODEL || 'gemini-1.5-flash').trim();
+  const key = (customKey !== undefined ? customKey : (env?.VITE_GEMINI_API_KEY || '')).trim();
+  const model = (customModel || env?.VITE_GEMINI_MODEL || 'gemini-3-flash-preview').trim();
 
   if (!key) {
     return {

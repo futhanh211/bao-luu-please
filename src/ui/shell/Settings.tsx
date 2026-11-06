@@ -34,7 +34,7 @@ export const Settings: React.FC = () => {
   const setAiMode = usePlaybackStore((s) => s.setAiMode);
 
   const [geminiKey, setGeminiKey] = useState<string>(() => getCustomGeminiKey() || '');
-  const [geminiModel, setGeminiModel] = useState<string>(() => (import.meta.env.VITE_GEMINI_MODEL || 'gemini-1.5-flash').trim());
+  const [geminiModel, setGeminiModel] = useState<string>(() => (import.meta.env.VITE_GEMINI_MODEL || 'gemini-3-flash-preview').trim());
   const [aiTesting, setAiTesting] = useState(false);
   const [aiFeedback, setAiFeedback] = useState<string | null>(null);
 
@@ -241,9 +241,9 @@ export const Settings: React.FC = () => {
                     background: '#fff',
                   }}
                 >
-                  <option value="gemini-1.5-flash">gemini-1.5-flash (Khuyên dùng - Nhanh & Nhẹ)</option>
-                  <option value="gemini-2.0-flash">gemini-2.0-flash (Mới nhất)</option>
-                  <option value="gemini-1.5-pro">gemini-1.5-pro (Mô hình lớn)</option>
+                  <option value="gemini-3-flash-preview">gemini-3-flash-preview (Khuyên dùng - Nhanh & Mới nhất)</option>
+                  <option value="gemini-flash-lite-latest">gemini-flash-lite-latest (Siêu nhẹ)</option>
+                  <option value="gemini-2.5-pro">gemini-2.5-pro (Mô hình lớn)</option>
                 </select>
               </div>
 
