@@ -41,6 +41,19 @@ export class AIService implements AIProvider {
     return true;
   }
 
+  public setLiveProvider(live: AIProvider | null): void {
+    this.live = live;
+    if (this.mode === 'live') {
+      this.setSource(live ? 'live' : 'mock');
+    }
+  }
+
+  public resetSource(): void {
+    if (this.mode === 'live' && this.live) {
+      this.setSource('live');
+    }
+  }
+
   public onSourceChange(fn: SourceListener): () => void {
     this.sourceListeners.add(fn);
     return () => this.sourceListeners.delete(fn);

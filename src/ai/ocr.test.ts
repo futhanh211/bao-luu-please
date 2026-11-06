@@ -312,4 +312,45 @@ describe('AI OCR Document Scanner (Session 1)', () => {
       expect(payload.user).toContain('TỆP KHÔNG CÓ DỮ LIỆU ẢNH TRỰC TIẾP');
     });
   });
+
+  describe('5. Gemini Vision & Strict Diagram Rejection (Loại bỏ ảnh sơ đồ draw.io / ERD)', () => {
+    const drawioDiagramFile: UploadedEvidenceFile = {
+      name: 'bonobakeryFINAL-PAGE1.drawio.png',
+      size: 1024 * 1800,
+      type: 'image/png',
+      dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+    };
+
+    it('Nhận diện từ khóa draw.io/diagram là tệp rác không liên quan', async () => {
+      const { isGarbageEvidenceText, detectEvidenceCategory, evaluateEvidenceFile, buildMockOcrResult } = await import('./mockTemplates');
+      expect(isGarbageEvidenceText(drawioDiagramFile.name)).toBe(true);
+
+      const detected = detectEvidenceCategory(drawioDiagramFile, 'military');
+      expect(detected).toBeNull();
+
+      const evalRes = evaluateEvidenceFile(drawioDiagramFile, 'military');
+      expect(evalRes.valid).toBe(false);
+      expect(evalRes.reason).toContain('không liên quan');
+
+      const mockRes = buildMockOcrResult(drawioDiagramFile, 'military');
+      expect(mockRes.confidence).toBeLessThan(0.6);
+      expect(mockRes.extractedCount).toBe(0);
+    });
+
+    it('Gemini Vision trả JSON từ chối khi phát hiện ảnh sơ đồ / không phải văn bản hành chính', () => {
+      const geminiRejectResponse = {
+        isValidDocument: false,
+        documentType: 'unknown',
+        confidence: 0.1,
+        summary: 'Tài liệu bị từ chối: Hình ảnh là sơ đồ cơ sở dữ liệu draw.io, không phải văn bản hành chính hợp lệ.',
+        data: {},
+      };
+
+      const result = validateOcrResult(geminiRejectResponse, 'military');
+      expect(result).not.toBeNull();
+      expect(result?.confidence).toBe(0.1);
+      expect(result?.extractedCount).toBe(0);
+      expect(result?.summary).toContain('draw.io');
+    });
+  });
 });

@@ -84,7 +84,7 @@ export function isGarbageEvidenceText(text: string): boolean {
     'wallpaper',
     'hinh nen',
     'unnamed',
-    // Đồ họa kỹ thuật, AI, kỹ năng, mạng xã hội, infographic
+    // Đồ họa kỹ thuật, AI, kỹ năng, mạng xã hội, infographic, sơ đồ diagram
     'claude',
     'skills',
     'skill',
@@ -100,6 +100,20 @@ export function isGarbageEvidenceText(text: string): boolean {
     'ranking',
     'bang xep hang',
     'yeu thich',
+    'drawio',
+    'draw.io',
+    'erd',
+    'flowchart',
+    'schema',
+    'database',
+    'csdl',
+    'so do',
+    'bieu do',
+    'architecture',
+    'wireframe',
+    'mockup',
+    'uml',
+    'usecase',
   ];
 
   if (Boolean(text.match(/\d+_\d+_\d+_n\.(jpg|jpeg|png|webp)$/i))) {

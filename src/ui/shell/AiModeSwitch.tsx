@@ -9,13 +9,17 @@ export const AiModeSwitch: React.FC = () => {
   const liveAvailable = useAppStore((s) => s.aiLiveAvailable);
   const aiBusy = useAppStore((s) => s.aiBusy);
   const setAiMode = usePlaybackStore((s) => s.setAiMode);
+  const setSettingsOpen = useAppStore((s) => s.setSettingsOpen);
 
   const title = liveAvailable
     ? `Đổi nguồn AI (đang chọn ${aiMode.toUpperCase()}) — bấm để chuyển`
-    : 'Chưa cấu hình VITE_GEMINI_API_KEY trong .env.local — đang chạy MOCK';
+    : 'Chưa cấu hình Gemini API Key — bấm để mở Cài đặt gắn Key';
 
   const handleClick = (): void => {
-    if (!liveAvailable) return;
+    if (!liveAvailable) {
+      setSettingsOpen(true);
+      return;
+    }
     setAiMode(aiMode === 'live' ? 'mock' : 'live');
   };
 
@@ -25,7 +29,6 @@ export const AiModeSwitch: React.FC = () => {
       className="ai-mode-switch"
       data-live={liveAvailable}
       data-busy={aiBusy ? 'true' : 'false'}
-      aria-disabled={!liveAvailable}
       onClick={handleClick}
       title={title}
     >

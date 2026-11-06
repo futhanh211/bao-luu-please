@@ -2,6 +2,62 @@
 
 Mỗi session thêm một mục theo mẫu:
 
+## 2026-11-06 · Bổ sung lại nút "Tạo đơn mẫu (ĐHĐN)" tại khu vực quét OCR
+- Đã làm:
+  - **Khôi phục nút tạo đơn mẫu tại khu vực OCR:**
+    - `src/ui/desks/student/EvidenceFormModal.tsx`:
+      + Bổ sung nút `📄 Tạo đơn mẫu (ĐHĐN)` ngay trên thanh tiêu đề của khối "Tệp minh chứng & AI Quét (OCR)".
+      + Hàm `handleLoadSample` kích hoạt tạo tệp SVG chuẩn của Đại học Đà Nẵng theo đúng danh mục đang chọn (Giấy ra viện, Lệnh gọi nhập ngũ, Xác nhận hoàn cảnh, Đơn giải trình) mang tên sinh viên đang đăng nhập.
+      + Cho phép giảng viên thử nghiệm nhanh toàn bộ quy trình AI OCR và tự động điền form 1-chạm mà không cần tìm tệp ngoài.
+      + Cập nhật hướng dẫn trong khung kéo thả: `Hoặc bấm nút "Tạo đơn mẫu (ĐHĐN)" phía trên để thử nghiệm nhanh`.
+  - **Kiểm thử tự động:**
+    - Cập nhật `src/ui/desks/student/evidenceFormModal.test.tsx` kiểm tra sự tồn tại và hiển thị đúng của nút `Tạo đơn mẫu (ĐHĐN)`.
+    - Toàn bộ 44 test suites (277 tests) pass 100%. `npm run build` thành công code 0.
+- File chính:
+  - `src/ui/desks/student/EvidenceFormModal.tsx`
+  - `src/ui/desks/student/evidenceFormModal.test.tsx`
+  - `docs/PROGRESS.md`
+- ASSUMPTION: Giữ nguyên toàn bộ logic quét OCR, Gemini Vision Live và hệ thống chống hồ sơ rác; chỉ khôi phục nút tạo đơn mẫu đúng vị trí theo yêu cầu.
+- Nợ / việc dở: Không.
+- Đã chạy: `npm test` (44/44 suites, 277/277 passed) · `npm run build` (code 0).
+
+---
+
+## 2026-11-06 · Tích hợp trực tiếp Google Gemini Multimodal Vision vào tính năng Quét OCR & Loại bỏ sơ đồ draw.io / ERD
+- Đã làm:
+  - **Khắc phục triệt để lỗi người dùng tải ảnh sơ đồ hệ thống (draw.io / ERD) bị nhận diện nhầm thành lệnh nghĩa vụ quân sự:**
+    - Người dùng tải tệp `bonobakeryFINAL-PAGE1.drawio.png` (sơ đồ cơ sở dữ liệu draw.io). Do trước đó chưa cấu hình Gemini API Key vào trình duyệt và thuật toán mock cũ thiếu từ khóa sơ đồ/draw.io nên hệ thống tự động fallback phân bổ nhầm vào hồ sơ Lệnh gọi nhập ngũ Hải Châu.
+    - Cập nhật `isGarbageEvidenceText` trong `src/ai/mockTemplates.ts`: Bổ sung toàn bộ từ khóa đồ họa/kỹ thuật: `drawio`, `draw.io`, `erd`, `diagram`, `flowchart`, `schema`, `database`, `csdl`, `so do`, `bieu do`, `architecture`, `wireframe`, `mockup`, `uml`, `usecase`.
+    - Cập nhật `evaluateEvidenceFile` và `buildMockOcrResult`: Tệp sơ đồ kỹ thuật bị từ chối tuyệt đối (`confidence: 0.1`, `extractedCount: 0`, không sinh bất kỳ trường thông tin giả lập nào).
+  - **Tích hợp Gemini Multimodal Vision trực tiếp (Live API OCR) trên giao diện sinh viên:**
+    - `src/ui/desks/student/EvidenceFormModal.tsx`:
+      + Bổ sung thanh trạng thái **Gemini Vision** trực quan ngay phía trên khung quét tài liệu: hiển thị rõ trạng thái `⚡ Gemini Vision LIVE (Đang đọc ảnh thật trực tiếp qua API Google Gemini)` hoặc `💡 Gemini Vision: Đang ở chế độ Mock giả lập`.
+      + Tích hợp hộp nhập nhanh **Gemini API Key trực tiếp ngay trong modal**: Sinh viên/người dùng có thể dán API Key (`AIzaSy...`) lấy từ Google AI Studio và bấm **"Lưu & Kích hoạt"** trong 1 giây mà không cần rời màn hình hay cấu hình thủ công.
+      + Nút quét OCR tự động cập nhật nhãn `📷 QUÉT BẰNG GEMINI VISION` và `⏳ GEMINI VISION ĐANG ĐỌC ẢNH...`.
+      + Khi có API Key, hệ thống gửi trực tiếp luồng base64 điểm ảnh tới Google Gemini API (`scanDocument`), cho phép Gemini Vision phân tích nội dung thực tế trên ảnh để đọc chữ, nhận diện dấu mộc đỏ, phân loại tài liệu hoặc từ chối chính xác nếu ảnh là sơ đồ/ảnh không hợp lệ.
+  - **Tối ưu hóa thời gian chờ (Timeout) và xử lý Prompt cho Multimodal OCR:**
+    - `src/ai/live.ts`: Tăng timeout cho tác vụ OCR đa phương thức lên 15 giây (`scanDocument(file, optionKey)`), tránh bị timeout 4s giả lập của tác vụ văn bản thông thường khi tải ảnh dung lượng lớn lên mạng.
+    - `src/ai/prompts.ts`: Nâng cấp prompt `SYSTEM_PROMPTS.ocrScan`, hướng dẫn Gemini Vision phân tích điểm ảnh thực tế, từ chối trả về `isValidDocument: false` nếu là sơ đồ cơ sở dữ liệu/ảnh chụp màn hình/ứng dụng, và chỉ trích xuất dữ liệu khi là văn bản hành chính in trên giấy có dấu mộc đỏ.
+    - `src/ai/validate.ts`: Xử lý phản hồi `isValidDocument: false` hoặc `documentType: "unknown"` từ Gemini Vision để loại bỏ hồ sơ rác ngay lập tức với thông điệp rõ ràng cho người dùng.
+    - `src/ai/service.ts`: Bổ sung `setLiveProvider` và `resetSource` giúp AIService khôi phục ngay trạng thái Live khi người dùng nhập API key.
+  - **Kiểm thử tự động:**
+    - Bổ sung test suite số 5 trong `src/ai/ocr.test.ts` kiểm thử việc loại bỏ tệp `bonobakeryFINAL-PAGE1.drawio.png` và xác thực JSON từ chối từ Gemini Vision.
+    - Toàn bộ 44 test suites và 277 tests pass 100%. `npm run build` thành công code 0.
+- File chính:
+  - `src/ai/prompts.ts`
+  - `src/ai/validate.ts`
+  - `src/ai/live.ts`
+  - `src/ai/service.ts`
+  - `src/ai/mockTemplates.ts`
+  - `src/ui/desks/student/EvidenceFormModal.tsx`
+  - `src/ai/ocr.test.ts`
+  - `docs/PROGRESS.md`
+- ASSUMPTION: Gemini Vision API được gọi trực tiếp bằng `inlineData` Base64 từ trình duyệt tới endpoint v1beta của Google Generative Language API; người dùng có thể cấu hình nhanh API Key ngay trong modal hoặc qua file `.env.local`.
+- Nợ / việc dở: Không.
+- Đã chạy: `npm test` (44/44 suites, 277/277 tests passed 100%) · `npm run build` (tsc & vite build thành công code 0).
+
+---
+
 ## 2026-11-06 · Khắc phục triệt để lỗi "quét luôn ra cùng 1 đáp án": Đa dạng hóa thực thể OCR động & Trực quan hóa Live Vision
 - Đã làm:
   - **Nguyên nhân gốc (Root Cause):**

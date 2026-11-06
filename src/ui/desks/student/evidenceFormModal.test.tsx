@@ -61,7 +61,7 @@ const INITIAL_FORM_DATA: StudentDetailedFormData = {
 };
 
 describe('EvidenceFormModal & AI Auto-Fill Integration (Session 3)', () => {
-  it('1. Render form modal ban đầu chưa có tệp: hiển thị khung tải tệp minh chứng và các trường thông tin (không còn nút nạp mẫu)', () => {
+  it('1. Render form modal ban đầu chưa có tệp: hiển thị khung tải tệp minh chứng và nút tạo đơn mẫu', () => {
     const html = renderToStaticMarkup(
       <EvidenceFormModal
         optionKey="medical"
@@ -72,7 +72,7 @@ describe('EvidenceFormModal & AI Auto-Fill Integration (Session 3)', () => {
     );
 
     expect(html).toContain('Tệp minh chứng &amp; AI Quét (OCR)');
-    expect(html).not.toContain('Nạp tệp mẫu (ĐHĐN)');
+    expect(html).toContain('Tạo đơn mẫu (ĐHĐN)');
     expect(html).toContain('Bấm vào đây để chọn tệp ảnh hoặc PDF từ máy tính');
     expect(html).toContain('Bệnh viện cấp giấy');
     expect(html).toContain('Mã bệnh án / Số lưu trữ');

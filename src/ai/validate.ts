@@ -121,6 +121,26 @@ export function validateOcrResult(
   expectedType: StudentEvidenceOptionKey
 ): OcrScanResult | null {
   const docTypeCandidate = asString(raw.documentType);
+  const isValidDoc = raw.isValidDocument !== false;
+
+  // Nếu Gemini Vision phát hiện đây không phải văn bản hành chính hợp lệ (sơ đồ, drawio, infographic, ảnh rác...)
+  if (!isValidDoc || docTypeCandidate === 'unknown') {
+    return {
+      documentType: expectedType,
+      confidence: 0.1,
+      summary:
+        asString(raw.summary) ||
+        'Tài liệu bị từ chối: Hình ảnh không phải văn bản hành chính hợp lệ có giá trị pháp lý.',
+      extractedCount: 0,
+      data: {
+        [expectedType]: {
+          isValidStamp: false,
+        },
+      },
+      fields: [],
+    };
+  }
+
   const documentType: StudentEvidenceOptionKey =
     docTypeCandidate === 'medical' ||
     docTypeCandidate === 'military' ||

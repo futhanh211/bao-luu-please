@@ -108,7 +108,7 @@ export class LiveAIProvider implements AIProvider {
     )}:generateContent`;
   }
 
-  private async generate(bundle: PromptBundle): Promise<string> {
+  private async generate(bundle: PromptBundle, customTimeoutMs?: number): Promise<string> {
     const parts: Array<{ text?: string; inlineData?: { mimeType: string; data: string } }> = [
       { text: bundle.user },
     ];
@@ -131,11 +131,12 @@ export class LiveAIProvider implements AIProvider {
       },
     });
 
+    const timeout = customTimeoutMs ?? this.timeoutMs;
     let lastError: unknown = new LiveAIError('Không gọi được Gemini');
 
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), this.timeoutMs);
+      const timer = setTimeout(() => controller.abort(), timeout);
       try {
         const response = await fetch(this.endpoint(), {
           method: 'POST',
@@ -210,7 +211,8 @@ export class LiveAIProvider implements AIProvider {
     optionKey: StudentEvidenceOptionKey
   ): Promise<OcrScanResult> {
     const payload = buildOcrPayload(file, optionKey);
-    const text = await this.generate(payload);
+    // Timeout cho multimodal Vision đọc ảnh là 15 giây
+    const text = await this.generate(payload, 15000);
     const raw = parseJsonObject(text);
     const result = raw ? validateOcrResult(raw, optionKey) : null;
     if (!result) throw new LiveAIError('Gemini trả JSON OCR không hợp lệ');
