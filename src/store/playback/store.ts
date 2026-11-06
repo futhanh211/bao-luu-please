@@ -616,11 +616,15 @@ export const usePlaybackStore = create<PlaybackStoreState>((set, get) => ({
   },
 
   setAiMode: (mode) => {
+    const liveAvailable = useAppStore.getState().aiLiveAvailable;
+    if (mode === 'live' && !liveAvailable) return false;
     const ai = getActiveAI();
-    if (!ai) return false;
-    const ok = ai.setMode(mode);
-    if (ok) useAppStore.getState().setAiMode(mode);
-    return ok;
+    if (ai) {
+      const ok = ai.setMode(mode);
+      if (!ok) return false;
+    }
+    useAppStore.getState().setAiMode(mode);
+    return true;
   },
 
   /** Ghi vết người quyết khác AI — chỉ ở store/UI, engine không bị đổi hành vi. */

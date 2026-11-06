@@ -66,7 +66,9 @@ export const EvidenceFormModal: React.FC<Props> = ({
 
   // Quản lý trạng thái kết nối Gemini Vision Live
   const [isLiveMode, setIsLiveMode] = useState<boolean>(() => isLiveAvailable());
-  const [apiKeyInput, setApiKeyInput] = useState<string>(() => getCustomGeminiKey() || '');
+  const [apiKeyInput, setApiKeyInput] = useState<string>(
+    () => getCustomGeminiKey() || (import.meta.env.VITE_GEMINI_API_KEY ?? '')
+  );
   const [showApiKeyInput, setShowApiKeyInput] = useState<boolean>(false);
   const [keyFeedbackMsg, setKeyFeedbackMsg] = useState<string | null>(null);
   const [isTestingKey, setIsTestingKey] = useState<boolean>(false);

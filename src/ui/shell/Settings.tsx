@@ -33,7 +33,9 @@ export const Settings: React.FC = () => {
   const liveAvailable = useAppStore((s) => s.aiLiveAvailable);
   const setAiMode = usePlaybackStore((s) => s.setAiMode);
 
-  const [geminiKey, setGeminiKey] = useState<string>(() => getCustomGeminiKey() || '');
+  const [geminiKey, setGeminiKey] = useState<string>(
+    () => getCustomGeminiKey() || (import.meta.env.VITE_GEMINI_API_KEY ?? '')
+  );
   const [geminiModel, setGeminiModel] = useState<string>(() => (import.meta.env.VITE_GEMINI_MODEL || 'gemini-3-flash-preview').trim());
   const [aiTesting, setAiTesting] = useState(false);
   const [aiFeedback, setAiFeedback] = useState<string | null>(null);

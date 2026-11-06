@@ -20,12 +20,20 @@ const LABELS: Record<AIStatus, { full: string; compact: string; title: string }>
 /** Badge nguồn AI dùng chung: HUD, panel đề xuất, khung chat, thư. */
 export const AiBadge: React.FC<AiBadgeProps> = ({ compact = false, className = '' }) => {
   const status = useAppStore((s) => s.aiStatus);
-  const label = LABELS[status];
+  const mode = useAppStore((s) => s.aiMode);
+  const liveAvailable = useAppStore((s) => s.aiLiveAvailable);
+  const effectiveStatus: AIStatus =
+    status === 'fallback'
+      ? 'fallback'
+      : liveAvailable && mode === 'live'
+      ? 'live'
+      : status;
+  const label = LABELS[effectiveStatus] || LABELS[status];
 
   return (
     <span
       className={`ai-source-badge ${className}`.trim()}
-      data-status={status}
+      data-status={effectiveStatus}
       title={label.title}
     >
       <span className="ai-source-dot" aria-hidden="true" />
