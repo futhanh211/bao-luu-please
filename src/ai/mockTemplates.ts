@@ -664,7 +664,7 @@ export function evaluateEvidenceFile(
   if (!hasTargetKeyword && !isVerifiedTestSample) {
     return {
       valid: false,
-      reason: `Tệp "${file.name}" không phát hiện từ khóa hoặc dấu hiệu của văn bản hành chính (${targetCategory.name}). Vui lòng tải giấy tờ minh chứng hợp lệ có con dấu mộc đỏ hoặc dùng nút "Nạp tệp mẫu (ĐHĐN)".`,
+      reason: `Tệp "${file.name}" không phát hiện từ khóa hoặc dấu hiệu của văn bản hành chính (${targetCategory.name}). Vui lòng tải giấy tờ minh chứng hợp lệ có con dấu mộc đỏ từ thiết bị của bạn.`,
     };
   }
 
