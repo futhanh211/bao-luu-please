@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
 import { useAppStore, Role } from './store/useApp';
 import { usePlaybackStore } from './store/playback';
@@ -10,7 +10,6 @@ import { SceneWipe } from './ui/shell/SceneWipe';
 import { useGlobalPreferences } from './ui/shell/useGlobalPreferences';
 import { Title } from './ui/scenes/Title';
 import { ScenarioPicker } from './ui/scenes/ScenarioPicker';
-import { TypographyTest } from './ui/scenes/TypographyTest';
 import { StudentDesk } from './ui/desks/StudentDesk';
 import { ControlRoom } from './ui/desks/ControlRoom';
 import { AdvisorDesk } from './ui/desks/AdvisorDesk';
@@ -31,7 +30,6 @@ import { sfx } from './ui/audio/sfx';
 import { DustMotes } from './ui/kit/DustMotes';
 
 export const App: React.FC = () => {
-  const [isTypography, setIsTypography] = useState(false);
   const {
     screen,
     role,
@@ -48,7 +46,6 @@ export const App: React.FC = () => {
     toggleCaptionPinned,
     miniMapVisible,
     toggleMiniMap,
-    toggleDevTools,
     reducedMotion,
     settingsOpen,
     setSettingsOpen,
@@ -74,12 +71,6 @@ export const App: React.FC = () => {
   const setReportDismissed = usePlaybackStore((s) => s.setReportDismissed);
   const reportVisible = sessionMode === 'demo' && Boolean(reportEnd) && !reportDismissed;
   const canAccessRole = useAuthStore((s) => s.canAccessRole);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined' && window.location.search.includes('typography')) {
-      setIsTypography(true);
-    }
-  }, []);
 
   // Initialize Supabase Cloud Sync (if configured)
   useEffect(() => {
@@ -225,10 +216,6 @@ export const App: React.FC = () => {
           e.preventDefault();
           toggleHelp();
           break;
-        case '`':
-          e.preventDefault();
-          toggleDevTools();
-          break;
         default:
           if (e.key === '/' && e.shiftKey) {
             e.preventDefault();
@@ -258,7 +245,6 @@ export const App: React.FC = () => {
     isPaused,
     pause,
     resume,
-    toggleDevTools,
     reportVisible,
     setReportDismissed,
     settingsOpen,
@@ -270,10 +256,6 @@ export const App: React.FC = () => {
     setAsIsOpen,
     canAccessRole,
   ]);
-
-  if (isTypography) {
-    return <TypographyTest />;
-  }
 
   const renderDesk = (activeRole: Role) => {
     switch (activeRole) {

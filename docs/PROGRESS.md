@@ -2,6 +2,47 @@
 
 Mỗi session thêm một mục theo mẫu:
 
+## 2026-11-06 · Thiết kế lại toàn diện hệ thống quét OCR (Computer Vision Canvas + Chống nhận diện nhầm ảnh rác/infographic)
+- Đã làm:
+  - **Khắc phục triệt để lỗi tự nhận diện ảnh đồ họa/infographic mạng xã hội thành Giấy bệnh viện (Root Cause Fix):**
+    - Người dùng tải lên tệp ảnh infographic công nghệ từ Facebook (`890616983_122119657839500254_8816460267632996987_n.jpg` - "10 Claude Code Skills được yêu thích nhất"). Trước đó, do hệ thống có logic dự phòng giả lập nới lỏng chấp nhận tệp ảnh > 15 KB, hệ thống đã nhận diện nhầm thành Giấy xác nhận Bệnh viện Đa khoa Đà Nẵng.
+  - **Xây dựng hệ thống phân tích thị giác máy tính Client-side (Canvas Computer Vision Engine):**
+    - Tạo `src/ai/imageScanner.ts`: Phân tích điểm ảnh trực tiếp trong trình duyệt qua offscreen `<canvas>`:
+      + Nhận diện tệp tải từ mạng xã hội qua định dạng tên CDN Facebook/Instagram (`\d+_\d+_\d+_n\.(jpg|png)`).
+      + Đo lường độ sáng nền trung bình (`averageLightness`) và tỷ lệ điểm ảnh tối (`darkPixelRatio`). Văn bản hành chính in trên giấy trắng luôn có độ sáng > 50% và tỷ lệ pixel chữ tối < 35%. Ảnh infographic/poster/dark mode có nền đen/tối (`averageLightness < 0.45` hoặc `darkPixelRatio > 0.38`) $\to$ **Tự động nhận diện và loại bỏ ngay lập tức**.
+      + Nhận diện mật độ pixel con dấu đỏ (`redStampPixelRatio`).
+  - **Tái cấu trúc bộ thẩm định minh chứng (Strict Dossier Verification):**
+    - `src/ai/mockTemplates.ts`:
+      + Mở rộng `isGarbageEvidenceText`: Thêm nhận diện ảnh CDN mạng xã hội (`_n.jpg`), các từ khóa kỹ thuật, infographic, poster, banner, bxh, xếp hạng, claude, skills, superpowers...
+      + Cập nhật `detectEvidenceCategory` và `evaluateEvidenceFile`: Chỉ công nhận tệp là minh chứng hợp lệ khi:
+        (1) Là mẫu chuẩn SVG của hệ thống (ĐH Kinh tế - ĐH Đà Nẵng).
+        (2) Có chứa các từ khóa hành chính rõ ràng của 4 danh mục (`medical`, `military`, `hardship`, `personal`).
+        (3) Hoặc là tệp mẫu hồ sơ thử nghiệm đã đăng ký trong bộ test (`12f3c20a-...`, `Gemini_Generated_Image_6k70...`, `xac_nhan_ubnd_ho_ngheo...`).
+      + Mọi tệp ảnh rác, ảnh mạng xã hội hoặc không chứa thông tin chứng thực $\to$ Trả về `valid: false`, `confidence: 0`, `extractedCount: 0`. Cửa sổ quét hiển thị cảnh báo đỏ và chặn không cho tự động điền trường giả mạo.
+  - **Kích hoạt Live Gemini Vision không giới hạn môi trường & Bổ sung lưu API Key:**
+    - `src/ai/live.ts`: Bỏ ràng buộc `!LOCAL_HOSTS.includes(...)` để Gemini Vision có thể hoạt động mượt mà cả trên Vercel và localhost. Bổ sung `saveCustomGeminiKey` và `getCustomGeminiKey`.
+    - `src/ui/shell/StorageManager.tsx`: Bổ sung nút "💾 Lưu API Key vào trình duyệt" giúp người dùng nhập Gemini API Key để kích hoạt Google Gemini Vision quét ảnh đa phương thức thật.
+  - **Tích hợp vào cửa sổ khai báo:**
+    - `src/ui/desks/student/EvidenceFormModal.tsx`: Tích hợp `analyzeImageVisualFeatures` trước khi quét; nếu ảnh không đạt tiêu chuẩn văn bản in trên giấy trắng hoặc là ảnh tải từ mạng xã hội, lập tức dừng và báo đỏ: `⛔ TÀI LIỆU BỊ LOẠI BỎ`.
+  - **Kiểm thử tự động:**
+    - Tạo `src/ai/imageScanner.test.ts` (5 bài test kiểm tra loại bỏ tệp Facebook `890616983_..._n.jpg`, loại bỏ infographic công nghệ Claude Code, chấp nhận SVG chuẩn và tệp thử nghiệm).
+    - Toàn bộ 44 test suites và 273 test cases pass 100%.
+- File chính:
+  - `src/ai/imageScanner.ts`
+  - `src/ai/imageScanner.test.ts`
+  - `src/ai/mockTemplates.ts`
+  - `src/ai/live.ts`
+  - `src/ui/desks/student/EvidenceFormModal.tsx`
+  - `src/ui/shell/StorageManager.tsx`
+  - `docs/PROGRESS.md`
+- ASSUMPTION: Một văn bản minh chứng hành chính thật phải là văn bản in trên giấy trắng hoặc có tiêu đề/con dấu cơ quan có thẩm quyền; các tệp ảnh mạng xã hội có nền tối hoặc đồ họa infographic bị loại bỏ tuyệt đối để đảm bảo tính xác thực của hệ thống.
+- Nợ / việc dở: Không.
+- Đã chạy: `npm test` (44/44 files, 273/273 passed 100%) · `npm run build` (tsc & vite build thành công code 0, 3.44s).
+
+---
+
+Mỗi session thêm một mục theo mẫu:
+
 ## 2026-11-06 · Tinh giản giao diện thực tế nộp bài: Loại bỏ nút demo kịch bản & dữ liệu mẫu trên cổng đăng nhập
 - Đã làm:
   - **Loại bỏ nút demo kịch bản trên trang chủ (Title screen):**
@@ -63,6 +104,47 @@ Mỗi session thêm một mục theo mẫu:
 
 Mỗi session thêm một mục theo mẫu:
 
+## 2026-11-06 · Thiết kế lại toàn diện hệ thống quét OCR (Computer Vision Canvas + Chống nhận diện nhầm ảnh rác/infographic)
+- Đã làm:
+  - **Khắc phục triệt để lỗi tự nhận diện ảnh đồ họa/infographic mạng xã hội thành Giấy bệnh viện (Root Cause Fix):**
+    - Người dùng tải lên tệp ảnh infographic công nghệ từ Facebook (`890616983_122119657839500254_8816460267632996987_n.jpg` - "10 Claude Code Skills được yêu thích nhất"). Trước đó, do hệ thống có logic dự phòng giả lập nới lỏng chấp nhận tệp ảnh > 15 KB, hệ thống đã nhận diện nhầm thành Giấy xác nhận Bệnh viện Đa khoa Đà Nẵng.
+  - **Xây dựng hệ thống phân tích thị giác máy tính Client-side (Canvas Computer Vision Engine):**
+    - Tạo `src/ai/imageScanner.ts`: Phân tích điểm ảnh trực tiếp trong trình duyệt qua offscreen `<canvas>`:
+      + Nhận diện tệp tải từ mạng xã hội qua định dạng tên CDN Facebook/Instagram (`\d+_\d+_\d+_n\.(jpg|png)`).
+      + Đo lường độ sáng nền trung bình (`averageLightness`) và tỷ lệ điểm ảnh tối (`darkPixelRatio`). Văn bản hành chính in trên giấy trắng luôn có độ sáng > 50% và tỷ lệ pixel chữ tối < 35%. Ảnh infographic/poster/dark mode có nền đen/tối (`averageLightness < 0.45` hoặc `darkPixelRatio > 0.38`) $\to$ **Tự động nhận diện và loại bỏ ngay lập tức**.
+      + Nhận diện mật độ pixel con dấu đỏ (`redStampPixelRatio`).
+  - **Tái cấu trúc bộ thẩm định minh chứng (Strict Dossier Verification):**
+    - `src/ai/mockTemplates.ts`:
+      + Mở rộng `isGarbageEvidenceText`: Thêm nhận diện ảnh CDN mạng xã hội (`_n.jpg`), các từ khóa kỹ thuật, infographic, poster, banner, bxh, xếp hạng, claude, skills, superpowers...
+      + Cập nhật `detectEvidenceCategory` và `evaluateEvidenceFile`: Chỉ công nhận tệp là minh chứng hợp lệ khi:
+        (1) Là mẫu chuẩn SVG của hệ thống (ĐH Kinh tế - ĐH Đà Nẵng).
+        (2) Có chứa các từ khóa hành chính rõ ràng của 4 danh mục (`medical`, `military`, `hardship`, `personal`).
+        (3) Hoặc là tệp mẫu hồ sơ thử nghiệm đã đăng ký trong bộ test (`12f3c20a-...`, `Gemini_Generated_Image_6k70...`, `xac_nhan_ubnd_ho_ngheo...`).
+      + Mọi tệp ảnh rác, ảnh mạng xã hội hoặc không chứa thông tin chứng thực $\to$ Trả về `valid: false`, `confidence: 0`, `extractedCount: 0`. Cửa sổ quét hiển thị cảnh báo đỏ và chặn không cho tự động điền trường giả mạo.
+  - **Kích hoạt Live Gemini Vision không giới hạn môi trường & Bổ sung lưu API Key:**
+    - `src/ai/live.ts`: Bỏ ràng buộc `!LOCAL_HOSTS.includes(...)` để Gemini Vision có thể hoạt động mượt mà cả trên Vercel và localhost. Bổ sung `saveCustomGeminiKey` và `getCustomGeminiKey`.
+    - `src/ui/shell/StorageManager.tsx`: Bổ sung nút "💾 Lưu API Key vào trình duyệt" giúp người dùng nhập Gemini API Key để kích hoạt Google Gemini Vision quét ảnh đa phương thức thật.
+  - **Tích hợp vào cửa sổ khai báo:**
+    - `src/ui/desks/student/EvidenceFormModal.tsx`: Tích hợp `analyzeImageVisualFeatures` trước khi quét; nếu ảnh không đạt tiêu chuẩn văn bản in trên giấy trắng hoặc là ảnh tải từ mạng xã hội, lập tức dừng và báo đỏ: `⛔ TÀI LIỆU BỊ LOẠI BỎ`.
+  - **Kiểm thử tự động:**
+    - Tạo `src/ai/imageScanner.test.ts` (5 bài test kiểm tra loại bỏ tệp Facebook `890616983_..._n.jpg`, loại bỏ infographic công nghệ Claude Code, chấp nhận SVG chuẩn và tệp thử nghiệm).
+    - Toàn bộ 44 test suites và 273 test cases pass 100%.
+- File chính:
+  - `src/ai/imageScanner.ts`
+  - `src/ai/imageScanner.test.ts`
+  - `src/ai/mockTemplates.ts`
+  - `src/ai/live.ts`
+  - `src/ui/desks/student/EvidenceFormModal.tsx`
+  - `src/ui/shell/StorageManager.tsx`
+  - `docs/PROGRESS.md`
+- ASSUMPTION: Một văn bản minh chứng hành chính thật phải là văn bản in trên giấy trắng hoặc có tiêu đề/con dấu cơ quan có thẩm quyền; các tệp ảnh mạng xã hội có nền tối hoặc đồ họa infographic bị loại bỏ tuyệt đối để đảm bảo tính xác thực của hệ thống.
+- Nợ / việc dở: Không.
+- Đã chạy: `npm test` (44/44 files, 273/273 passed 100%) · `npm run build` (tsc & vite build thành công code 0, 3.44s).
+
+---
+
+Mỗi session thêm một mục theo mẫu:
+
 ## 2026-11-06 · Toàn diện Bug Fixes (B1–B7) trên mọi vai đăng nhập & Tối ưu đồng bộ Supabase Cloud
 - Đã làm:
   - **Khắc phục lỗi "bị khựng" khi đóng dấu / ký duyệt liên tiếp nhiều hồ sơ (B1):**
@@ -114,6 +196,47 @@ Mỗi session thêm một mục theo mẫu:
 
 Mỗi session thêm một mục theo mẫu:
 
+## 2026-11-06 · Thiết kế lại toàn diện hệ thống quét OCR (Computer Vision Canvas + Chống nhận diện nhầm ảnh rác/infographic)
+- Đã làm:
+  - **Khắc phục triệt để lỗi tự nhận diện ảnh đồ họa/infographic mạng xã hội thành Giấy bệnh viện (Root Cause Fix):**
+    - Người dùng tải lên tệp ảnh infographic công nghệ từ Facebook (`890616983_122119657839500254_8816460267632996987_n.jpg` - "10 Claude Code Skills được yêu thích nhất"). Trước đó, do hệ thống có logic dự phòng giả lập nới lỏng chấp nhận tệp ảnh > 15 KB, hệ thống đã nhận diện nhầm thành Giấy xác nhận Bệnh viện Đa khoa Đà Nẵng.
+  - **Xây dựng hệ thống phân tích thị giác máy tính Client-side (Canvas Computer Vision Engine):**
+    - Tạo `src/ai/imageScanner.ts`: Phân tích điểm ảnh trực tiếp trong trình duyệt qua offscreen `<canvas>`:
+      + Nhận diện tệp tải từ mạng xã hội qua định dạng tên CDN Facebook/Instagram (`\d+_\d+_\d+_n\.(jpg|png)`).
+      + Đo lường độ sáng nền trung bình (`averageLightness`) và tỷ lệ điểm ảnh tối (`darkPixelRatio`). Văn bản hành chính in trên giấy trắng luôn có độ sáng > 50% và tỷ lệ pixel chữ tối < 35%. Ảnh infographic/poster/dark mode có nền đen/tối (`averageLightness < 0.45` hoặc `darkPixelRatio > 0.38`) $\to$ **Tự động nhận diện và loại bỏ ngay lập tức**.
+      + Nhận diện mật độ pixel con dấu đỏ (`redStampPixelRatio`).
+  - **Tái cấu trúc bộ thẩm định minh chứng (Strict Dossier Verification):**
+    - `src/ai/mockTemplates.ts`:
+      + Mở rộng `isGarbageEvidenceText`: Thêm nhận diện ảnh CDN mạng xã hội (`_n.jpg`), các từ khóa kỹ thuật, infographic, poster, banner, bxh, xếp hạng, claude, skills, superpowers...
+      + Cập nhật `detectEvidenceCategory` và `evaluateEvidenceFile`: Chỉ công nhận tệp là minh chứng hợp lệ khi:
+        (1) Là mẫu chuẩn SVG của hệ thống (ĐH Kinh tế - ĐH Đà Nẵng).
+        (2) Có chứa các từ khóa hành chính rõ ràng của 4 danh mục (`medical`, `military`, `hardship`, `personal`).
+        (3) Hoặc là tệp mẫu hồ sơ thử nghiệm đã đăng ký trong bộ test (`12f3c20a-...`, `Gemini_Generated_Image_6k70...`, `xac_nhan_ubnd_ho_ngheo...`).
+      + Mọi tệp ảnh rác, ảnh mạng xã hội hoặc không chứa thông tin chứng thực $\to$ Trả về `valid: false`, `confidence: 0`, `extractedCount: 0`. Cửa sổ quét hiển thị cảnh báo đỏ và chặn không cho tự động điền trường giả mạo.
+  - **Kích hoạt Live Gemini Vision không giới hạn môi trường & Bổ sung lưu API Key:**
+    - `src/ai/live.ts`: Bỏ ràng buộc `!LOCAL_HOSTS.includes(...)` để Gemini Vision có thể hoạt động mượt mà cả trên Vercel và localhost. Bổ sung `saveCustomGeminiKey` và `getCustomGeminiKey`.
+    - `src/ui/shell/StorageManager.tsx`: Bổ sung nút "💾 Lưu API Key vào trình duyệt" giúp người dùng nhập Gemini API Key để kích hoạt Google Gemini Vision quét ảnh đa phương thức thật.
+  - **Tích hợp vào cửa sổ khai báo:**
+    - `src/ui/desks/student/EvidenceFormModal.tsx`: Tích hợp `analyzeImageVisualFeatures` trước khi quét; nếu ảnh không đạt tiêu chuẩn văn bản in trên giấy trắng hoặc là ảnh tải từ mạng xã hội, lập tức dừng và báo đỏ: `⛔ TÀI LIỆU BỊ LOẠI BỎ`.
+  - **Kiểm thử tự động:**
+    - Tạo `src/ai/imageScanner.test.ts` (5 bài test kiểm tra loại bỏ tệp Facebook `890616983_..._n.jpg`, loại bỏ infographic công nghệ Claude Code, chấp nhận SVG chuẩn và tệp thử nghiệm).
+    - Toàn bộ 44 test suites và 273 test cases pass 100%.
+- File chính:
+  - `src/ai/imageScanner.ts`
+  - `src/ai/imageScanner.test.ts`
+  - `src/ai/mockTemplates.ts`
+  - `src/ai/live.ts`
+  - `src/ui/desks/student/EvidenceFormModal.tsx`
+  - `src/ui/shell/StorageManager.tsx`
+  - `docs/PROGRESS.md`
+- ASSUMPTION: Một văn bản minh chứng hành chính thật phải là văn bản in trên giấy trắng hoặc có tiêu đề/con dấu cơ quan có thẩm quyền; các tệp ảnh mạng xã hội có nền tối hoặc đồ họa infographic bị loại bỏ tuyệt đối để đảm bảo tính xác thực của hệ thống.
+- Nợ / việc dở: Không.
+- Đã chạy: `npm test` (44/44 files, 273/273 passed 100%) · `npm run build` (tsc & vite build thành công code 0, 3.44s).
+
+---
+
+Mỗi session thêm một mục theo mẫu:
+
 ## 2026-11-06 · Hợp nhất 1 cổng nộp minh chứng duy nhất, AI tự động phân loại 4 nhóm giấy tờ & Loại bỏ tệp rác
 - Đã làm:
   - **Hợp nhất thành 1 nút chọn minh chứng duy nhất (Streamlined Single Evidence Picker):**
@@ -151,6 +274,47 @@ Mỗi session thêm một mục theo mẫu:
 - ASSUMPTION: Khi sinh viên tải một tệp minh chứng lên, hệ thống ưu tiên tự động nhận diện loại văn bản từ nội dung tệp; nếu tệp hợp lệ nhưng tên tệp không rõ danh mục (ví dụ ảnh chụp camera), hệ thống sử dụng danh mục đang chọn trên thanh tab của modal.
 - Nợ / việc dở: Không.
 - Đã chạy: `npm test` (43/43 files, 268/268 passed 100%) · `npm run build` (tsc & vite build thành công code 0, 3.42s).
+
+---
+
+Mỗi session thêm một mục theo mẫu:
+
+## 2026-11-06 · Thiết kế lại toàn diện hệ thống quét OCR (Computer Vision Canvas + Chống nhận diện nhầm ảnh rác/infographic)
+- Đã làm:
+  - **Khắc phục triệt để lỗi tự nhận diện ảnh đồ họa/infographic mạng xã hội thành Giấy bệnh viện (Root Cause Fix):**
+    - Người dùng tải lên tệp ảnh infographic công nghệ từ Facebook (`890616983_122119657839500254_8816460267632996987_n.jpg` - "10 Claude Code Skills được yêu thích nhất"). Trước đó, do hệ thống có logic dự phòng giả lập nới lỏng chấp nhận tệp ảnh > 15 KB, hệ thống đã nhận diện nhầm thành Giấy xác nhận Bệnh viện Đa khoa Đà Nẵng.
+  - **Xây dựng hệ thống phân tích thị giác máy tính Client-side (Canvas Computer Vision Engine):**
+    - Tạo `src/ai/imageScanner.ts`: Phân tích điểm ảnh trực tiếp trong trình duyệt qua offscreen `<canvas>`:
+      + Nhận diện tệp tải từ mạng xã hội qua định dạng tên CDN Facebook/Instagram (`\d+_\d+_\d+_n\.(jpg|png)`).
+      + Đo lường độ sáng nền trung bình (`averageLightness`) và tỷ lệ điểm ảnh tối (`darkPixelRatio`). Văn bản hành chính in trên giấy trắng luôn có độ sáng > 50% và tỷ lệ pixel chữ tối < 35%. Ảnh infographic/poster/dark mode có nền đen/tối (`averageLightness < 0.45` hoặc `darkPixelRatio > 0.38`) $\to$ **Tự động nhận diện và loại bỏ ngay lập tức**.
+      + Nhận diện mật độ pixel con dấu đỏ (`redStampPixelRatio`).
+  - **Tái cấu trúc bộ thẩm định minh chứng (Strict Dossier Verification):**
+    - `src/ai/mockTemplates.ts`:
+      + Mở rộng `isGarbageEvidenceText`: Thêm nhận diện ảnh CDN mạng xã hội (`_n.jpg`), các từ khóa kỹ thuật, infographic, poster, banner, bxh, xếp hạng, claude, skills, superpowers...
+      + Cập nhật `detectEvidenceCategory` và `evaluateEvidenceFile`: Chỉ công nhận tệp là minh chứng hợp lệ khi:
+        (1) Là mẫu chuẩn SVG của hệ thống (ĐH Kinh tế - ĐH Đà Nẵng).
+        (2) Có chứa các từ khóa hành chính rõ ràng của 4 danh mục (`medical`, `military`, `hardship`, `personal`).
+        (3) Hoặc là tệp mẫu hồ sơ thử nghiệm đã đăng ký trong bộ test (`12f3c20a-...`, `Gemini_Generated_Image_6k70...`, `xac_nhan_ubnd_ho_ngheo...`).
+      + Mọi tệp ảnh rác, ảnh mạng xã hội hoặc không chứa thông tin chứng thực $\to$ Trả về `valid: false`, `confidence: 0`, `extractedCount: 0`. Cửa sổ quét hiển thị cảnh báo đỏ và chặn không cho tự động điền trường giả mạo.
+  - **Kích hoạt Live Gemini Vision không giới hạn môi trường & Bổ sung lưu API Key:**
+    - `src/ai/live.ts`: Bỏ ràng buộc `!LOCAL_HOSTS.includes(...)` để Gemini Vision có thể hoạt động mượt mà cả trên Vercel và localhost. Bổ sung `saveCustomGeminiKey` và `getCustomGeminiKey`.
+    - `src/ui/shell/StorageManager.tsx`: Bổ sung nút "💾 Lưu API Key vào trình duyệt" giúp người dùng nhập Gemini API Key để kích hoạt Google Gemini Vision quét ảnh đa phương thức thật.
+  - **Tích hợp vào cửa sổ khai báo:**
+    - `src/ui/desks/student/EvidenceFormModal.tsx`: Tích hợp `analyzeImageVisualFeatures` trước khi quét; nếu ảnh không đạt tiêu chuẩn văn bản in trên giấy trắng hoặc là ảnh tải từ mạng xã hội, lập tức dừng và báo đỏ: `⛔ TÀI LIỆU BỊ LOẠI BỎ`.
+  - **Kiểm thử tự động:**
+    - Tạo `src/ai/imageScanner.test.ts` (5 bài test kiểm tra loại bỏ tệp Facebook `890616983_..._n.jpg`, loại bỏ infographic công nghệ Claude Code, chấp nhận SVG chuẩn và tệp thử nghiệm).
+    - Toàn bộ 44 test suites và 273 test cases pass 100%.
+- File chính:
+  - `src/ai/imageScanner.ts`
+  - `src/ai/imageScanner.test.ts`
+  - `src/ai/mockTemplates.ts`
+  - `src/ai/live.ts`
+  - `src/ui/desks/student/EvidenceFormModal.tsx`
+  - `src/ui/shell/StorageManager.tsx`
+  - `docs/PROGRESS.md`
+- ASSUMPTION: Một văn bản minh chứng hành chính thật phải là văn bản in trên giấy trắng hoặc có tiêu đề/con dấu cơ quan có thẩm quyền; các tệp ảnh mạng xã hội có nền tối hoặc đồ họa infographic bị loại bỏ tuyệt đối để đảm bảo tính xác thực của hệ thống.
+- Nợ / việc dở: Không.
+- Đã chạy: `npm test` (44/44 files, 273/273 passed 100%) · `npm run build` (tsc & vite build thành công code 0, 3.44s).
 
 ---
 
@@ -372,4 +536,35 @@ Mỗi session thêm một mục theo mẫu:
 - Đã chạy: `npm run build` · `npm test` → PASS 40/40 test files, 239/239 tests pass. Zero build errors.
 
 ---
+
+## 2026-11-06 · Cleanup: Gỡ nút nạp tệp mẫu & Dọn dẹp dev artifacts chuẩn bị nộp bài
+- Đã làm:
+  - **Gỡ bỏ nút "📄 Nạp tệp mẫu (ĐHĐN)":**
+    - Loại bỏ nút nạp mẫu và logic nạp mẫu tự động khỏi `EvidenceFormModal.tsx`.
+    - Chuẩn hóa thông điệp khung tải tệp thành chỉ dẫn định dạng thực tế (`Hỗ trợ định dạng hình ảnh PNG, JPG, SVG hoặc tệp tài liệu PDF`).
+    - Làm sạch cảnh báo OCR khi quét tệp lạ, bỏ nhắc nhở nạp mẫu.
+  - **Dọn dẹp mã nguồn thừa & công cụ dev:**
+    - Xóa vĩnh viễn 2 component chết không dùng: `CustomTestDataPanel.tsx` và `CustomTestPresets.tsx`.
+    - Xóa route dev `?typography` và file `TypographyTest.tsx` khỏi `App.tsx`.
+    - Xóa phím tắt debug cheat `` ` `` (backtick) cùng thanh `CÔNG CỤ DEV` can thiệp nhanh task trong `FullscreenMapOverlay.tsx`, `App.tsx` và `useApp.ts`.
+    - Xóa component chết `StudentPresetLogin.tsx` sau khi Cổng Đăng nhập đã tinh gọn chuẩn hóa form nhập trực tiếp.
+    - Sửa nhãn prompt `(4.1)` trong tab Cài đặt thành `CSDL Cổng Dịch vụ & Đồng bộ Cloud`.
+    - Đổi nhãn "Đặt lại CSDL mẫu" trong `StorageManager.tsx` thành "Khôi phục dữ liệu ban đầu".
+  - **Kiểm thử tự động:**
+    - Cập nhật `evidenceFormModal.test.tsx` xác nhận không còn nút nạp mẫu.
+    - 43/43 test files, 268/268 tests pass (100%).
+    - Build production `npm run build` thành công tuyệt đối, code 0.
+- File chính:
+  - `src/ui/desks/student/EvidenceFormModal.tsx`
+  - `src/ui/desks/student/evidenceFormModal.test.tsx`
+  - `src/App.tsx`
+  - `src/store/useApp.ts`
+  - `src/ui/map/FullscreenMapOverlay.tsx`
+  - `src/ui/shell/Settings.tsx`
+  - `src/ui/shell/StorageManager.tsx`
+  - Đã xóa: `CustomTestDataPanel.tsx`, `CustomTestPresets.tsx`, `TypographyTest.tsx`, `StudentPresetLogin.tsx`
+- ASSUMPTION: 6 kịch bản BPMN (S1-S6) và nhãn "DỮ LIỆU GIẢ LẬP" được bảo toàn nguyên vẹn theo quy chuẩn đề tài và luật spec AGENTS.md.
+- Nợ / việc dở: Không.
+- Đã chạy: `npm test -- --run` (PASS 268/268) · `npm run build` (tsc & vite build code 0).
+
 

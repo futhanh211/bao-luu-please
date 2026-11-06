@@ -96,7 +96,7 @@ export const Settings: React.FC = () => {
             data-active={activeTab === 'storage' ? 'true' : 'false'}
             onClick={() => setActiveTab('storage')}
           >
-            <span>💾</span> CSDL Bền vững & Tích hợp (4.1)
+            <span>💾</span> CSDL Cổng Dịch vụ & Đồng bộ Cloud
           </button>
         </div>
 

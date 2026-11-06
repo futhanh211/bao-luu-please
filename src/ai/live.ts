@@ -29,26 +29,46 @@ class NonRetryableAIError extends LiveAIError {}
 const TIMEOUT_MS = 4000;
 const MAX_ATTEMPTS = 2;
 
-const LOCAL_HOSTS = ['localhost', '127.0.0.1', '::1', ''];
+export function getCustomGeminiKey(): string {
+  if (typeof window === 'undefined') return '';
+  try {
+    return localStorage.getItem('bao_luu_custom_gemini_key') || '';
+  } catch {
+    return '';
+  }
+}
 
-/** Live chỉ bật khi demo trên máy local và đã khai đủ 2 biến môi trường. */
+export function saveCustomGeminiKey(key: string): void {
+  if (typeof window === 'undefined') return;
+  try {
+    if (!key.trim()) {
+      localStorage.removeItem('bao_luu_custom_gemini_key');
+    } else {
+      localStorage.setItem('bao_luu_custom_gemini_key', key.trim());
+    }
+  } catch {
+    // Ignore storage errors in test environments
+  }
+}
+
+/** Live bật khi có API key (từ biến môi trường VITE_GEMINI_API_KEY hoặc lưu trong trình duyệt). */
 export function isLiveAvailable(): boolean {
   if (typeof window === 'undefined') return false;
-  if (!LOCAL_HOSTS.includes(window.location.hostname)) return false;
 
   const env = import.meta.env;
-  const key = (env.VITE_GEMINI_API_KEY ?? '').trim();
-  const model = (env.VITE_GEMINI_MODEL ?? '').trim();
+  const customKey = getCustomGeminiKey();
+  const key = (customKey || (env?.VITE_GEMINI_API_KEY ?? '')).trim();
+  const model = (env?.VITE_GEMINI_MODEL ?? 'gemini-1.5-flash').trim();
   return key.length > 0 && model.length > 0;
 }
 
 export function createLiveAIFromEnv(): LiveAIProvider | null {
   if (!isLiveAvailable()) return null;
   const env = import.meta.env;
-  return new LiveAIProvider(
-    (env.VITE_GEMINI_API_KEY ?? '').trim(),
-    (env.VITE_GEMINI_MODEL ?? '').trim()
-  );
+  const customKey = getCustomGeminiKey();
+  const key = (customKey || (env?.VITE_GEMINI_API_KEY ?? '')).trim();
+  const model = (env?.VITE_GEMINI_MODEL ?? 'gemini-1.5-flash').trim();
+  return new LiveAIProvider(key, model);
 }
 
 interface GeminiResponse {

@@ -13,7 +13,7 @@ import {
   importUsersJson,
   RegisteredAccount,
 } from '../../data/userRegistry';
-import { testGeminiConnection } from '../../ai/live';
+import { testGeminiConnection, getCustomGeminiKey, saveCustomGeminiKey } from '../../ai/live';
 import {
   isSupabaseConfigured,
   testSupabaseConnection,
@@ -49,7 +49,7 @@ export const StorageManager: React.FC = () => {
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
   // External API Testing State
-  const [apiKeyInput, setApiKeyInput] = useState<string>('');
+  const [apiKeyInput, setApiKeyInput] = useState<string>(() => getCustomGeminiKey() || '');
   const [modelInput, setModelInput] = useState<string>('gemini-1.5-flash');
   const [isTestingApi, setIsTestingApi] = useState<boolean>(false);
   const [apiResult, setApiResult] = useState<{
@@ -58,6 +58,16 @@ export const StorageManager: React.FC = () => {
     message: string;
     modelUsed: string;
   } | null>(null);
+
+  const handleSaveGeminiKey = () => {
+    saveCustomGeminiKey(apiKeyInput);
+    sfx.playStamp();
+    showToast(
+      apiKeyInput.trim()
+        ? 'Đã lưu Gemini API Key vào trình duyệt! Hệ thống sẽ dùng Gemini Vision khi quét ảnh.'
+        : 'Đã xóa Gemini API Key khỏi trình duyệt (chuyển về chế độ Mock an toàn).'
+    );
+  };
 
   // Supabase Testing State
   const initialSupabaseCfg = getSupabaseConfig();
@@ -151,10 +161,10 @@ export const StorageManager: React.FC = () => {
   };
 
   const handleResetToDefault = () => {
-    if (window.confirm('Khôi phục CSDL về trạng thái mẫu ban đầu (2 hồ sơ mẫu)?')) {
+    if (window.confirm('Khôi phục CSDL về trạng thái dữ liệu mặc định ban đầu?')) {
       resetSubmittedCasesToDefault();
       refreshData();
-      showToast('Đã đặt lại CSDL mẫu ban đầu!');
+      showToast('Đã khôi phục dữ liệu mặc định ban đầu!');
     }
   };
 
@@ -376,7 +386,7 @@ export const StorageManager: React.FC = () => {
             className="storage-btn storage-btn-success"
             onClick={handleResetToDefault}
           >
-            🔄 Đặt lại CSDL mẫu
+            🔄 Khôi phục dữ liệu ban đầu
           </button>
 
           <button
@@ -435,6 +445,14 @@ export const StorageManager: React.FC = () => {
               disabled={isTestingApi}
             >
               {isTestingApi ? 'Đang gửi gói tin...' : '⚡ Kiểm tra kết nối (Ping API)'}
+            </button>
+            <button
+              type="button"
+              className="storage-btn-save"
+              onClick={handleSaveGeminiKey}
+              title="Lưu API Key vào trình duyệt để sử dụng Gemini Vision thật"
+            >
+              💾 Lưu API Key vào trình duyệt
             </button>
           </div>
 

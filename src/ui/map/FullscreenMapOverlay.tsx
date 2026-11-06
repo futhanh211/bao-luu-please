@@ -64,13 +64,9 @@ export const FullscreenMapOverlay: React.FC = () => {
   const mapFullscreen = useAppStore((s) => s.mapFullscreen);
   const speed = useAppStore((s) => s.speed);
   const reducedMotion = useAppStore((s) => s.reducedMotion);
-  const devTools = useAppStore((s) => s.devTools);
 
   const {
     mapState,
-    isWaitingUserTask,
-    waitingTaskId,
-    completeUserTask,
   } = usePlaybackStore();
 
   const [showEventLog, setShowEventLog] = useState(false);
@@ -171,47 +167,6 @@ export const FullscreenMapOverlay: React.FC = () => {
         showEventLog={showEventLog}
         setShowEventLog={setShowEventLog}
       />
-
-      {/* User Task Completion Bar — chỉ hiện khi bật công cụ dev (phím `) */}
-      {devTools && isWaitingUserTask && waitingTaskId && (
-        <div
-          style={{
-            backgroundColor: 'var(--desk-700)',
-            borderBottom: '2px dashed var(--amber)',
-            padding: '8px 24px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            fontFamily: 'var(--font-paper)',
-            fontSize: '15px',
-            zIndex: 15,
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '18px' }}>🛠</span>
-            <span>
-              CÔNG CỤ DEV · Tác vụ <strong>{waitingTaskId}</strong> đang chờ (ẩn khi tắt phím `):
-            </span>
-          </div>
-          <div style={{ display: 'flex', gap: '10px' }}>
-            {waitingTaskId === 'T4' && (
-              <>
-                <button onClick={() => completeUserTask('T4', 'confirmed')} style={{ padding: '4px 14px', backgroundColor: 'var(--stamp-green)', color: '#fff', borderRadius: 2 }}>✓ Xác nhận</button>
-                <button onClick={() => completeUserTask('T4', 'declined')} style={{ padding: '4px 14px', backgroundColor: 'var(--stamp-red)', color: '#fff', borderRadius: 2 }}>✕ Từ chối</button>
-              </>
-            )}
-            {waitingTaskId === 'T5' && (
-              <>
-                <button onClick={() => completeUserTask('T5', 'valid')} style={{ padding: '4px 14px', backgroundColor: 'var(--stamp-green)', color: '#fff', borderRadius: 2 }}>✓ Hợp lệ</button>
-                <button onClick={() => completeUserTask('T5', 'invalid')} style={{ padding: '4px 14px', backgroundColor: 'var(--stamp-red)', color: '#fff', borderRadius: 2 }}>✕ Không hợp lệ</button>
-              </>
-            )}
-            {waitingTaskId === 'T9' && (
-              <button onClick={() => completeUserTask('T9', { signerName: 'PGS.TS. Đoàn Ngọc Phi Anh' })} style={{ padding: '4px 16px', backgroundColor: 'var(--stamp-blue)', color: '#fff', borderRadius: 2 }}>✍️ Ký số Quyết định</button>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* SVG Canvas with Camera ViewBox */}
       <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>

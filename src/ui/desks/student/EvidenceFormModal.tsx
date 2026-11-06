@@ -9,12 +9,12 @@ import {
 import { StudentEvidenceOptionKey } from '../../../data/customTestData';
 import { Paperclip } from '../../kit/Paperclip';
 import { DocumentScanOverlay } from '../../kit/DocumentScanOverlay';
-import { createSampleEvidenceFile } from '../../../data/sampleEvidenceImages';
 import { getActiveAI } from '../../../store/playback/session';
 import { defaultMockAI } from '../../../ai/mock';
 import { AIService } from '../../../ai/service';
 import { sfx } from '../../audio/sfx';
 import { detectEvidenceCategory } from '../../../ai/mockTemplates';
+import { analyzeImageVisualFeatures } from '../../../ai/imageScanner';
 
 const CATEGORY_TABS: { key: StudentEvidenceOptionKey; icon: string; label: string }[] = [
   { key: 'medical', icon: '🏥', label: 'Bệnh viện / Y tế' },
@@ -116,28 +116,39 @@ export const EvidenceFormModal: React.FC<Props> = ({
     reader.readAsDataURL(file);
   };
 
-  const handleLoadSample = () => {
-    const sample = createSampleEvidenceFile(category, data.fullName || 'Nguyễn Minh Khoa');
-    setImgLoadError(false);
-    setUploadedFile(sample);
-    setData((prev) => ({ ...prev, uploadedFile: sample }));
-    setFileError(null);
-    setScanSummary(null);
-    setScanStatus('idle');
-    setAutoFilledFields([]);
-    sfx.playPaperSlide();
-  };
-
   const handleTriggerAiScan = async () => {
     if (!uploadedFile || isScanning) return;
     setIsScanning(true);
     setFileError(null);
 
     try {
+      // 0. Phân tích thị giác (Computer Vision / Canvas) phát hiện ảnh mạng xã hội, ảnh nền tối / infographic
+      const visualAnalysis = await analyzeImageVisualFeatures(uploadedFile);
+      if (!visualAnalysis.isValidDocumentPaper) {
+        setScanStatus('warning');
+        setAutoFilledFields([]);
+        const rejectMsg =
+          visualAnalysis.rejectReason ||
+          'Hình ảnh không phải là văn bản hành chính in trên giấy trắng có con dấu mộc đỏ.';
+        setFileError(`TÀI LIỆU BỊ LOẠI BỎ: ${rejectMsg}`);
+        setScanSummary(rejectMsg);
+        sfx.playBuzz();
+        return;
+      }
+
       // 1. Tự động nhận diện loại giấy tờ (Bệnh viện, Nghĩa vụ quân sự, Hoàn cảnh, Cá nhân)
       const detectedCat = detectEvidenceCategory(uploadedFile, category);
-      const effectiveCategory = detectedCat || category;
+      if (!detectedCat) {
+        setScanStatus('warning');
+        setAutoFilledFields([]);
+        const rejectMsg = `Tệp "${uploadedFile.name}" không phát hiện thông tin chứng thực của cơ quan có thẩm quyền (Bệnh viện, BCH Quân sự, UBND hoặc Đơn giải trình hợp lệ).`;
+        setFileError(`TÀI LIỆU BỊ LOẠI BỎ: ${rejectMsg}`);
+        setScanSummary(rejectMsg);
+        sfx.playBuzz();
+        return;
+      }
 
+      const effectiveCategory = detectedCat;
       const ai = getActiveAI() ?? new AIService(defaultMockAI, null, 'mock');
       const result = await ai.scanDocument(uploadedFile, effectiveCategory);
 
@@ -414,14 +425,6 @@ export const EvidenceFormModal: React.FC<Props> = ({
                   Tệp minh chứng & AI Quét (OCR)
                 </span>
               </div>
-              <button
-                type="button"
-                className="ai-sample-preset-btn"
-                onClick={handleLoadSample}
-                title="Tải tệp mẫu chuẩn của ĐH Đà Nẵng để thử nghiệm nhanh không cần tìm tệp ngoài"
-              >
-                📄 Nạp tệp mẫu (ĐHĐN)
-              </button>
             </div>
 
             <input
@@ -464,7 +467,7 @@ export const EvidenceFormModal: React.FC<Props> = ({
                   Bấm vào đây để chọn tệp ảnh hoặc PDF từ máy tính
                 </div>
                 <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 2 }}>
-                  Hoặc bấm nút <strong>&quot;Nạp tệp mẫu (ĐHĐN)&quot;</strong> phía trên để demo 1-chạm
+                  Hỗ trợ định dạng hình ảnh (PNG, JPG, SVG) hoặc tệp tài liệu PDF
                 </div>
               </div>
             ) : (
@@ -610,7 +613,7 @@ export const EvidenceFormModal: React.FC<Props> = ({
               <div>
                 <strong style={{ color: 'var(--stamp-red)' }}>Không thể trích xuất thông tin minh chứng:</strong> {scanSummary}
                 <div style={{ fontSize: 11, color: 'var(--ink)', marginTop: 2 }}>
-                  Tệp tải lên không khớp với mẫu minh chứng yêu cầu. Dữ liệu bên dưới <strong>chưa được tự động điền</strong>. Bạn có thể chọn tệp khác, bấm <strong>"Nạp tệp mẫu (ĐHĐN)"</strong> hoặc tự nhập tay các trường thông tin.
+                  Tệp tải lên không khớp với mẫu minh chứng yêu cầu. Dữ liệu bên dưới <strong>chưa được tự động điền</strong>. Bạn có thể chọn tệp khác hoặc tự nhập tay các trường thông tin bên dưới.
                 </div>
               </div>
             </div>

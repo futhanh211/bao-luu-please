@@ -50,7 +50,6 @@ interface AppState {
   captionPinned: boolean;
   mapFullscreen: boolean;
   miniMapVisible: boolean;
-  devTools: boolean;
   helpOpen: boolean;
   asIsOpen: boolean;
   directorCaption: string | null;
@@ -84,7 +83,6 @@ interface AppState {
   toggleCaptionPinned: () => void;
   toggleMapFullscreen: () => void;
   toggleMiniMap: () => void;
-  toggleDevTools: () => void;
   resetCase: () => void;
 }
 
@@ -108,7 +106,6 @@ export const useAppStore = create<AppState>((set) => ({
   captionPinned: false,
   mapFullscreen: false,
   miniMapVisible: true,
-  devTools: false,
   helpOpen: false,
   asIsOpen: false,
   directorCaption: null,
@@ -147,7 +144,6 @@ export const useAppStore = create<AppState>((set) => ({
   toggleCaptionPinned: () => set((state) => ({ captionPinned: !state.captionPinned })),
   toggleMapFullscreen: () => set((state) => ({ mapFullscreen: !state.mapFullscreen })),
   toggleMiniMap: () => set((state) => ({ miniMapVisible: !state.miniMapVisible })),
-  toggleDevTools: () => set((state) => ({ devTools: !state.devTools })),
   resetCase: () =>
     set({
       screen: 'scenario',
