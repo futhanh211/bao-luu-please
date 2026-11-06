@@ -49,6 +49,7 @@ export interface UploadedEvidenceFile {
   size: number;
   type: string;
   dataUrl?: string;
+  svgRaw?: string;
   lastModified?: number;
 }
 
@@ -263,27 +264,32 @@ export function buildEvidenceItemFromFormData(
   switch (reason) {
     case 'Ốm đau/tai nạn điều trị dài': {
       const med = formData.medical;
+      const hasHospital = Boolean(med.hospital && med.hospital.trim().length > 0);
+      const hasStamp = med.isValidStamp === true;
+
       item = {
         id: 'ev_custom_med',
         type: 'medical_record',
-        name: `Giấy xác nhận của bệnh viện (${med.hospital || 'Bệnh viện Đa khoa'})`,
-        content: `Chẩn đoán: ${med.diagnosis || 'Điều trị ngoại trú'}. Khoa: ${med.department || 'Điều trị'}. Bác sĩ chỉ định: ${med.doctorName}.`,
+        name: hasHospital
+          ? `Giấy xác nhận của bệnh viện (${med.hospital})`
+          : 'Giấy xác nhận bệnh viện (Thiếu tên cơ sở y tế)',
+        content: `Chẩn đoán: ${med.diagnosis || 'Chưa có chẩn đoán'}. Khoa: ${med.department || 'Chưa ghi'}. Bác sĩ chỉ định: ${med.doctorName || 'Chưa ghi'}.`,
         fields: [
-          { id: 'hospital', label: 'Bệnh viện cấp giấy', value: med.hospital },
-          { id: 'recordCode', label: 'Mã bệnh án / Số lưu trữ', value: med.recordCode },
-          { id: 'department', label: 'Khoa điều trị', value: med.department },
+          { id: 'hospital', label: 'Bệnh viện cấp giấy', value: med.hospital || '' },
+          { id: 'recordCode', label: 'Mã bệnh án / Số lưu trữ', value: med.recordCode || '' },
+          { id: 'department', label: 'Khoa điều trị', value: med.department || '' },
           { id: 'patientName', label: 'Họ tên bệnh nhân', value: studentName },
-          { id: 'doctorName', label: 'Bác sĩ điều trị', value: med.doctorName },
-          { id: 'admissionDate', label: 'Ngày nhập viện', value: med.admissionDate },
-          { id: 'dischargeDate', label: 'Ngày cấp giấy xác nhận', value: med.dischargeDate },
-          { id: 'diagnosis', label: 'Chẩn đoán điều trị', value: med.diagnosis },
+          { id: 'doctorName', label: 'Bác sĩ điều trị', value: med.doctorName || '' },
+          { id: 'admissionDate', label: 'Ngày nhập viện', value: med.admissionDate || '' },
+          { id: 'dischargeDate', label: 'Ngày cấp giấy xác nhận', value: med.dischargeDate || '' },
+          { id: 'diagnosis', label: 'Chẩn đoán điều trị', value: med.diagnosis || '' },
           {
             id: 'hospitalStamp',
             label: 'Dấu bệnh viện',
-            value: med.isValidStamp ? 'Có chữ ký và dấu mộc đỏ Bệnh viện' : 'Chưa có dấu mộc đỏ',
+            value: hasStamp ? 'Có chữ ký và dấu mộc đỏ Bệnh viện' : 'Chưa có dấu mộc đỏ',
           },
         ],
-        issueNotes: med.isValidStamp
+        issueNotes: hasStamp
           ? undefined
           : 'Giấy xác nhận chưa có chữ ký và dấu mộc đỏ của Bệnh viện theo quy định',
       };
@@ -292,25 +298,30 @@ export function buildEvidenceItemFromFormData(
 
     case 'Nghĩa vụ quân sự': {
       const mil = formData.military;
+      const hasUnit = Boolean(mil.militaryUnit && mil.militaryUnit.trim().length > 0);
+      const hasStamp = mil.isValidStamp === true;
+
       item = {
         id: 'ev_custom_mil',
         type: 'military_call',
-        name: `Giấy đi nghĩa vụ quân sự (${mil.militaryUnit || 'BCH Quân sự'})`,
-        content: `Lệnh gọi nhập ngũ số ${mil.orderNumber}. Ngày tập trung: ${mil.reportDate} tại ${mil.location}.`,
+        name: hasUnit
+          ? `Giấy đi nghĩa vụ quân sự (${mil.militaryUnit})`
+          : 'Lệnh gọi nhập ngũ (Thiếu đơn vị ban hành)',
+        content: `Lệnh gọi nhập ngũ số ${mil.orderNumber || 'Chưa ghi'}. Ngày tập trung: ${mil.reportDate || 'Chưa ghi'} tại ${mil.location || 'Chưa ghi'}.`,
         fields: [
-          { id: 'unit', label: 'Cơ quan cấp lệnh (BCH Quân sự)', value: mil.militaryUnit },
-          { id: 'orderNumber', label: 'Số lệnh gọi nhập ngũ', value: mil.orderNumber },
+          { id: 'unit', label: 'Cơ quan cấp lệnh (BCH Quân sự)', value: mil.militaryUnit || '' },
+          { id: 'orderNumber', label: 'Số lệnh gọi nhập ngũ', value: mil.orderNumber || '' },
           { id: 'citizenName', label: 'Công dân', value: studentName },
-          { id: 'signDate', label: 'Ngày ký lệnh', value: mil.signDate },
-          { id: 'reportDate', label: 'Ngày tập trung nhập ngũ', value: mil.reportDate },
-          { id: 'location', label: 'Địa điểm giao nhận quân', value: mil.location },
+          { id: 'signDate', label: 'Ngày ký lệnh', value: mil.signDate || '' },
+          { id: 'reportDate', label: 'Ngày tập trung nhập ngũ', value: mil.reportDate || '' },
+          { id: 'location', label: 'Địa điểm giao nhận quân', value: mil.location || '' },
           {
             id: 'stamp',
             label: 'Dấu đơn vị',
-            value: mil.isValidStamp ? 'Có chữ ký và dấu mộc đỏ BCH Quân sự' : 'Chưa có dấu mộc đỏ',
+            value: hasStamp ? 'Có chữ ký và dấu mộc đỏ BCH Quân sự' : 'Chưa có dấu mộc đỏ',
           },
         ],
-        issueNotes: mil.isValidStamp
+        issueNotes: hasStamp
           ? undefined
           : 'Lệnh gọi nhập ngũ chưa có chữ ký và dấu mộc đỏ của BCH Quân sự theo quy định',
       };
@@ -319,25 +330,30 @@ export function buildEvidenceItemFromFormData(
 
     case 'Hoàn cảnh gia đình': {
       const hard = formData.hardship;
+      const hasAuth = Boolean(hard.authority && hard.authority.trim().length > 0);
+      const hasStamp = hard.isValidStamp === true;
+
       item = {
         id: 'ev_custom_hard',
         type: 'hardship_proof',
-        name: `Giấy chứng minh hoàn cảnh gia đình (${hard.authority || 'UBND Phường/Xã'})`,
-        content: `Xác nhận diện: ${hard.category}. Chi tiết hoàn cảnh: ${hard.description}.`,
+        name: hasAuth
+          ? `Giấy chứng minh hoàn cảnh gia đình (${hard.authority})`
+          : 'Giấy chứng minh hoàn cảnh gia đình (Thiếu cơ quan xác nhận)',
+        content: `Xác nhận diện: ${hard.category}. Chi tiết hoàn cảnh: ${hard.description || 'Chưa ghi'}.`,
         fields: [
-          { id: 'authority', label: 'UBND Phường/Xã xác nhận', value: hard.authority },
+          { id: 'authority', label: 'UBND Phường/Xã xác nhận', value: hard.authority || '' },
           { id: 'category', label: 'Diện hoàn cảnh', value: hard.category },
-          { id: 'guardianName', label: 'Họ tên phụ huynh / Chủ hộ', value: hard.guardianName },
+          { id: 'guardianName', label: 'Họ tên phụ huynh / Chủ hộ', value: hard.guardianName || '' },
           { id: 'citizenName', label: 'Họ tên sinh viên', value: studentName },
-          { id: 'confirmDate', label: 'Ngày địa phương xác nhận', value: hard.confirmDate },
-          { id: 'reason', label: 'Lý do hoàn cảnh khó khăn', value: hard.description },
+          { id: 'confirmDate', label: 'Ngày địa phương xác nhận', value: hard.confirmDate || '' },
+          { id: 'reason', label: 'Lý do hoàn cảnh khó khăn', value: hard.description || '' },
           {
             id: 'stamp',
             label: 'Dấu xác nhận',
-            value: hard.isValidStamp ? 'Có lời phê xác nhận và dấu mộc đỏ UBND' : 'Chưa có dấu mộc đỏ',
+            value: hasStamp ? 'Có lời phê xác nhận và dấu mộc đỏ UBND' : 'Chưa có dấu mộc đỏ',
           },
         ],
-        issueNotes: hard.isValidStamp
+        issueNotes: hasStamp
           ? undefined
           : 'Đơn chưa có lời phê xác nhận và dấu mộc đỏ của UBND Phường/Xã theo quy định',
       };
@@ -347,38 +363,44 @@ export function buildEvidenceItemFromFormData(
     case 'Lý do cá nhân khác': {
       const pers = formData.personal;
       const isInternship = pers.subType === 'internship';
+      const hasStamp = pers.isValidStamp === true;
+
       item = {
         id: 'ev_custom_pers',
         type: 'personal_reason',
         name: isInternship
-          ? `Giấy tiếp nhận thực tập (${pers.companyName || 'Công ty'})`
+          ? `Giấy tiếp nhận thực tập (${pers.companyName || 'Thiếu tên đơn vị'})`
           : 'Đơn trình bày lý do cá nhân (Có xác nhận phụ huynh)',
         content: isInternship
-          ? `Thực tập tại ${pers.companyName}, vị trí: ${pers.internshipRole}. Thời gian: ${pers.startDate} đến ${pers.endDate}.`
-          : `Lý do cá nhân: ${pers.personalReasonContent}. Phụ huynh xác nhận: ${pers.parentName} (${pers.parentPhone}).`,
+          ? `Thực tập tại ${pers.companyName || 'Chưa ghi'}, vị trí: ${pers.internshipRole || 'Chưa ghi'}. Thời gian: ${pers.startDate || 'Chưa ghi'} đến ${pers.endDate || 'Chưa ghi'}.`
+          : `Lý do cá nhân: ${pers.personalReasonContent || 'Chưa ghi'}. Phụ huynh xác nhận: ${pers.parentName || 'Chưa ghi'} (${pers.parentPhone || 'Chưa ghi'}).`,
         fields: isInternship
           ? [
-              { id: 'company', label: 'Đơn vị / Công ty thực tập', value: pers.companyName },
-              { id: 'role', label: 'Vị trí & hình thức thực tập', value: pers.internshipRole },
+              { id: 'company', label: 'Đơn vị / Công ty thực tập', value: pers.companyName || '' },
+              { id: 'role', label: 'Vị trí & hình thức thực tập', value: pers.internshipRole || '' },
               { id: 'studentName', label: 'Họ tên sinh viên', value: studentName },
-              { id: 'startDate', label: 'Ngày bắt đầu thực tập', value: pers.startDate },
-              { id: 'endDate', label: 'Ngày kết thúc thực tập', value: pers.endDate },
+              { id: 'startDate', label: 'Ngày bắt đầu thực tập', value: pers.startDate || '' },
+              { id: 'endDate', label: 'Ngày kết thúc thực tập', value: pers.endDate || '' },
               {
                 id: 'stamp',
                 label: 'Dấu đơn vị',
-                value: pers.isValidStamp ? 'Có chữ ký và dấu mộc đỏ của Công ty' : 'Chưa có dấu mộc đỏ',
+                value: hasStamp ? 'Có chữ ký và dấu mộc đỏ của Công ty' : 'Chưa có dấu mộc đỏ',
               },
             ]
           : [
               { id: 'subType', label: 'Loại hồ sơ cá nhân', value: 'Đơn trình bày lý do cá nhân' },
               { id: 'studentName', label: 'Họ tên sinh viên', value: studentName },
-              { id: 'content', label: 'Nội dung lý do', value: pers.personalReasonContent },
-              { id: 'parentName', label: 'Họ tên phụ huynh đồng ý', value: pers.parentName },
-              { id: 'parentPhone', label: 'SĐT phụ huynh', value: pers.parentPhone },
-              { id: 'stamp', label: 'Xác nhận gia đình', value: 'Đã có cam kết và chữ ký của phụ huynh' },
+              { id: 'content', label: 'Nội dung lý do', value: pers.personalReasonContent || '' },
+              { id: 'parentName', label: 'Họ tên phụ huynh đồng ý', value: pers.parentName || '' },
+              { id: 'parentPhone', label: 'SĐT phụ huynh', value: pers.parentPhone || '' },
+              {
+                id: 'stamp',
+                label: 'Xác nhận gia đình',
+                value: hasStamp ? 'Đã có cam kết và chữ ký của phụ huynh' : 'Chưa có chữ ký xác nhận',
+              },
             ],
         issueNotes:
-          isInternship && !pers.isValidStamp
+          isInternship && !hasStamp
             ? 'Giấy tiếp nhận thực tập chưa có chữ ký và dấu mộc đỏ của Công ty theo quy định'
             : undefined,
       };

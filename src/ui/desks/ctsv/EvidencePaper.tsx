@@ -56,7 +56,9 @@ export const EvidencePaper: React.FC<EvidencePaperProps> = ({
               onClick={() => onToggle(key)}
             >
               <span className="evidence-field-label">{field.label}</span>
-              <span className="evidence-field-value">{field.value}</span>
+              <span className="evidence-field-value" title={field.value}>
+                {field.value}
+              </span>
               {marked && <span className="evidence-mark" aria-label="Đã đánh dấu nghi vấn" />}
             </button>
           );

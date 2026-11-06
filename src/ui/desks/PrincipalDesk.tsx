@@ -14,6 +14,7 @@ import {
   getPrincipalCases,
   updateCasePrincipalSign,
   SubmittedCase,
+  subscribeCases,
 } from '../../data/caseRegistry';
 import { DecisionDoc } from '../../engine/types';
 
@@ -327,6 +328,13 @@ export const PrincipalDesk: React.FC = () => {
 
   const scenarioId = view.scenario?.id;
   const logLength = view.log.length;
+
+  useEffect(() => {
+    const unsub = subscribeCases(() => {
+      setSubmittedCases(getPrincipalCases());
+    });
+    return unsub;
+  }, []);
 
   useEffect(() => {
     const cases = getPrincipalCases();

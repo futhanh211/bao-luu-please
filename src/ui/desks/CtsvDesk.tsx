@@ -21,6 +21,7 @@ import {
   getCtsvCases,
   updateCaseCtsvDecision,
   SubmittedCase,
+  subscribeCases,
 } from '../../data/caseRegistry';
 
 const CTSV_STAMPS: StampChoice[] = [
@@ -352,6 +353,13 @@ export const CtsvDesk: React.FC = () => {
 
   const scenarioId = view.scenario?.id;
   const logLength = view.log.length;
+
+  useEffect(() => {
+    const unsub = subscribeCases(() => {
+      setSubmittedCases(getCtsvCases());
+    });
+    return unsub;
+  }, []);
 
   useEffect(() => {
     const cases = getCtsvCases();
@@ -690,7 +698,7 @@ export const CtsvDesk: React.FC = () => {
       className="desk-page ctsv-page"
       style={{
         width: '100%',
-        maxWidth: '980px',
+        maxWidth: '1280px',
         margin: '0 auto',
         display: 'flex',
         flexDirection: 'column',

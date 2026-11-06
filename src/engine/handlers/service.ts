@@ -14,11 +14,14 @@ export async function handleServiceTask(
 
       // Check required fields
       const missing: string[] = [];
-      if (!state.form.fullName) missing.push('Họ và tên');
-      if (!state.form.mssv) missing.push('Mã số sinh viên');
-      if (!state.form.reason) missing.push('Lý do nghỉ học');
+      if (!state.form.fullName?.trim()) missing.push('Họ và tên');
+      if (!state.form.mssv?.trim()) missing.push('Mã số sinh viên');
+      if (!state.form.reason?.trim()) missing.push('Lý do nghỉ học');
       if (!state.form.semesterCount) missing.push('Số học kỳ xin nghỉ');
       if (!state.form.commitment) missing.push('Cam kết');
+      if (!state.evidence || state.evidence.length === 0) {
+        missing.push('Tài liệu minh chứng');
+      }
 
       // Check if student exists in DS2
       emit({ type: 'data.read', storeId: 'DS2', entityId: state.form.mssv });
@@ -35,7 +38,8 @@ export async function handleServiceTask(
 
       emit({ type: 'ai.responded', touchpoint: 'AI-1', source: 'T1', result: docResult });
 
-      const evidenceOk = docResult.typeMatchesReason && docResult.confidence >= 0.6;
+      const hasGarbageAnomaly = docResult.anomalies.some((a) => a.field === 'garbage');
+      const evidenceOk = docResult.typeMatchesReason && docResult.confidence >= 0.6 && !hasGarbageAnomaly;
       const complete = missing.length === 0;
 
       state.validity = {

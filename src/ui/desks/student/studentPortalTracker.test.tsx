@@ -216,5 +216,50 @@ describe('StudentPortalTracker — Hiển thị hồ sơ theo ma trận phân qu
 
     expect(html).toContain('Trả hồ sơ');
     expect(html).toContain('PHIẾU HƯỚNG DẪN BỔ SUNG HỒ SƠ');
+    expect(html).toContain('Nộp lại hồ sơ khác');
+  });
+
+  it('5. khi hồ sơ bị trả lại hoặc từ chối, hiển thị nút "Nộp lại hồ sơ khác"', () => {
+    const testCase: SubmittedCase = {
+      id: 'BL-2026-94',
+      caseCode: 'BL-2026-94',
+      studentMssv: '251121536104',
+      studentName: 'Ngô Thanh Bình',
+      studentClass: '51K36',
+      studentFaculty: 'Khoa Thống kê - Tin học',
+      form: {
+        fullName: 'Ngô Thanh Bình',
+        mssv: '251121536104',
+        className: '51K36',
+        faculty: 'Khoa Thống kê - Tin học',
+        phone: '0905123456',
+        email: 'binh@due.udn.vn',
+        reason: 'Ốm đau/tai nạn điều trị dài',
+        semesterCount: 1,
+        startSemester: 'Học kỳ 1 năm học 2026–2027',
+        commitment: true,
+      },
+      evidence: [],
+      attachedEvidenceIds: [],
+      submittedAt: '06/11/2026 10:00',
+      day: 0,
+      status: 'returned',
+    };
+
+    saveSubmittedCase(testCase);
+
+    const html = renderToStaticMarkup(
+      <StudentPortalTracker
+        caseCode="BL-2026-94"
+        studentName="Ngô Thanh Bình"
+        mssv="251121536104"
+        faculty="Khoa Thống kê - Tin học"
+        log={[]}
+        day={0}
+      />
+    );
+
+    // Có nút nộp lại hồ sơ khác ở cả thanh tác vụ và trong văn bản thông báo
+    expect(html).toContain('Nộp lại hồ sơ khác');
   });
 });

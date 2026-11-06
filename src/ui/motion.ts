@@ -16,6 +16,7 @@ export const MOTION = {
   typewriterCharMs: 30,
   aiTypewriterCharMs: 25,
   letterSlideMs: 350,
+  scannerSweepMs: 1200,
 };
 
 export const screenVariants = {

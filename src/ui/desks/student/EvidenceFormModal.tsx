@@ -8,6 +8,11 @@ import {
 } from '../../../data/studentFormData';
 import { StudentEvidenceOptionKey } from '../../../data/customTestData';
 import { Paperclip } from '../../kit/Paperclip';
+import { DocumentScanOverlay } from '../../kit/DocumentScanOverlay';
+import { createSampleEvidenceFile } from '../../../data/sampleEvidenceImages';
+import { getActiveAI } from '../../../store/playback/session';
+import { defaultMockAI } from '../../../ai/mock';
+import { AIService } from '../../../ai/service';
 import { sfx } from '../../audio/sfx';
 
 interface Props {
@@ -27,9 +32,17 @@ export const EvidenceFormModal: React.FC<Props> = ({
   const [uploadedFile, setUploadedFile] = useState<UploadedEvidenceFile | null>(
     () => initialData.uploadedFile || null
   );
+  const [imgLoadError, setImgLoadError] = useState(false);
   const [fileError, setFileError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
+  const [autoFilledFields, setAutoFilledFields] = useState<string[]>([]);
+  const [scanSummary, setScanSummary] = useState<string | null>(null);
+  const [scanStatus, setScanStatus] = useState<'idle' | 'success' | 'warning'>('idle');
+
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const isAutoFilled = (key: string): boolean => autoFilledFields.includes(key);
 
   const processSelectedFile = (file: File) => {
     if (file.size > 20 * 1024 * 1024) {
@@ -37,6 +50,10 @@ export const EvidenceFormModal: React.FC<Props> = ({
       return;
     }
     setFileError(null);
+    setImgLoadError(false);
+    setScanSummary(null);
+    setScanStatus('idle');
+    setAutoFilledFields([]);
 
     const reader = new FileReader();
     reader.onload = () => {
@@ -48,6 +65,17 @@ export const EvidenceFormModal: React.FC<Props> = ({
         lastModified: file.lastModified,
         dataUrl: result,
       };
+
+      if (file.type.includes('svg') || file.name.endsWith('.svg')) {
+        const textReader = new FileReader();
+        textReader.onload = () => {
+          fileData.svgRaw = textReader.result as string;
+          setUploadedFile({ ...fileData });
+          setData((prev) => ({ ...prev, uploadedFile: { ...fileData } }));
+        };
+        textReader.readAsText(file);
+      }
+
       setUploadedFile(fileData);
       setData((prev) => ({ ...prev, uploadedFile: fileData }));
       sfx.playPaperSlide();
@@ -56,6 +84,119 @@ export const EvidenceFormModal: React.FC<Props> = ({
       setFileError('Không thể đọc tệp từ thiết bị. Vui lòng thử lại.');
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleLoadSample = () => {
+    const sample = createSampleEvidenceFile(optionKey, data.fullName || 'Nguyễn Minh Khoa');
+    setImgLoadError(false);
+    setUploadedFile(sample);
+    setData((prev) => ({ ...prev, uploadedFile: sample }));
+    setFileError(null);
+    setScanSummary(null);
+    setScanStatus('idle');
+    setAutoFilledFields([]);
+    sfx.playPaperSlide();
+  };
+
+  const handleTriggerAiScan = async () => {
+    if (!uploadedFile || isScanning) return;
+    setIsScanning(true);
+    setFileError(null);
+
+    try {
+      const ai = getActiveAI() ?? new AIService(defaultMockAI, null, 'mock');
+      const result = await ai.scanDocument(uploadedFile, optionKey);
+
+      const isSuccess = result.confidence >= 0.6 && result.extractedCount > 0;
+      setScanSummary(result.summary);
+
+      if (isSuccess) {
+        setScanStatus('success');
+        setFileError(null);
+        sfx.playOcrSuccess();
+
+        const filledKeys: string[] = [];
+        if (optionKey === 'medical' && result.data.medical) {
+          const m = result.data.medical;
+          setData((prev) => ({
+            ...prev,
+            medical: {
+              ...prev.medical,
+              ...(m.hospital ? { hospital: m.hospital } : {}),
+              ...(m.recordCode ? { recordCode: m.recordCode } : {}),
+              ...(m.department ? { department: m.department } : {}),
+              ...(m.doctorName ? { doctorName: m.doctorName } : {}),
+              ...(m.admissionDate ? { admissionDate: m.admissionDate } : {}),
+              ...(m.dischargeDate ? { dischargeDate: m.dischargeDate } : {}),
+              ...(m.diagnosis ? { diagnosis: m.diagnosis } : {}),
+              ...(m.isValidStamp !== undefined ? { isValidStamp: m.isValidStamp } : {}),
+            },
+          }));
+          filledKeys.push(...result.fields.map((f) => f.key));
+        } else if (optionKey === 'military' && result.data.military) {
+          const mil = result.data.military;
+          setData((prev) => ({
+            ...prev,
+            military: {
+              ...prev.military,
+              ...(mil.militaryUnit ? { militaryUnit: mil.militaryUnit } : {}),
+              ...(mil.orderNumber ? { orderNumber: mil.orderNumber } : {}),
+              ...(mil.signDate ? { signDate: mil.signDate } : {}),
+              ...(mil.reportDate ? { reportDate: mil.reportDate } : {}),
+              ...(mil.location ? { location: mil.location } : {}),
+              ...(mil.isValidStamp !== undefined ? { isValidStamp: mil.isValidStamp } : {}),
+            },
+          }));
+          filledKeys.push(...result.fields.map((f) => f.key));
+        } else if (optionKey === 'hardship' && result.data.hardship) {
+          const h = result.data.hardship;
+          setData((prev) => ({
+            ...prev,
+            hardship: {
+              ...prev.hardship,
+              ...(h.authority ? { authority: h.authority } : {}),
+              ...(h.category ? { category: h.category } : {}),
+              ...(h.guardianName ? { guardianName: h.guardianName } : {}),
+              ...(h.confirmDate ? { confirmDate: h.confirmDate } : {}),
+              ...(h.description ? { description: h.description } : {}),
+              ...(h.isValidStamp !== undefined ? { isValidStamp: h.isValidStamp } : {}),
+            },
+          }));
+          filledKeys.push(...result.fields.map((f) => f.key));
+        } else if (optionKey === 'personal' && result.data.personal) {
+          const p = result.data.personal;
+          setData((prev) => ({
+            ...prev,
+            personal: {
+              ...prev.personal,
+              ...(p.subType ? { subType: p.subType } : {}),
+              ...(p.personalReasonContent ? { personalReasonContent: p.personalReasonContent } : {}),
+              ...(p.parentName ? { parentName: p.parentName } : {}),
+              ...(p.parentPhone ? { parentPhone: p.parentPhone } : {}),
+              ...(p.companyName ? { companyName: p.companyName } : {}),
+              ...(p.internshipRole ? { internshipRole: p.internshipRole } : {}),
+              ...(p.startDate ? { startDate: p.startDate } : {}),
+              ...(p.endDate ? { endDate: p.endDate } : {}),
+              ...(p.isValidStamp !== undefined ? { isValidStamp: p.isValidStamp } : {}),
+            },
+          }));
+          filledKeys.push(...result.fields.map((f) => f.key));
+        }
+        setAutoFilledFields(filledKeys);
+      } else {
+        // Tệp cảnh báo / rác / không hợp lệ: Không điền trường nào vào form
+        setScanStatus('warning');
+        setAutoFilledFields([]);
+        setFileError(`Cảnh báo kiểm tra minh chứng: ${result.summary}`);
+        sfx.playBuzz();
+      }
+    } catch {
+      setScanStatus('warning');
+      setFileError('Không thể hoàn tất quét OCR tài liệu. Vui lòng thử lại hoặc điền tay.');
+      sfx.playBuzz();
+    } finally {
+      setIsScanning(false);
+    }
   };
 
   const updateMed = (patch: Partial<StudentDetailedFormData['medical']>) => {
@@ -90,6 +231,22 @@ export const EvidenceFormModal: React.FC<Props> = ({
     onSave({ ...data, uploadedFile });
   };
 
+  const inputClass = (key: string): string =>
+    `student-input${isAutoFilled(key) ? ' student-input--autofilled' : ''}`;
+
+  const renderLabel = (text: string, id: string, autoFillKey: string, required = true) => (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
+      <label className="student-label" htmlFor={id} style={{ marginBottom: 0 }}>
+        {text} {required ? '*' : ''}
+      </label>
+      {isAutoFilled(autoFillKey) && (
+        <span className="ai-autofill-badge" title="Thông tin do AI trích xuất tự động từ văn bản">
+          ✓ AI điền
+        </span>
+      )}
+    </div>
+  );
+
   const med = data.medical;
   const mil = data.military;
   const hard = data.hardship;
@@ -113,8 +270,8 @@ export const EvidenceFormModal: React.FC<Props> = ({
         onClick={(e) => e.stopPropagation()}
         className="paper-sheet paper-lifted"
         style={{
-          width: 'min(640px, 94vw)',
-          maxHeight: '90vh',
+          width: 'min(660px, 95vw)',
+          maxHeight: '92vh',
           overflowY: 'auto',
           padding: '24px 28px',
           boxShadow: 'var(--shadow-paper-lg)',
@@ -141,14 +298,254 @@ export const EvidenceFormModal: React.FC<Props> = ({
         </div>
 
         <form onSubmit={handleSubmit}>
+          {/* KHỐI 1: TẢI MINH CHỨNG & AI QUÉT THÔNG MINH (OCR AUTO-FILL) */}
+          <div
+            style={{
+              background: 'var(--paper-dim)',
+              padding: '12px 14px',
+              borderRadius: 'var(--radius-sm)',
+              border: '1px solid var(--paper-line)',
+              marginBottom: 16,
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: 8,
+                marginBottom: 8,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: 14 }}>📁</span>
+                <span style={{ fontWeight: 'bold', fontSize: 12.5, textTransform: 'uppercase', color: 'var(--stamp-blue)' }}>
+                  Tệp minh chứng & AI Quét (OCR)
+                </span>
+              </div>
+              <button
+                type="button"
+                className="ai-sample-preset-btn"
+                onClick={handleLoadSample}
+                title="Tải tệp mẫu chuẩn của ĐH Đà Nẵng để thử nghiệm nhanh không cần tìm tệp ngoài"
+              >
+                📄 Nạp tệp mẫu (ĐHĐN)
+              </button>
+            </div>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*,.pdf,.doc,.docx"
+              style={{ display: 'none' }}
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) processSelectedFile(f);
+              }}
+            />
+
+            {!uploadedFile ? (
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setDragOver(true);
+                }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setDragOver(false);
+                  const f = e.dataTransfer.files?.[0];
+                  if (f) processSelectedFile(f);
+                }}
+                style={{
+                  border: dragOver ? '2px dashed var(--stamp-blue)' : '2px dashed var(--paper-line)',
+                  background: dragOver ? 'var(--wash-blue)' : '#fbfaf5',
+                  padding: '16px 14px',
+                  textAlign: 'center',
+                  borderRadius: 'var(--radius-sm)',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                <div style={{ fontSize: 24, marginBottom: 2 }}>📂</div>
+                <div style={{ fontWeight: 'bold', fontSize: 12.5, color: 'var(--ink)' }}>
+                  Bấm vào đây để chọn tệp ảnh hoặc PDF từ máy tính
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 2 }}>
+                  Hoặc bấm nút <strong>&quot;Nạp tệp mẫu (ĐHĐN)&quot;</strong> phía trên để demo 1-chạm
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {/* Khung ngắm xem trước tài liệu có tích hợp máy quét laser OCR */}
+                <DocumentScanOverlay
+                  isScanning={isScanning}
+                  documentType={optionKey}
+                  fileName={uploadedFile.name}
+                  className="paper-lifted"
+                >
+                  {uploadedFile.svgRaw ? (
+                    <div
+                      className="sample-svg-preview"
+                      style={{
+                        width: '100%',
+                        height: 220,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: '#fcfbf7',
+                        overflow: 'hidden',
+                        padding: 6,
+                      }}
+                      dangerouslySetInnerHTML={{ __html: uploadedFile.svgRaw }}
+                    />
+                  ) : !imgLoadError && uploadedFile.type.startsWith('image/') && uploadedFile.dataUrl ? (
+                    <img
+                      src={uploadedFile.dataUrl}
+                      alt="Xem trước ảnh minh chứng"
+                      onError={() => setImgLoadError(true)}
+                      style={{
+                        width: '100%',
+                        maxHeight: 220,
+                        minHeight: 160,
+                        objectFit: 'contain',
+                        background: '#fdfcf7',
+                        display: 'block',
+                      }}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        padding: '28px 16px',
+                        textAlign: 'center',
+                        background: '#fdfcf7',
+                        color: 'var(--ink)',
+                        width: '100%',
+                      }}
+                    >
+                      <span style={{ fontSize: 36 }}>📄</span>
+                      <div style={{ fontWeight: 'bold', fontSize: 13, marginTop: 4 }}>
+                        {uploadedFile.name}
+                      </div>
+                      <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>
+                        Dung lượng: {formatFileSize(uploadedFile.size)} · Đã sẵn sàng quét
+                      </div>
+                    </div>
+                  )}
+                </DocumentScanOverlay>
+
+                {/* Thanh điều khiển AI Quét & Đổi tệp */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: 8,
+                    background: '#fff',
+                    padding: '8px 12px',
+                    borderRadius: 'var(--radius-sm)',
+                    border: '1px solid var(--paper-line)',
+                  }}
+                >
+                  <div style={{ fontSize: 11.5, color: 'var(--ink)', minWidth: 0, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
+                    Tệp: <strong>{uploadedFile.name}</strong> ({formatFileSize(uploadedFile.size)})
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <button
+                      type="button"
+                      className="ai-ocr-scan-btn"
+                      onClick={handleTriggerAiScan}
+                      disabled={isScanning}
+                      title="AI nhận diện chữ viết và tự động điền các trường của đơn"
+                    >
+                      {isScanning ? '⏳ ĐANG QUÉT...' : '📷 AI QUÉT & TỰ ĐỘNG ĐIỀN'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUploadedFile(null);
+                        setImgLoadError(false);
+                        setData((prev) => ({ ...prev, uploadedFile: null }));
+                        setScanSummary(null);
+                        setScanStatus('idle');
+                        setAutoFilledFields([]);
+                        if (fileInputRef.current) fileInputRef.current.value = '';
+                      }}
+                      style={{
+                        background: 'none',
+                        border: '1px solid var(--stamp-red)',
+                        color: 'var(--stamp-red)',
+                        padding: '4px 8px',
+                        borderRadius: 'var(--radius-sm)',
+                        fontSize: 11,
+                        fontFamily: 'var(--font-paper)',
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      ✕ Chọn tệp khác
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {fileError && (
+              <div style={{ color: 'var(--stamp-red)', fontSize: 11.5, marginTop: 6, fontWeight: 'bold' }}>
+                ⚠ {fileError}
+              </div>
+            )}
+          </div>
+
+          {/* Banner thông báo kết quả AI Scan */}
+          {scanSummary && scanStatus === 'success' && (
+            <div className="ai-ocr-banner ai-ocr-banner--success" role="status">
+              <span style={{ fontSize: 16, color: 'var(--stamp-green)' }}>✔</span>
+              <div>
+                <strong style={{ color: 'var(--stamp-green)' }}>Trích xuất OCR thành công:</strong> {scanSummary}.
+                <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 2 }}>
+                  Các trường có nhãn <strong>[✓ AI điền]</strong> bên dưới đã được điền tự động. Bạn có thể kiểm tra và chỉnh sửa trước khi lưu.
+                </div>
+              </div>
+            </div>
+          )}
+
+          {scanSummary && scanStatus === 'warning' && (
+            <div className="ai-ocr-banner ai-ocr-banner--warning" role="alert">
+              <span style={{ fontSize: 16, color: 'var(--stamp-red)' }}>⚠</span>
+              <div>
+                <strong style={{ color: 'var(--stamp-red)' }}>Không thể trích xuất thông tin minh chứng:</strong> {scanSummary}
+                <div style={{ fontSize: 11, color: 'var(--ink)', marginTop: 2 }}>
+                  Tệp tải lên không khớp với mẫu minh chứng yêu cầu. Dữ liệu bên dưới <strong>chưa được tự động điền</strong>. Bạn có thể chọn tệp khác, bấm <strong>"Nạp tệp mẫu (ĐHĐN)"</strong> hoặc tự nhập tay các trường thông tin.
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* KHỐI 2: CHI TIẾT THÔNG TIN MINH CHỨNG */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <span style={{ fontWeight: 'bold', fontSize: 12.5, textTransform: 'uppercase', color: 'var(--ink)' }}>
+              CHI TIẾT THÔNG TIN MINH CHỨNG:
+            </span>
+            {autoFilledFields.length > 0 && (
+              <span style={{ fontSize: 11, color: 'var(--stamp-green)', fontWeight: 600 }}>
+                ✔ Đã điền tự động {autoFilledFields.length} trường
+              </span>
+            )}
+          </div>
+
           {/* 1. Form điền: Giấy xác nhận của bệnh viện */}
           {optionKey === 'medical' && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 14px' }}>
               <div>
-                <label className="student-label" htmlFor="m-hospital">Bệnh viện cấp giấy *</label>
+                {renderLabel('Bệnh viện cấp giấy', 'm-hospital', 'hospital')}
                 <input
                   id="m-hospital"
-                  className="student-input"
+                  className={inputClass('hospital')}
                   required
                   value={med.hospital}
                   placeholder="Nhập tên bệnh viện (VD: Bệnh viện Đa khoa Đà Nẵng)"
@@ -156,10 +553,10 @@ export const EvidenceFormModal: React.FC<Props> = ({
                 />
               </div>
               <div>
-                <label className="student-label" htmlFor="m-code">Mã bệnh án / Số lưu trữ *</label>
+                {renderLabel('Mã bệnh án / Số lưu trữ', 'm-code', 'recordCode')}
                 <input
                   id="m-code"
-                  className="student-input"
+                  className={inputClass('recordCode')}
                   required
                   value={med.recordCode}
                   placeholder="Nhập số hồ sơ bệnh án"
@@ -168,10 +565,10 @@ export const EvidenceFormModal: React.FC<Props> = ({
               </div>
 
               <div>
-                <label className="student-label" htmlFor="m-dept">Khoa điều trị *</label>
+                {renderLabel('Khoa điều trị', 'm-dept', 'department')}
                 <input
                   id="m-dept"
-                  className="student-input"
+                  className={inputClass('department')}
                   required
                   value={med.department}
                   placeholder="Nhập khoa điều trị"
@@ -179,10 +576,10 @@ export const EvidenceFormModal: React.FC<Props> = ({
                 />
               </div>
               <div>
-                <label className="student-label" htmlFor="m-doc">Họ tên bác sĩ chỉ định *</label>
+                {renderLabel('Họ tên bác sĩ chỉ định', 'm-doc', 'doctorName')}
                 <input
                   id="m-doc"
-                  className="student-input"
+                  className={inputClass('doctorName')}
                   required
                   value={med.doctorName}
                   placeholder="Nhập tên bác sĩ điều trị"
@@ -191,22 +588,22 @@ export const EvidenceFormModal: React.FC<Props> = ({
               </div>
 
               <div>
-                <label className="student-label" htmlFor="m-adm">Ngày nhập viện *</label>
+                {renderLabel('Ngày nhập viện', 'm-adm', 'admissionDate')}
                 <input
                   id="m-adm"
                   type="date"
-                  className="student-input"
+                  className={inputClass('admissionDate')}
                   required
                   value={toIsoDate(med.admissionDate)}
                   onChange={(e) => updateMed({ admissionDate: toVnDate(e.target.value) })}
                 />
               </div>
               <div>
-                <label className="student-label" htmlFor="m-dis">Ngày cấp giấy xác nhận *</label>
+                {renderLabel('Ngày cấp giấy xác nhận', 'm-dis', 'dischargeDate')}
                 <input
                   id="m-dis"
                   type="date"
-                  className="student-input"
+                  className={inputClass('dischargeDate')}
                   required
                   value={toIsoDate(med.dischargeDate)}
                   onChange={(e) => updateMed({ dischargeDate: toVnDate(e.target.value) })}
@@ -214,10 +611,10 @@ export const EvidenceFormModal: React.FC<Props> = ({
               </div>
 
               <div style={{ gridColumn: '1 / -1' }}>
-                <label className="student-label" htmlFor="m-diag">Chẩn đoán bệnh & chỉ định điều trị *</label>
+                {renderLabel('Chẩn đoán bệnh & chỉ định điều trị', 'm-diag', 'diagnosis')}
                 <textarea
                   id="m-diag"
-                  className="student-textarea"
+                  className={`student-textarea${isAutoFilled('diagnosis') ? ' student-input--autofilled' : ''}`}
                   rows={3}
                   required
                   value={med.diagnosis}
@@ -240,6 +637,11 @@ export const EvidenceFormModal: React.FC<Props> = ({
                   <span style={{ color: med.isValidStamp ? 'var(--stamp-green)' : 'var(--stamp-red)', fontWeight: 600 }}>
                     Xác nhận hợp lệ: Giấy xác nhận đã có chữ ký và dấu mộc đỏ của Bệnh viện
                   </span>
+                  {isAutoFilled('isValidStamp') && (
+                    <span className="ai-autofill-badge" style={{ marginLeft: 4 }}>
+                      ✓ AI xác thực
+                    </span>
+                  )}
                 </label>
               </div>
             </div>
@@ -249,10 +651,10 @@ export const EvidenceFormModal: React.FC<Props> = ({
           {optionKey === 'military' && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 14px' }}>
               <div>
-                <label className="student-label" htmlFor="mil-unit">Cơ quan cấp lệnh (BCH Quân sự) *</label>
+                {renderLabel('Cơ quan cấp lệnh (BCH Quân sự)', 'mil-unit', 'militaryUnit')}
                 <input
                   id="mil-unit"
-                  className="student-input"
+                  className={inputClass('militaryUnit')}
                   required
                   value={mil.militaryUnit}
                   placeholder="Nhập tên BCH Quân sự Quận/Huyện"
@@ -260,10 +662,10 @@ export const EvidenceFormModal: React.FC<Props> = ({
                 />
               </div>
               <div>
-                <label className="student-label" htmlFor="mil-num">Số lệnh gọi nhập ngũ *</label>
+                {renderLabel('Số lệnh gọi nhập ngũ', 'mil-num', 'orderNumber')}
                 <input
                   id="mil-num"
-                  className="student-input"
+                  className={inputClass('orderNumber')}
                   required
                   value={mil.orderNumber}
                   placeholder="Nhập số hiệu lệnh (VD: .../LG-BCH)"
@@ -272,22 +674,22 @@ export const EvidenceFormModal: React.FC<Props> = ({
               </div>
 
               <div>
-                <label className="student-label" htmlFor="mil-sign">Ngày ký lệnh *</label>
+                {renderLabel('Ngày ký lệnh', 'mil-sign', 'signDate')}
                 <input
                   id="mil-sign"
                   type="date"
-                  className="student-input"
+                  className={inputClass('signDate')}
                   required
                   value={toIsoDate(mil.signDate)}
                   onChange={(e) => updateMil({ signDate: toVnDate(e.target.value) })}
                 />
               </div>
               <div>
-                <label className="student-label" htmlFor="mil-rep">Ngày tập trung nhập ngũ *</label>
+                {renderLabel('Ngày tập trung nhập ngũ', 'mil-rep', 'reportDate')}
                 <input
                   id="mil-rep"
                   type="date"
-                  className="student-input"
+                  className={inputClass('reportDate')}
                   required
                   value={toIsoDate(mil.reportDate)}
                   onChange={(e) => updateMil({ reportDate: toVnDate(e.target.value) })}
@@ -295,10 +697,10 @@ export const EvidenceFormModal: React.FC<Props> = ({
               </div>
 
               <div style={{ gridColumn: '1 / -1' }}>
-                <label className="student-label" htmlFor="mil-loc">Địa điểm giao nhận quân *</label>
+                {renderLabel('Địa điểm giao nhận quân', 'mil-loc', 'location')}
                 <input
                   id="mil-loc"
-                  className="student-input"
+                  className={inputClass('location')}
                   required
                   value={mil.location}
                   placeholder="Nhập địa chỉ tập trung làm thủ tục nhập ngũ"
@@ -320,6 +722,11 @@ export const EvidenceFormModal: React.FC<Props> = ({
                   <span style={{ color: mil.isValidStamp ? 'var(--stamp-green)' : 'var(--stamp-red)', fontWeight: 600 }}>
                     Xác nhận hợp lệ: Lệnh gọi nhập ngũ đã có chữ ký và dấu mộc đỏ của BCH Quân sự
                   </span>
+                  {isAutoFilled('isValidStamp') && (
+                    <span className="ai-autofill-badge" style={{ marginLeft: 4 }}>
+                      ✓ AI xác thực
+                    </span>
+                  )}
                 </label>
               </div>
             </div>
@@ -329,10 +736,10 @@ export const EvidenceFormModal: React.FC<Props> = ({
           {optionKey === 'hardship' && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 14px' }}>
               <div>
-                <label className="student-label" htmlFor="h-auth">UBND Phường/Xã xác nhận *</label>
+                {renderLabel('UBND Phường/Xã xác nhận', 'h-auth', 'authority')}
                 <input
                   id="h-auth"
-                  className="student-input"
+                  className={inputClass('authority')}
                   required
                   value={hard.authority}
                   placeholder="Nhập tên UBND Phường/Xã nơi cư trú"
@@ -340,10 +747,10 @@ export const EvidenceFormModal: React.FC<Props> = ({
                 />
               </div>
               <div>
-                <label className="student-label" htmlFor="h-cat">Diện hoàn cảnh *</label>
+                {renderLabel('Diện hoàn cảnh', 'h-cat', 'category')}
                 <select
                   id="h-cat"
-                  className="student-input"
+                  className={inputClass('category')}
                   value={hard.category}
                   onChange={(e) =>
                     updateHard({ category: e.target.value as StudentDetailedFormData['hardship']['category'] })
@@ -357,10 +764,10 @@ export const EvidenceFormModal: React.FC<Props> = ({
               </div>
 
               <div>
-                <label className="student-label" htmlFor="h-guardian">Họ tên phụ huynh / Chủ hộ *</label>
+                {renderLabel('Họ tên phụ huynh / Chủ hộ', 'h-guardian', 'guardianName')}
                 <input
                   id="h-guardian"
-                  className="student-input"
+                  className={inputClass('guardianName')}
                   required
                   value={hard.guardianName}
                   placeholder="Nhập họ tên cha/mẹ hoặc người giám hộ"
@@ -368,11 +775,11 @@ export const EvidenceFormModal: React.FC<Props> = ({
                 />
               </div>
               <div>
-                <label className="student-label" htmlFor="h-date">Ngày địa phương xác nhận *</label>
+                {renderLabel('Ngày địa phương xác nhận', 'h-date', 'confirmDate')}
                 <input
                   id="h-date"
                   type="date"
-                  className="student-input"
+                  className={inputClass('confirmDate')}
                   required
                   value={toIsoDate(hard.confirmDate)}
                   onChange={(e) => updateHard({ confirmDate: toVnDate(e.target.value) })}
@@ -380,10 +787,10 @@ export const EvidenceFormModal: React.FC<Props> = ({
               </div>
 
               <div style={{ gridColumn: '1 / -1' }}>
-                <label className="student-label" htmlFor="h-desc">Trình bày chi tiết hoàn cảnh khó khăn *</label>
+                {renderLabel('Trình bày chi tiết hoàn cảnh khó khăn', 'h-desc', 'description')}
                 <textarea
                   id="h-desc"
-                  className="student-textarea"
+                  className={`student-textarea${isAutoFilled('description') ? ' student-input--autofilled' : ''}`}
                   rows={3}
                   required
                   value={hard.description}
@@ -406,6 +813,11 @@ export const EvidenceFormModal: React.FC<Props> = ({
                   <span style={{ color: hard.isValidStamp ? 'var(--stamp-green)' : 'var(--stamp-red)', fontWeight: 600 }}>
                     Xác nhận hợp lệ: Đơn đã có lời phê xác nhận và dấu mộc đỏ của UBND Phường/Xã
                   </span>
+                  {isAutoFilled('isValidStamp') && (
+                    <span className="ai-autofill-badge" style={{ marginLeft: 4 }}>
+                      ✓ AI xác thực
+                    </span>
+                  )}
                 </label>
               </div>
             </div>
@@ -441,10 +853,10 @@ export const EvidenceFormModal: React.FC<Props> = ({
               {pers.subType !== 'internship' ? (
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 14px' }}>
                   <div style={{ gridColumn: '1 / -1' }}>
-                    <label className="student-label" htmlFor="p-content">Nội dung trình bày lý do cá nhân *</label>
+                    {renderLabel('Nội dung trình bày lý do cá nhân', 'p-content', 'personalReasonContent')}
                     <textarea
                       id="p-content"
-                      className="student-textarea"
+                      className={`student-textarea${isAutoFilled('personalReasonContent') ? ' student-input--autofilled' : ''}`}
                       rows={3}
                       required
                       value={pers.personalReasonContent}
@@ -453,10 +865,10 @@ export const EvidenceFormModal: React.FC<Props> = ({
                     />
                   </div>
                   <div>
-                    <label className="student-label" htmlFor="p-pname">Họ tên phụ huynh đồng ý *</label>
+                    {renderLabel('Họ tên phụ huynh đồng ý', 'p-pname', 'parentName')}
                     <input
                       id="p-pname"
-                      className="student-input"
+                      className={inputClass('parentName')}
                       required
                       value={pers.parentName}
                       placeholder="Nhập họ tên phụ huynh xác nhận"
@@ -464,11 +876,11 @@ export const EvidenceFormModal: React.FC<Props> = ({
                     />
                   </div>
                   <div>
-                    <label className="student-label" htmlFor="p-pphone">Số điện thoại phụ huynh *</label>
+                    {renderLabel('Số điện thoại phụ huynh', 'p-pphone', 'parentPhone')}
                     <input
                       id="p-pphone"
                       type="tel"
-                      className="student-input"
+                      className={inputClass('parentPhone')}
                       required
                       value={pers.parentPhone}
                       placeholder="Nhập SĐT phụ huynh để đối chiếu"
@@ -479,10 +891,10 @@ export const EvidenceFormModal: React.FC<Props> = ({
               ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 14px' }}>
                   <div>
-                    <label className="student-label" htmlFor="p-comp">Tên đơn vị / Công ty thực tập *</label>
+                    {renderLabel('Tên đơn vị / Công ty thực tập', 'p-comp', 'companyName')}
                     <input
                       id="p-comp"
-                      className="student-input"
+                      className={inputClass('companyName')}
                       required
                       value={pers.companyName}
                       placeholder="Nhập tên doanh nghiệp tiếp nhận"
@@ -490,10 +902,10 @@ export const EvidenceFormModal: React.FC<Props> = ({
                     />
                   </div>
                   <div>
-                    <label className="student-label" htmlFor="p-role">Vị trí & hình thức thực tập *</label>
+                    {renderLabel('Vị trí & hình thức thực tập', 'p-role', 'internshipRole')}
                     <input
                       id="p-role"
-                      className="student-input"
+                      className={inputClass('internshipRole')}
                       required
                       value={pers.internshipRole}
                       placeholder="VD: Thực tập sinh Toàn thời gian"
@@ -501,22 +913,22 @@ export const EvidenceFormModal: React.FC<Props> = ({
                     />
                   </div>
                   <div>
-                    <label className="student-label" htmlFor="p-start">Ngày bắt đầu thực tập *</label>
+                    {renderLabel('Ngày bắt đầu thực tập', 'p-start', 'startDate')}
                     <input
                       id="p-start"
                       type="date"
-                      className="student-input"
+                      className={inputClass('startDate')}
                       required
                       value={toIsoDate(pers.startDate)}
                       onChange={(e) => updatePers({ startDate: toVnDate(e.target.value) })}
                     />
                   </div>
                   <div>
-                    <label className="student-label" htmlFor="p-end">Ngày kết thúc thực tập *</label>
+                    {renderLabel('Ngày kết thúc thực tập', 'p-end', 'endDate')}
                     <input
                       id="p-end"
                       type="date"
-                      className="student-input"
+                      className={inputClass('endDate')}
                       required
                       value={toIsoDate(pers.endDate)}
                       onChange={(e) => updatePers({ endDate: toVnDate(e.target.value) })}
@@ -536,147 +948,17 @@ export const EvidenceFormModal: React.FC<Props> = ({
                       <span style={{ color: pers.isValidStamp ? 'var(--stamp-green)' : 'var(--stamp-red)', fontWeight: 600 }}>
                         Xác nhận đơn vị: Giấy tiếp nhận thực tập đã có chữ ký và dấu mộc đỏ của Công ty
                       </span>
+                      {isAutoFilled('isValidStamp') && (
+                        <span className="ai-autofill-badge" style={{ marginLeft: 4 }}>
+                          ✓ AI xác thực
+                        </span>
+                      )}
                     </label>
                   </div>
                 </div>
               )}
             </div>
           )}
-
-          {/* PHẦN 2: TẢI LÊN TỆP MINH CHỨNG TỪ MÁY TÍNH */}
-          <div style={{ marginTop: 18, borderTop: '1px dashed var(--paper-line)', paddingTop: 14 }}>
-            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 6 }}>
-              <label style={{ fontWeight: 'bold', fontSize: 13, textTransform: 'uppercase', color: 'var(--stamp-blue)' }}>
-                📁 TẢI LÊN TỆP MINH CHỨNG TỪ MÁY TÍNH *
-              </label>
-              <span style={{ fontSize: 11, color: 'var(--ink-soft)' }}>
-                (Chọn ảnh chụp, bản scan hoặc file PDF từ thiết bị của bạn)
-              </span>
-            </div>
-
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*,.pdf,.doc,.docx"
-              style={{ display: 'none' }}
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) processSelectedFile(f);
-              }}
-            />
-
-            {!uploadedFile ? (
-              <div
-                onClick={() => fileInputRef.current?.click()}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setDragOver(true);
-                }}
-                onDragLeave={() => setDragOver(false)}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  setDragOver(false);
-                  const f = e.dataTransfer.files?.[0];
-                  if (f) processSelectedFile(f);
-                }}
-                style={{
-                  border: dragOver ? '2px dashed var(--stamp-blue)' : '2px dashed var(--paper-line)',
-                  background: dragOver ? 'var(--wash-blue)' : 'var(--paper-dim)',
-                  padding: '20px 14px',
-                  textAlign: 'center',
-                  borderRadius: 'var(--radius-sm)',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                }}
-              >
-                <div style={{ fontSize: 26, marginBottom: 4 }}>📂</div>
-                <div style={{ fontWeight: 'bold', fontSize: 13, color: 'var(--ink)' }}>
-                  Bấm vào đây để chọn tệp từ máy tính
-                </div>
-                <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 3 }}>
-                  Chấp nhận các định dạng Ảnh (.png, .jpg, .jpeg), file .PDF hoặc tài liệu Word (.docx)
-                </div>
-              </div>
-            ) : (
-              <div
-                style={{
-                  border: '1px solid var(--stamp-green)',
-                  background: 'var(--wash-green)',
-                  padding: '10px 14px',
-                  borderRadius: 'var(--radius-sm)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 12,
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
-                  {uploadedFile.type.startsWith('image/') && uploadedFile.dataUrl ? (
-                    <img
-                      src={uploadedFile.dataUrl}
-                      alt="Xem trước ảnh minh chứng"
-                      style={{
-                        width: 48,
-                        height: 48,
-                        objectFit: 'cover',
-                        borderRadius: 3,
-                        border: '1px solid var(--paper-line)',
-                        background: '#fff',
-                        flexShrink: 0,
-                      }}
-                    />
-                  ) : (
-                    <span style={{ fontSize: 32, flexShrink: 0 }}>📄</span>
-                  )}
-                  <div style={{ minWidth: 0 }}>
-                    <div
-                      style={{
-                        fontWeight: 'bold',
-                        fontSize: 13,
-                        color: 'var(--ink)',
-                        textOverflow: 'ellipsis',
-                        overflow: 'hidden',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {uploadedFile.name}
-                    </div>
-                    <div style={{ fontSize: 11, color: 'var(--stamp-green)', marginTop: 2 }}>
-                      ✔ Đã tải lên từ máy · Dung lượng: {formatFileSize(uploadedFile.size)}
-                    </div>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setUploadedFile(null);
-                    setData((prev) => ({ ...prev, uploadedFile: null }));
-                    if (fileInputRef.current) fileInputRef.current.value = '';
-                  }}
-                  style={{
-                    background: 'none',
-                    border: '1px solid var(--stamp-red)',
-                    color: 'var(--stamp-red)',
-                    padding: '4px 10px',
-                    borderRadius: 'var(--radius-sm)',
-                    fontSize: 11,
-                    fontFamily: 'var(--font-paper)',
-                    cursor: 'pointer',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  ✕ Chọn tệp khác
-                </button>
-              </div>
-            )}
-
-            {fileError && (
-              <div style={{ color: 'var(--stamp-red)', fontSize: 11.5, marginTop: 4, fontWeight: 'bold' }}>
-                ⚠ {fileError}
-              </div>
-            )}
-          </div>
 
           {/* Nút hành động */}
           <div

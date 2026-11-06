@@ -25,7 +25,9 @@ export type SoundName =
   | 'pull_chain'
   | 'uv_switch'
   | 'phone_ring'
-  | 'tape_reel';
+  | 'tape_reel'
+  | 'scanner_sweep'
+  | 'ocr_success';
 
 const MAX_VOLUME = 0.4;
 
@@ -55,6 +57,8 @@ const THROTTLE_MS: Record<SoundName, number> = {
   uv_switch: 150,
   phone_ring: 800,
   tape_reel: 180,
+  scanner_sweep: 150,
+  ocr_success: 200,
 };
 
 interface ToneOptions {
@@ -217,10 +221,24 @@ export class SoundManager {
       case 'tape_reel':
         this.synthTapeReel();
         break;
+      case 'scanner_sweep':
+        this.synthScannerSweep();
+        break;
+      case 'ocr_success':
+        this.synthOcrSuccess();
+        break;
     }
   }
 
   // --- Convenience API ---
+  public playScannerSweep(): void {
+    this.play('scanner_sweep');
+  }
+
+  public playOcrSuccess(): void {
+    this.play('ocr_success');
+  }
+
   public playStamp(): void {
     this.play('stamp_heavy');
   }
@@ -517,6 +535,20 @@ export class SoundManager {
   private synthTapeReel(): void {
     this.tone({ freq: 110, type: 'sawtooth', dur: 0.1, gain: 0.03 });
     this.noise(0.07, 0.035, 'bandpass', 950);
+  }
+
+  /** Tiếng quét laser quang học di chuyển cơ khí của máy quét tài liệu. */
+  private synthScannerSweep(): void {
+    this.tone({ freq: 220, endFreq: 440, type: 'triangle', dur: 0.35, gain: 0.05 });
+    this.tone({ freq: 880, endFreq: 1760, type: 'sine', dur: 0.3, gain: 0.045, delay: 0.02 });
+    this.noise(0.25, 0.035, 'bandpass', 1200);
+  }
+
+  /** Tiếng bíp hợp âm sáng báo hiệu nhận diện OCR hoàn tất thành công. */
+  private synthOcrSuccess(): void {
+    this.tone({ freq: 987.77, type: 'sine', dur: 0.12, gain: 0.08 });
+    this.tone({ freq: 1318.51, type: 'sine', dur: 0.18, gain: 0.07, delay: 0.06 });
+    this.tone({ freq: 1975.53, type: 'sine', dur: 0.25, gain: 0.06, delay: 0.12 });
   }
 }
 

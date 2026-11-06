@@ -126,3 +126,338 @@
     animation: none;
   }
 }
+
+/* =========================================================
+   DOCUMENT SCANNER OVERLAY (Retro OCR Viewfinder & Laser HUD)
+   ========================================================= */
+
+.scanner-viewport {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--paper-line);
+  border-radius: var(--radius-sm);
+  background: var(--paper-dim);
+  user-select: none;
+  min-height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.scanner-overlay-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+/* Lưới tọa độ quang học (Reticle dots & crosshairs) */
+.scanner-grid {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    radial-gradient(circle, rgba(29, 29, 25, 0.15) 1px, transparent 1px);
+  background-size: 16px 16px;
+  opacity: 0.75;
+  pointer-events: none;
+}
+
+/* 4 góc ngắm quang học (Viewfinder L-brackets) */
+.scanner-corner {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-color: var(--stamp-blue);
+  border-style: solid;
+  pointer-events: none;
+  z-index: 12;
+}
+
+.scanner-corner--tl {
+  top: 6px;
+  left: 6px;
+  border-width: 2.5px 0 0 2.5px;
+}
+
+.scanner-corner--tr {
+  top: 6px;
+  right: 6px;
+  border-width: 2.5px 2.5px 0 0;
+}
+
+.scanner-corner--bl {
+  bottom: 6px;
+  left: 6px;
+  border-width: 0 0 2.5px 2.5px;
+}
+
+.scanner-corner--br {
+  bottom: 6px;
+  right: 6px;
+  border-width: 0 2.5px 2.5px 0;
+}
+
+/* Tia laser quét quang học chuyển động dọc */
+.scanner-laser-beam {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 48px;
+  background: linear-gradient(to top, rgba(39, 80, 138, 0.22) 0%, transparent 100%);
+  pointer-events: none;
+  z-index: 11;
+  transform: translateY(-100%);
+}
+
+.scanner-laser-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--stamp-blue) 15%,
+    #70a5f5 50%,
+    var(--stamp-blue) 85%,
+    transparent 100%
+  );
+  box-shadow: 
+    0 0 8px rgba(39, 80, 138, 0.8),
+    0 0 16px rgba(112, 165, 245, 0.5);
+  pointer-events: none;
+  z-index: 12;
+}
+
+/* Vùng nhận diện OCR giả lập (Target bounding boxes) */
+.scanner-target-box {
+  position: absolute;
+  border: 1px dashed var(--stamp-blue);
+  background: rgba(39, 80, 138, 0.08);
+  border-radius: var(--radius-sm);
+  pointer-events: none;
+  z-index: 11;
+  animation: target-box-pulse 1s ease-in-out infinite alternate;
+}
+
+@keyframes target-box-pulse {
+  0% {
+    opacity: 0.35;
+    transform: scale(0.99);
+  }
+  100% {
+    opacity: 0.85;
+    transform: scale(1.01);
+  }
+}
+
+/* Thanh HUD trạng thái máy quét ở dưới đáy */
+.scanner-hud-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(18, 25, 44, 0.88);
+  backdrop-filter: blur(2px);
+  color: var(--text-on-stamp);
+  padding: 6px 12px;
+  font-family: var(--font-hud);
+  font-size: 13px;
+  letter-spacing: 0.5px;
+  z-index: 15;
+  border-top: 1px solid var(--stamp-blue);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.scanner-hud-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.scanner-hud-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #7fe08a; /* CRT green accent */
+}
+
+.scanner-hud-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #7fe08a;
+  box-shadow: 0 0 6px #7fe08a;
+  animation: ai-pulse 0.8s ease-in-out infinite;
+}
+
+.scanner-hud-pct {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--amber);
+  font-weight: bold;
+}
+
+/* Thanh tiến trình retro gauge */
+.scanner-progress-track {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 1px;
+  overflow: hidden;
+}
+
+.scanner-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--stamp-blue) 0%, #7fe08a 100%);
+  transition: width 0.15s ease-out;
+}
+
+/* Khi người dùng bật Reduced Motion */
+.scanner-viewport[data-reduced-motion='true'] .scanner-laser-line,
+.scanner-viewport[data-reduced-motion='true'] .scanner-laser-beam,
+.scanner-viewport[data-reduced-motion='true'] .scanner-hud-dot,
+.scanner-viewport[data-reduced-motion='true'] .scanner-target-box {
+  animation: none !important;
+}
+
+.scanner-viewport[data-reduced-motion='true'] .scanner-laser-line {
+  top: 50% !important;
+  opacity: 0.6;
+}
+
+/* =========================================================
+   AI AUTO-FILL BADGES & BUTTONS (EvidenceFormModal)
+   ========================================================= */
+
+.ai-autofill-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-family: var(--font-hud);
+  font-size: 11px;
+  padding: 1px 5px;
+  border-radius: var(--radius-sm);
+  background: var(--wash-green);
+  color: var(--stamp-green);
+  border: 1px solid var(--stamp-green);
+  margin-left: 6px;
+  letter-spacing: 0.3px;
+  vertical-align: middle;
+  animation: ai-badge-appear 0.3s ease-out;
+}
+
+@keyframes ai-badge-appear {
+  0% {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.student-input--autofilled {
+  border-color: var(--stamp-blue) !important;
+  background-color: rgba(39, 80, 138, 0.04) !important;
+  box-shadow: 0 0 0 1px var(--stamp-blue) inset;
+}
+
+.ai-ocr-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--wash-green);
+  border: 1px solid var(--stamp-green);
+  border-radius: var(--radius-sm);
+  margin-bottom: 14px;
+  font-family: var(--font-paper);
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--ink);
+  animation: ai-badge-appear 0.25s ease-out;
+}
+
+.ai-ocr-banner--success {
+  background: var(--wash-green);
+  border-color: var(--stamp-green);
+}
+
+.ai-ocr-banner--warning {
+  background: var(--wash-amber);
+  border-color: var(--stamp-red);
+  box-shadow: 0 0 0 1px rgba(179, 38, 30, 0.15) inset;
+}
+
+.ai-ocr-scan-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  font-family: var(--font-hud);
+  font-size: 13.5px;
+  font-weight: bold;
+  letter-spacing: 0.4px;
+  background: linear-gradient(180deg, #325a9b 0%, #204172 100%);
+  color: #fff;
+  border: 1px solid #1a3359;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  box-shadow: 1px 2px 0px rgba(0, 0, 0, 0.4);
+  transition: all 0.15s ease;
+}
+
+.ai-ocr-scan-btn:hover:not(:disabled) {
+  background: linear-gradient(180deg, #3c6ab5 0%, #27508a 100%);
+  transform: translateY(-1px);
+  box-shadow: 2px 3px 0px rgba(0, 0, 0, 0.5);
+}
+
+.ai-ocr-scan-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.ai-sample-preset-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  font-family: var(--font-paper);
+  font-size: 11.5px;
+  background: var(--paper-dim);
+  color: var(--ink);
+  border: 1px solid var(--paper-line);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.ai-sample-preset-btn:hover {
+  background: var(--paper);
+  border-color: var(--ink-soft);
+}
+
+.sample-svg-preview {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sample-svg-preview svg {
+  max-width: 100%;
+  max-height: 220px;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+
+

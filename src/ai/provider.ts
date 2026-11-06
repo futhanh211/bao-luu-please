@@ -18,6 +18,12 @@ export type {
   ReviewerBrief,
 } from '../engine/types';
 
+export type {
+  OcrScanResult,
+  OcrDocumentType,
+  ExtractedOcrField,
+} from './ocrTypes';
+
 /** Tóm tắt một ca để AI đọc — chỉ chứa dữ kiện engine đã có, không thêm suy diễn. */
 export interface CaseSummary {
   form: StudentApplicationForm;

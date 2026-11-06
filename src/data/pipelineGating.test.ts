@@ -9,6 +9,7 @@ import {
   getAdvisorCases,
   getCtsvCases,
   getPrincipalCases,
+  removeSubmittedCase,
   SubmittedCase,
 } from './caseRegistry';
 
@@ -281,5 +282,40 @@ describe('Multi-Role Pipeline Gating & Access Control (Luật gating giữa các
     expect(target?.decisionDoc).toBeUndefined();
     expect(target?.principalSignerName).toBeUndefined();
     expect(getPrincipalCases().some((c) => c.id === 'BL-DIRTY-01')).toBe(false);
+  });
+
+  it('7. removeSubmittedCase: xóa hồ sơ theo MSSV hoặc mã ca thành công', () => {
+    const testCase: SubmittedCase = {
+      id: 'BL-TEST-REMOVE',
+      caseCode: 'BL-TEST-REMOVE',
+      studentMssv: '251121536999',
+      studentName: 'Trần Văn X',
+      studentClass: '51K36',
+      studentFaculty: 'Khoa Tin học',
+      form: {
+        fullName: 'Trần Văn X',
+        mssv: '251121536999',
+        className: '51K36',
+        faculty: 'Khoa Tin học',
+        phone: '0901234567',
+        email: 'tranvanx@due.edu.vn',
+        reason: 'Lý do cá nhân khác',
+        semesterCount: 1,
+        startSemester: 'Học kỳ 1 năm học 2026–2027',
+        commitment: true,
+      },
+      evidence: [],
+      attachedEvidenceIds: [],
+      submittedAt: '01/01/2026 08:00',
+      day: 0,
+      status: 'returned',
+    };
+
+    saveSubmittedCase(testCase);
+    expect(getAllSubmittedCases().some((c) => c.studentMssv === '251121536999')).toBe(true);
+
+    const ok = removeSubmittedCase('251121536999');
+    expect(ok).toBe(true);
+    expect(getAllSubmittedCases().some((c) => c.studentMssv === '251121536999')).toBe(false);
   });
 });

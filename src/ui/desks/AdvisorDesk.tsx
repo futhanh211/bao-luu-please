@@ -18,6 +18,7 @@ import {
   getAdvisorCases,
   updateCaseAdvisorDecision,
   SubmittedCase,
+  subscribeCases,
 } from '../../data/caseRegistry';
 
 const ADVISOR_STAMPS: StampChoice[] = [
@@ -340,6 +341,13 @@ export const AdvisorDesk: React.FC = () => {
 
   const scenarioId = view.scenario?.id;
   const logLength = view.log.length;
+
+  useEffect(() => {
+    const unsub = subscribeCases(() => {
+      setSubmittedCases(getAdvisorCases());
+    });
+    return unsub;
+  }, []);
 
   useEffect(() => {
     const cases = getAdvisorCases();

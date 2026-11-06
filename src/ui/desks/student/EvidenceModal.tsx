@@ -65,7 +65,18 @@ export const EvidenceModal: React.FC<Props> = ({ item, onClose }) => {
                 </span>
               </div>
 
-              {item.fileData.dataUrl && item.fileData.type.startsWith('image/') ? (
+              {item.fileData.svgRaw ? (
+                <div style={{ textAlign: 'center', background: '#fff', padding: 8, borderRadius: 4, border: '1px solid var(--paper-line)' }}>
+                  <div
+                    className="sample-svg-preview"
+                    style={{ width: '100%', maxHeight: 360, display: 'flex', justifyContent: 'center' }}
+                    dangerouslySetInnerHTML={{ __html: item.fileData.svgRaw }}
+                  />
+                  <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 6 }}>
+                    Minh chứng số hóa: <strong>{item.fileData.name}</strong>
+                  </div>
+                </div>
+              ) : item.fileData.dataUrl && item.fileData.type.startsWith('image/') ? (
                 <div style={{ textAlign: 'center', background: '#fff', padding: 8, borderRadius: 4, border: '1px solid var(--paper-line)' }}>
                   <img
                     src={item.fileData.dataUrl}

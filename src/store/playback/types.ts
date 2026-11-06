@@ -87,5 +87,6 @@ export interface PlaybackStoreState {
   sealCtsvInspection: (caseId: string, result: CtsvResult) => void;
   setReportDismissed: (dismissed: boolean) => void;
   reset: () => void;
+  prepareStudentResubmission: () => void;
   setActiveCaption: (nodeId: string | null) => void;
 }

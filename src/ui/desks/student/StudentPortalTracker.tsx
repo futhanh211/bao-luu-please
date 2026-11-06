@@ -1,13 +1,14 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { EngineEvent, DecisionDoc } from '../../../engine/types';
 import { useAuthStore } from '../../../store/useAuth';
 import { useAppStore } from '../../../store/useApp';
+import { usePlaybackStore } from '../../../store/playback';
 import { DecisionDraft } from '../principal/DecisionDraft';
 import { composeLetter, LetterDoc } from '../../../data/letters';
 import { Paper } from '../../kit/Paper';
 import { Stamp } from '../../kit/Stamp';
 import { sfx } from '../../audio/sfx';
-import { getSubmittedCaseByMssv, getSubmittedCaseById } from '../../../data/caseRegistry';
+import { getSubmittedCaseByMssv, getSubmittedCaseById, subscribeCases } from '../../../data/caseRegistry';
 
 interface StudentPortalTrackerProps {
   caseCode: string;
@@ -17,6 +18,7 @@ interface StudentPortalTrackerProps {
   log: EngineEvent[];
   day: number;
   decisionDoc?: DecisionDoc | null;
+  onResubmit?: () => void;
 }
 
 export const StudentPortalTracker: React.FC<StudentPortalTrackerProps> = ({
@@ -27,9 +29,28 @@ export const StudentPortalTracker: React.FC<StudentPortalTrackerProps> = ({
   log,
   day,
   decisionDoc,
+  onResubmit,
 }) => {
   const logout = useAuthStore((s) => s.logout);
   const setScreen = useAppStore((s) => s.setScreen);
+  const prepareStudentResubmission = usePlaybackStore((s) => s.prepareStudentResubmission);
+  const [, setCaseUpdateTick] = useState(0);
+
+  useEffect(() => {
+    const unsub = subscribeCases(() => {
+      setCaseUpdateTick((t) => t + 1);
+    });
+    return unsub;
+  }, []);
+
+  const handleResubmit = () => {
+    sfx.play('paper');
+    if (onResubmit) {
+      onResubmit();
+    } else {
+      prepareStudentResubmission();
+    }
+  };
 
   const regCase = getSubmittedCaseByMssv(mssv) || getSubmittedCaseById(caseCode);
   const activeDoc = decisionDoc || regCase?.decisionDoc;
@@ -296,6 +317,30 @@ export const StudentPortalTracker: React.FC<StudentPortalTrackerProps> = ({
 
         {/* Nút tác vụ */}
         <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10, flexWrap: 'wrap', paddingTop: 10, borderTop: '1px dashed var(--paper-line)' }}>
+          {(isReturned || isRejected) && (
+            <button
+              type="button"
+              onClick={handleResubmit}
+              style={{
+                padding: '6px 14px',
+                fontFamily: 'var(--font-paper)',
+                fontSize: 13,
+                fontWeight: 'bold',
+                backgroundColor: 'var(--amber)',
+                color: 'var(--desk-900)',
+                border: '1px solid var(--desk-900)',
+                borderRadius: 'var(--radius-sm)',
+                boxShadow: 'var(--shadow-hard)',
+                cursor: 'var(--cursor-pointer)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+              }}
+              title="Chỉnh sửa đơn, bổ sung minh chứng và nộp lại hồ sơ"
+            >
+              📝 Nộp lại hồ sơ khác
+            </button>
+          )}
           <button
             type="button"
             onClick={handleLogout}
@@ -410,6 +455,46 @@ export const StudentPortalTracker: React.FC<StudentPortalTrackerProps> = ({
                     {isRejected && advisorDeclined ? 'Cố vấn học tập' : 'ThS. Nguyễn Thị Mai'}
                   </div>
                 </div>
+              </div>
+
+              {/* Khu vực hướng dẫn & nút nộp lại hồ sơ khác */}
+              <div
+                style={{
+                  marginTop: 26,
+                  paddingTop: 16,
+                  borderTop: '1px dashed var(--paper-line)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 10,
+                }}
+              >
+                <div style={{ fontSize: 13, color: 'var(--ink-soft)', textAlign: 'center', fontStyle: 'italic' }}>
+                  {isReturned
+                    ? 'Hồ sơ chưa đủ điều kiện tiếp nhận do thiếu minh chứng hoặc thông tin chưa hợp lệ. Vui lòng bổ sung và nộp lại.'
+                    : 'Hồ sơ đã kết thúc xử lý. Bạn có thể điều chỉnh nguyện vọng và nộp lại hồ sơ khác.'}
+                </div>
+                <button
+                  type="button"
+                  onClick={handleResubmit}
+                  style={{
+                    padding: '9px 24px',
+                    fontFamily: 'var(--font-paper)',
+                    fontSize: 14,
+                    fontWeight: 'bold',
+                    backgroundColor: 'var(--amber)',
+                    color: 'var(--desk-900)',
+                    border: '2px solid var(--desk-900)',
+                    borderRadius: 'var(--radius-sm)',
+                    boxShadow: 'var(--shadow-hard)',
+                    cursor: 'var(--cursor-pointer)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 8,
+                  }}
+                >
+                  📝 Nộp lại hồ sơ khác
+                </button>
               </div>
             </div>
           </Paper>

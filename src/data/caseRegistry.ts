@@ -2,6 +2,13 @@ import { EvidenceItem, StudentApplicationForm, DecisionDoc, EngineEvent } from '
 import { getStorageItem, setStorageItem } from './userRegistry';
 import { getStudentFormData, buildEvidenceItemsFromFormData } from './studentFormData';
 import { ScenarioConfig, SCENARIOS } from './scenarios';
+import {
+  isSupabaseConfigured,
+  fetchSupabaseCases,
+  upsertSupabaseCase,
+  deleteSupabaseCase,
+  subscribeSupabaseRealtime,
+} from '../services/supabaseClient';
 
 export type CaseStatus =
   | 'pending_advisor'
@@ -250,9 +257,109 @@ export function getAllSubmittedCases(): SubmittedCase[] {
   }
 }
 
+export type CaseChangeListener = (cases: SubmittedCase[]) => void;
+const caseChangeListeners = new Set<CaseChangeListener>();
+let isNotifying = false;
+
+/**
+ * Đăng ký theo dõi sự kiện thay đổi hồ sơ (từ LocalStorage hoặc Supabase Realtime)
+ */
+export function subscribeCases(listener: CaseChangeListener): () => void {
+  caseChangeListeners.add(listener);
+  return () => {
+    caseChangeListeners.delete(listener);
+  };
+}
+
+export function notifyCaseListeners(cases?: SubmittedCase[]): void {
+  if (isNotifying) return;
+  isNotifying = true;
+  try {
+    const currentCases = cases || getAllSubmittedCases();
+    for (const listener of caseChangeListeners) {
+      try {
+        listener(currentCases);
+      } catch (err) {
+        console.error('Lỗi thông báo listener hồ sơ:', err);
+      }
+    }
+  } finally {
+    isNotifying = false;
+  }
+}
+
+let supabaseSyncInitialized = false;
+
+/**
+ * Khởi động đồng bộ Supabase Cloud Database:
+ * 1. Kéo toàn bộ hồ sơ từ Supabase về merge với LocalStorage.
+ * 2. Đăng ký Realtime WebSocket để nhận ngay khi sinh viên nộp / thầy cô duyệt trên máy khác.
+ */
+export function initSupabaseSync(): () => void {
+  if (isTestEnv || supabaseSyncInitialized || !isSupabaseConfigured()) {
+    return () => {};
+  }
+  supabaseSyncInitialized = true;
+
+  // 1. Kéo dữ liệu đám mây ban đầu
+  void (async () => {
+    try {
+      const cloudCases = await fetchSupabaseCases();
+      if (cloudCases && cloudCases.length > 0) {
+        const localCases = getAllSubmittedCases();
+        const mergedMap = new Map<string, SubmittedCase>();
+
+        for (const lc of localCases) {
+          mergedMap.set(lc.id, lc);
+        }
+        for (const cc of cloudCases) {
+          mergedMap.set(cc.id, cc);
+        }
+
+        const merged = Array.from(mergedMap.values());
+        setStorageItem(STORAGE_KEY, JSON.stringify(merged));
+        notifyCaseListeners(merged);
+      }
+    } catch (e) {
+      console.warn('Không thể đồng bộ dữ liệu ban đầu từ Supabase:', e);
+    }
+  })();
+
+  // 2. Lắng nghe Realtime qua WebSocket
+  const unsubscribeRealtime = subscribeSupabaseRealtime((changedCase, eventType) => {
+    try {
+      const current = getAllSubmittedCases();
+      if (eventType === 'DELETE') {
+        const next = current.filter((c) => c.id !== changedCase.id);
+        setStorageItem(STORAGE_KEY, JSON.stringify(next));
+        notifyCaseListeners(next);
+      } else {
+        const idx = current.findIndex((c) => c.id === changedCase.id);
+        let next: SubmittedCase[];
+        if (idx >= 0) {
+          next = [...current];
+          next[idx] = changedCase;
+        } else {
+          next = [changedCase, ...current];
+        }
+        setStorageItem(STORAGE_KEY, JSON.stringify(next));
+        notifyCaseListeners(next);
+      }
+    } catch (err) {
+      console.error('Lỗi xử lý sự kiện Realtime Supabase:', err);
+    }
+  });
+
+  return () => {
+    unsubscribeRealtime();
+    supabaseSyncInitialized = false;
+  };
+}
+
 export function saveAllSubmittedCases(cases: SubmittedCase[]): void {
   try {
     setStorageItem(STORAGE_KEY, JSON.stringify(cases));
+    notifyCaseListeners(cases);
   } catch (err) {
     console.error('Lỗi lưu danh sách hồ sơ:', err);
   }
@@ -266,7 +373,25 @@ export function getSubmittedCaseById(id: string): SubmittedCase | null {
 export function getSubmittedCaseByMssv(mssv: string): SubmittedCase | null {
   const trimmed = (mssv || '').trim();
   const all = getAllSubmittedCases();
-  return all.find((c) => c.studentMssv === trimmed) || null;
+  return [...all].reverse().find((c) => c.studentMssv === trimmed) || null;
+}
+
+export function removeSubmittedCase(caseIdOrMssv: string): boolean {
+  const all = getAllSubmittedCases();
+  const trimmed = (caseIdOrMssv || '').trim();
+  const index = all.findIndex(
+    (c) => c.id === trimmed || c.caseCode === trimmed || c.studentMssv === trimmed
+  );
+  if (index >= 0) {
+    const removedId = all[index].id;
+    all.splice(index, 1);
+    saveAllSubmittedCases(all);
+    if (isSupabaseConfigured() && removedId) {
+      void deleteSupabaseCase(removedId);
+    }
+    return true;
+  }
+  return false;
 }
 
 export function saveSubmittedCase(caseData: SubmittedCase): void {
@@ -278,6 +403,9 @@ export function saveSubmittedCase(caseData: SubmittedCase): void {
     all.push(caseData);
   }
   saveAllSubmittedCases(all);
+  if (isSupabaseConfigured()) {
+    void upsertSupabaseCase(caseData);
+  }
 }
 
 export function updateCaseAdvisorDecision(
@@ -299,6 +427,9 @@ export function updateCaseAdvisorDecision(
   if (notes) target.advisorNotes = notes;
 
   saveAllSubmittedCases(all);
+  if (isSupabaseConfigured()) {
+    void upsertSupabaseCase(target);
+  }
   return target;
 }
 
@@ -347,6 +478,9 @@ export function updateCaseCtsvDecision(
   }
 
   saveAllSubmittedCases(all);
+  if (isSupabaseConfigured()) {
+    void upsertSupabaseCase(target);
+  }
   return target;
 }
 
@@ -375,6 +509,9 @@ export function updateCasePrincipalSign(
   target.status = 'completed';
 
   saveAllSubmittedCases(all);
+  if (isSupabaseConfigured()) {
+    void upsertSupabaseCase(target);
+  }
   return target;
 }
 

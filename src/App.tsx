@@ -26,6 +26,7 @@ import { Help } from './ui/shell/Help';
 import { AsIs } from './ui/scenes/AsIs';
 import { LoginPortal } from './ui/scenes/LoginPortal';
 import { findReportEndEvent } from './data/caseReport';
+import { initSupabaseSync } from './data/caseRegistry';
 import { sfx } from './ui/audio/sfx';
 import { DustMotes } from './ui/kit/DustMotes';
 
@@ -78,6 +79,12 @@ export const App: React.FC = () => {
     if (typeof window !== 'undefined' && window.location.search.includes('typography')) {
       setIsTypography(true);
     }
+  }, []);
+
+  // Initialize Supabase Cloud Sync (if configured)
+  useEffect(() => {
+    const cleanup = initSupabaseSync();
+    return cleanup;
   }, []);
 
   // Initialize playback when entering desk

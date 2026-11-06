@@ -103,6 +103,8 @@ a {
     var(--shadow-paper);
   font-family: var(--font-paper);
   position: relative;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .paper-sheet.paper-lifted {

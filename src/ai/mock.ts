@@ -1,7 +1,17 @@
 import { AIProvider, DocScanInput, DocScanResult, ReviewerBrief } from '../engine/types';
 import { AIScriptConfig, asCaseSummary, ChatMessage } from './provider';
 import { answerStudentQuestion, StudentChatContext } from '../data/knowledge-base';
-import { buildFallbackBrief, buildFallbackDocScan, buildFallbackDraft } from './mockTemplates';
+import {
+  buildFallbackBrief,
+  buildFallbackDocScan,
+  buildFallbackDraft,
+  buildMockOcrResult,
+} from './mockTemplates';
+import {
+  OcrScanResult,
+  UploadedEvidenceFile,
+  StudentEvidenceOptionKey,
+} from './ocrTypes';
 
 const EMPTY_BRIEF: Record<'advisor' | 'ctsv', ReviewerBrief> = {
   advisor: {
@@ -23,6 +33,20 @@ const EMPTY_DRAFT: Record<'return' | 'reject' | 'decisionBasis', string> = {
   reject: 'Hồ sơ chưa đủ điều kiện bảo lưu kết quả học tập theo quy chế hiện hành.',
   decisionBasis: 'Căn cứ Quy chế đào tạo của Trường ĐH Kinh tế – ĐH Đà Nẵng và hồ sơ xin nghỉ học tạm thời của sinh viên.',
 };
+
+// Danh sách tên sinh viên thuộc các kịch bản chuẩn định sẵn (S1 - S6)
+const STANDARD_SCENARIOS = [
+  'Nguyễn Minh Khoa',
+  'Trần Thu Hà',
+  'Lê Tuấn Kiệt',
+  'Phạm Ngọc Anh',
+  'Hoàng Khánh Linh',
+  'Đỗ Mai Lan',
+  'Nguyễn Văn An',
+  'Trần Thị Mai',
+  'Lê Hoàng Long',
+  'Vũ Hải Đăng',
+];
 
 /**
  * AI mock — deterministic 100%, không gọi mạng.
@@ -56,7 +80,14 @@ export class MockAIProvider implements AIProvider {
       return buildFallbackDocScan(input.form, []);
     }
 
-    if (this.script?.docScanResult) {
+    const trimmedName = (input.form.fullName || '').trim();
+    const isStandardScenario = STANDARD_SCENARIOS.includes(trimmedName);
+    const hasCustomOrUploadedEvidence = input.evidence.some(
+      (e) => e.id.startsWith('ev_custom_') || e.id.startsWith('ev_file_') || Boolean(e.fileData)
+    );
+
+    // Chỉ dùng scripted docScanResult nếu hồ sơ thuộc kịch bản chuẩn và không dùng minh chứng tự tạo/tải lên
+    if (this.script?.docScanResult && isStandardScenario && !hasCustomOrUploadedEvidence) {
       return this.script.docScanResult;
     }
 
@@ -68,20 +99,6 @@ export class MockAIProvider implements AIProvider {
 
     const summary = asCaseSummary(ctx);
     const scripted = role === 'advisor' ? this.script?.advisorBrief : this.script?.ctsvBrief;
-
-    // Danh sách tên sinh viên thuộc các kịch bản chuẩn định sẵn (S1 - S6)
-    const STANDARD_SCENARIOS = [
-      'Nguyễn Minh Khoa',
-      'Trần Thu Hà',
-      'Lê Tuấn Kiệt',
-      'Phạm Ngọc Anh',
-      'Hoàng Khánh Linh',
-      'Đỗ Mai Lan',
-      'Nguyễn Văn An',
-      'Trần Thị Mai',
-      'Lê Hoàng Long',
-      'Vũ Hải Đăng',
-    ];
 
     if (summary && scripted) {
       // Nếu hồ sơ đang xem thuộc về kịch bản mẫu chuẩn định sẵn -> dùng scripted brief
@@ -128,6 +145,14 @@ export class MockAIProvider implements AIProvider {
     }
 
     return answerStudentQuestion(lastUserText, toChatContext(ctx));
+  }
+
+  public async scanDocument(
+    file: UploadedEvidenceFile,
+    optionKey: StudentEvidenceOptionKey
+  ): Promise<OcrScanResult> {
+    await this.delay();
+    return buildMockOcrResult(file, optionKey);
   }
 }
 

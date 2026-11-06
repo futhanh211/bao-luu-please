@@ -138,7 +138,9 @@ export const Paper: React.FC<PaperProps> = ({
       )}
 
       {/* Nội dung tài liệu */}
-      <div style={{ position: 'relative', zIndex: 2 }}>{children}</div>
+      <div style={{ position: 'relative', zIndex: 2, minWidth: 0, width: '100%', maxWidth: '100%' }}>
+        {children}
+      </div>
     </div>
   );
 };

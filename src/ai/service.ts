@@ -1,10 +1,15 @@
 import { AIProvider, DocScanInput, DocScanResult, ReviewerBrief } from '../engine/types';
 import { MockAIProvider } from './mock';
+import {
+  OcrScanResult,
+  UploadedEvidenceFile,
+  StudentEvidenceOptionKey,
+} from './ocrTypes';
 
 /** Nguồn thực tế đang trả lời: mock, live, hoặc đã rơi về mock giữa ca. */
 export type AISource = 'mock' | 'live' | 'fallback';
 
-type Touchpoint = 'AI-1' | 'AI-2' | 'AI-3' | 'AI-4';
+type Touchpoint = 'AI-1' | 'AI-2' | 'AI-3' | 'AI-4' | 'AI-OCR';
 
 type SourceListener = (source: AISource) => void;
 type ActivityListener = (touchpoint: string | null) => void;
@@ -112,6 +117,21 @@ export class AIService implements AIProvider {
       'AI-4',
       (live) => live.draftText(kind, ctx),
       () => this.mock.draftText(kind, ctx)
+    );
+  }
+
+  public scanDocument(
+    file: UploadedEvidenceFile,
+    optionKey: StudentEvidenceOptionKey
+  ): Promise<OcrScanResult> {
+    return this.run(
+      'AI-OCR',
+      async (live) => {
+        if (!live.scanDocument) throw new Error('Live AI không hỗ trợ scanDocument');
+        const res = await live.scanDocument(file, optionKey);
+        return res as OcrScanResult;
+      },
+      () => this.mock.scanDocument(file, optionKey)
     );
   }
 }

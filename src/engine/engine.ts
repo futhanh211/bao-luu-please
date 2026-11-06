@@ -78,13 +78,17 @@ export function createEngine(
 
   async function start(submission?: StartSubmission): Promise<void> {
     if (submission) {
-      const scenarioEvidence = scenario.evidence ? cloneEvidence(scenario.evidence) : [];
+      const sourceEvidence = submission.evidence
+        ? cloneEvidence(submission.evidence)
+        : scenario.evidence
+          ? cloneEvidence(scenario.evidence)
+          : [];
       const attachedIds = submission.attachedEvidenceIds;
       baselineForm = cloneForm(submission.form);
       baselineEvidence =
         attachedIds === undefined
-          ? scenarioEvidence
-          : scenarioEvidence.filter((e) => attachedIds.includes(e.id));
+          ? sourceEvidence
+          : sourceEvidence.filter((e) => attachedIds.includes(e.id));
 
       state.form = cloneForm(baselineForm);
       state.evidence = cloneEvidence(baselineEvidence);

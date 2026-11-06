@@ -6,8 +6,20 @@ import {
   buildDocScanPayload,
   buildDraftPayload,
   buildReviewerPayload,
+  buildOcrPayload,
 } from './prompts';
-import { parseJsonObject, validateBrief, validateDocScan, validateDraft } from './validate';
+import {
+  parseJsonObject,
+  validateBrief,
+  validateDocScan,
+  validateDraft,
+  validateOcrResult,
+} from './validate';
+import {
+  OcrScanResult,
+  UploadedEvidenceFile,
+  StudentEvidenceOptionKey,
+} from './ocrTypes';
 
 export class LiveAIError extends Error {}
 
@@ -77,12 +89,24 @@ export class LiveAIProvider implements AIProvider {
   }
 
   private async generate(bundle: PromptBundle): Promise<string> {
+    const parts: Array<{ text?: string; inlineData?: { mimeType: string; data: string } }> = [
+      { text: bundle.user },
+    ];
+    if (bundle.imagePart) {
+      parts.push({
+        inlineData: {
+          mimeType: bundle.imagePart.mimeType,
+          data: bundle.imagePart.data,
+        },
+      });
+    }
+
     const body = JSON.stringify({
       systemInstruction: { parts: [{ text: bundle.system }] },
-      contents: [{ role: 'user', parts: [{ text: bundle.user }] }],
+      contents: [{ role: 'user', parts }],
       generationConfig: {
-        temperature: 0.2,
-        maxOutputTokens: 800,
+        temperature: 0.1,
+        maxOutputTokens: 1000,
         responseMimeType: bundle.json ? 'application/json' : 'text/plain',
       },
     });
@@ -159,6 +183,18 @@ export class LiveAIProvider implements AIProvider {
     const draft = validateDraft(raw ?? text);
     if (!draft) throw new LiveAIError('Gemini soạn văn bản không hợp lệ');
     return draft;
+  }
+
+  public async scanDocument(
+    file: UploadedEvidenceFile,
+    optionKey: StudentEvidenceOptionKey
+  ): Promise<OcrScanResult> {
+    const payload = buildOcrPayload(file, optionKey);
+    const text = await this.generate(payload);
+    const raw = parseJsonObject(text);
+    const result = raw ? validateOcrResult(raw, optionKey) : null;
+    if (!result) throw new LiveAIError('Gemini trả JSON OCR không hợp lệ');
+    return result;
   }
 }
 

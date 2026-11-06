@@ -52,6 +52,7 @@ export const StudentDesk: React.FC = () => {
   const removeEvidenceItem = usePlaybackStore((s) => s.removeEvidenceItem);
   const studentRecord = usePlaybackStore((s) => s.studentRecord);
   const initScenario = usePlaybackStore((s) => s.initScenario);
+  const prepareStudentResubmission = usePlaybackStore((s) => s.prepareStudentResubmission);
 
   const [tab, setTab] = useState<DeskTab>('inbox');
   const [readIds, setReadIds] = useState<string[]>([]);
@@ -240,6 +241,7 @@ export const StudentDesk: React.FC = () => {
         log={currentEventLog}
         day={day}
         decisionDoc={engine?.state.decisionDoc}
+        onResubmit={prepareStudentResubmission}
       />
     );
   }

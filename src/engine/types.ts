@@ -101,6 +101,7 @@ export interface EvidenceItem {
     size: number;
     type: string;
     dataUrl?: string;
+    svgRaw?: string;
     lastModified?: number;
   };
 }
@@ -110,6 +111,7 @@ export interface EvidenceItem {
 export interface StartSubmission {
   form: StudentApplicationForm;
   attachedEvidenceIds?: string[];
+  evidence?: EvidenceItem[];
 }
 
 export interface ValidityState {
@@ -258,6 +260,7 @@ export interface AIProvider {
   chat(history: unknown[], ctx: unknown): Promise<string>;
   reviewerBrief(role: 'advisor' | 'ctsv', ctx: unknown): Promise<ReviewerBrief>;
   draftText(kind: 'return' | 'reject' | 'decisionBasis', ctx: unknown): Promise<string>;
+  scanDocument?(file: unknown, optionKey: unknown): Promise<unknown>;
 }
 
 export interface EngineDeps {

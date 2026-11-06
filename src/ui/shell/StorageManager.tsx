@@ -13,6 +13,11 @@ import {
   RegisteredAccount,
 } from '../../data/userRegistry';
 import { testGeminiConnection } from '../../ai/live';
+import {
+  isSupabaseConfigured,
+  testSupabaseConnection,
+  getSupabaseConfig,
+} from '../../services/supabaseClient';
 import { useAuthStore } from '../../store/useAuth';
 import { sfx } from '../audio/sfx';
 
@@ -48,6 +53,17 @@ export const StorageManager: React.FC = () => {
     latencyMs: number;
     message: string;
     modelUsed: string;
+  } | null>(null);
+
+  // Supabase Testing State
+  const initialSupabaseCfg = getSupabaseConfig();
+  const [supabaseUrlInput, setSupabaseUrlInput] = useState<string>(initialSupabaseCfg?.url || '');
+  const [supabaseKeyInput, setSupabaseKeyInput] = useState<string>(initialSupabaseCfg?.anonKey || '');
+  const [isTestingSupabase, setIsTestingSupabase] = useState<boolean>(false);
+  const [supabaseResult, setSupabaseResult] = useState<{
+    success: boolean;
+    latencyMs: number;
+    message: string;
   } | null>(null);
 
   const currentUser = useAuthStore((s) => s.currentUser);
@@ -169,6 +185,30 @@ export const StorageManager: React.FC = () => {
       sfx.playBuzz();
     } finally {
       setIsTestingApi(false);
+    }
+  };
+
+  const handlePingSupabase = async () => {
+    setIsTestingSupabase(true);
+    setSupabaseResult(null);
+    try {
+      const res = await testSupabaseConnection(supabaseUrlInput, supabaseKeyInput);
+      setSupabaseResult(res);
+      if (res.success) {
+        sfx.playStamp();
+      } else {
+        sfx.playBuzz();
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setSupabaseResult({
+        success: false,
+        latencyMs: 0,
+        message: `Lỗi kết nối: ${msg}`,
+      });
+      sfx.playBuzz();
+    } finally {
+      setIsTestingSupabase(false);
     }
   };
 
@@ -364,6 +404,64 @@ export const StorageManager: React.FC = () => {
             Thuật toán băm mật mã chuẩn X.509 SHA-256 được tích hợp trực tiếp tại khâu Ban Giám hiệu ký số (node T9)
             để đảm bảo tính bất biến, chống giả mạo hồ sơ điện tử trước khi ban hành quyết định về sinh viên.
           </div>
+        </div>
+
+        {/* Tích hợp 3: Supabase Cloud Database */}
+        <div className="storage-card">
+          <div className="storage-card-title">
+            <span>☁️ Tích hợp 3: Supabase Cloud Database & Realtime Sync</span>
+            <span
+              className={`storage-badge ${
+                isSupabaseConfigured() ? 'storage-badge-success' : 'storage-badge-neutral'
+              }`}
+            >
+              {isSupabaseConfigured() ? 'CLOUD REALTIME SYNC BẬT' : 'CHẾ ĐỘ OFFLINE LOCAL'}
+            </span>
+          </div>
+          <div className="storage-section-sub">
+            Đồng bộ hồ sơ sinh viên nộp giữa nhiều thiết bị theo thời gian thực (sinh viên nộp trên điện thoại, bàn Cố vấn / CTSV / BGH cập nhật ngay lập tức không cần F5).
+          </div>
+
+          <div className="storage-input-group" style={{ flexDirection: 'column', gap: '8px', alignItems: 'stretch' }}>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <input
+                type="text"
+                className="storage-input"
+                style={{ flex: '1 1 240px' }}
+                placeholder="Supabase Project URL (ví dụ: https://xyz.supabase.co)"
+                value={supabaseUrlInput}
+                onChange={(e) => setSupabaseUrlInput(e.target.value)}
+              />
+              <input
+                type="password"
+                className="storage-input"
+                style={{ flex: '1 1 200px' }}
+                placeholder="Supabase Anon Public Key"
+                value={supabaseKeyInput}
+                onChange={(e) => setSupabaseKeyInput(e.target.value)}
+              />
+              <button
+                type="button"
+                className="storage-btn-ping"
+                onClick={handlePingSupabase}
+                disabled={isTestingSupabase}
+              >
+                {isTestingSupabase ? 'Đang kiểm tra...' : '☁️ Ping Supabase'}
+              </button>
+            </div>
+          </div>
+
+          {supabaseResult && (
+            <div
+              className={`storage-result ${
+                supabaseResult.success ? 'storage-result-success' : 'storage-result-error'
+              }`}
+              style={{ marginTop: '8px' }}
+            >
+              {supabaseResult.success ? '✔ ' : '✖ '}
+              {supabaseResult.message}
+            </div>
+          )}
         </div>
       </section>
     </div>

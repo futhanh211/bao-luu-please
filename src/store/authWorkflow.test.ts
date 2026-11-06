@@ -6,6 +6,7 @@ import { useAppStore, ROLES } from './useApp';
 describe('Luồng phối hợp Sinh viên nộp đơn -> Giảng viên duyệt đơn', () => {
   beforeEach(() => {
     useAuthStore.getState().logout();
+    useAppStore.getState().setSessionMode('demo');
     usePlaybackStore.getState().reset();
     usePlaybackStore.getState().initScenario('s1');
   });
@@ -114,5 +115,45 @@ describe('Luồng phối hợp Sinh viên nộp đơn -> Giảng viên duyệt �
     expect(state.submissionDraft?.form.className).toBe('46K21.1');
     expect(state.submissionDraft?.form.faculty).toBe('Khoa Kinh tế');
     expect(state.currentEventLog).toHaveLength(0);
+  });
+
+  it('chuẩn bị nộp lại hồ sơ (prepareStudentResubmission) mở khóa form, sinh mã ca mới và giữ dữ liệu đã điền', async () => {
+    // 1. Khởi tạo phiên sinh viên nộp thiếu minh chứng (s2)
+    useAppStore.getState().setSessionMode('portal');
+    usePlaybackStore.getState().initScenario('s2');
+
+    // Nộp đơn không có minh chứng đính kèm
+    await usePlaybackStore.getState().submitApplication();
+
+    const stateAfterSubmit = usePlaybackStore.getState();
+    expect(stateAfterSubmit.submitted).toBe(true);
+    const hasReturned = stateAfterSubmit.currentEventLog.some(
+      (e) => e.type === 'case.ended' && e.endEventId === 'E_END_RETURNED'
+    );
+    expect(hasReturned).toBe(true);
+
+    const oldCaseCode = useAppStore.getState().caseCode;
+
+    // 2. Sinh viên bấm "Nộp lại hồ sơ khác" -> gọi prepareStudentResubmission
+    usePlaybackStore.getState().prepareStudentResubmission();
+
+    const stateAfterResubmit = usePlaybackStore.getState();
+    // Đã mở khóa đơn để bổ sung minh chứng và nộp lại
+    expect(stateAfterResubmit.submitted).toBe(false);
+    expect(stateAfterResubmit.isPlaying).toBe(false);
+    expect(stateAfterResubmit.currentEventLog).toHaveLength(0);
+    expect(stateAfterResubmit.mapState.caseEnded).toBe(false);
+
+    // Form dữ liệu của sinh viên vẫn được bảo lưu (không bắt gõ lại từ đầu)
+    expect(stateAfterResubmit.submissionDraft?.form.fullName).toBe('Trần Thu Hà');
+    expect(stateAfterResubmit.submissionDraft?.form.mssv).toBe('3121102002');
+
+    // Mã ca mới được sinh ra
+    const newCaseCode = useAppStore.getState().caseCode;
+    expect(newCaseCode).not.toBe(oldCaseCode);
+
+    // Dọn dẹp sessionMode sau test
+    useAppStore.getState().setSessionMode('demo');
+    usePlaybackStore.getState().reset();
   });
 });

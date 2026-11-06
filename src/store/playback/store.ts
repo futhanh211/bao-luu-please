@@ -32,6 +32,7 @@ import {
   saveSubmittedCase,
   getSubmittedCaseByMssv,
   getSubmittedCaseById,
+  removeSubmittedCase,
   getNextCaseCode,
   ensureScenarioInCaseRegistry,
 } from '../../data/caseRegistry';
@@ -333,6 +334,42 @@ export const usePlaybackStore = create<PlaybackStoreState>((set, get) => ({
       ? scenario.evidence.map((e) => e.id)
       : [...(submissionDraft?.attachedEvidenceIds ?? [])];
 
+    // Đảm bảo sinh viên và dữ liệu học vụ luôn có trong DS1 và DS2 khi nộp đơn
+    const studentsDb = getActiveStudentsDb();
+    const academicFinanceDb = getActiveAcademicFinanceDb();
+    const trimmedMssv = form.mssv.trim();
+    if (studentsDb && academicFinanceDb && trimmedMssv) {
+      if (!studentsDb.get(trimmedMssv)) {
+        studentsDb.upsert({
+          mssv: trimmedMssv,
+          name: form.fullName.trim() || `Sinh viên ${trimmedMssv}`,
+          className: form.className.trim() || '48K12.1',
+          faculty: form.faculty.trim() || 'Khoa Công nghệ thông tin kinh doanh',
+          phone: form.phone.trim() || '0905123456',
+          email: form.email.trim() || `${trimmedMssv}@due.udn.vn`,
+          status: 'Đang học',
+        });
+      }
+      if (!academicFinanceDb.get(trimmedMssv)) {
+        academicFinanceDb.upsert({
+          mssv: trimmedMssv,
+          semestersCompleted: 3,
+          gpaNote: 'GPA tích lũy: 3.25 / 4.0 - Đủ điều kiện học vụ',
+          discipline: 'none',
+          tuitionDebt: 0,
+          forcedWithdrawal: false,
+        });
+      }
+    }
+
+    if (get().isCustomCase || useAppStore.getState().sessionMode === 'portal') {
+      scenario.directorPlan = {
+        advisorOutcome: 'confirmed',
+        ctsvOutcome: 'valid',
+        principalSigner: 'PGS.TS. Đoàn Ngọc Phi Anh - Phó Hiệu trưởng',
+      };
+    }
+
     set({
       submitted: true,
       submissionDraft: { form, attachedEvidenceIds },
@@ -342,7 +379,11 @@ export const usePlaybackStore = create<PlaybackStoreState>((set, get) => ({
     });
 
     mark('submit:start');
-    await engine.start({ form, attachedEvidenceIds });
+    await engine.start({
+      form,
+      attachedEvidenceIds,
+      evidence: scenario.evidence ? [...scenario.evidence] : [],
+    });
     mark('submit:engine-start-done');
 
     // Lưu vào Sổ tiếp nhận hồ sơ Một Cửa Số (Case Registry)
@@ -680,6 +721,70 @@ export const usePlaybackStore = create<PlaybackStoreState>((set, get) => ({
         : null,
       submitted: false,
       studentRecord: studentsDb?.get(engine?.state.form.mssv ?? '') ?? null,
+      disagreements: 0,
+      ctsvInspections: {},
+      reportDismissed: false,
+      isCustomCase: scenario?.id === 's6',
+    });
+  },
+
+  prepareStudentResubmission: () => {
+    tokenAnimManager.cancelAll();
+    clearSessionQueue();
+    useAppStore.getState().setAiBusy(null);
+
+    const { engine, scenario, customTestConfig, submissionDraft } = get();
+    engine?.reset();
+    if (engine) {
+      engine.subscribe(enqueueEvent);
+    }
+
+    const studentsDb = getActiveStudentsDb();
+    const academicFinanceDb = getActiveAcademicFinanceDb();
+    studentsDb?.reset();
+    academicFinanceDb?.reset();
+
+    if (scenario?.id === 's6' && customTestConfig && studentsDb && academicFinanceDb) {
+      syncCustomTestDataToDatabases(customTestConfig, studentsDb, academicFinanceDb);
+    }
+
+    const nextCode = getNextCaseCode();
+    useAppStore.getState().setCaseCode(nextCode);
+    if (scenario) {
+      scenario.code = nextCode;
+    }
+    if (engine) {
+      engine.state.caseId = nextCode;
+    }
+
+    const studentMssv = submissionDraft?.form.mssv || scenario?.form.mssv;
+    if (studentMssv) {
+      removeSubmittedCase(studentMssv);
+    }
+
+    set({
+      mapState: createInitialMapState(),
+      isPlaying: false,
+      isPaused: false,
+      isWaitingUserTask: false,
+      waitingTaskId: null,
+      waitingTaskIds: [],
+      currentEventLog: [],
+      eventDays: [],
+      activeCaptionNodeId: null,
+      submissionDraft: submissionDraft
+        ? {
+            form: { ...submissionDraft.form },
+            attachedEvidenceIds: [...submissionDraft.attachedEvidenceIds],
+          }
+        : scenario
+        ? {
+            form: { ...scenario.form },
+            attachedEvidenceIds: [],
+          }
+        : null,
+      submitted: false,
+      studentRecord: studentsDb?.get(studentMssv ?? '') ?? null,
       disagreements: 0,
       ctsvInspections: {},
       reportDismissed: false,
