@@ -374,30 +374,14 @@ export const CtsvDesk: React.FC = () => {
       );
 
       setSelectedCaseId((prev) => {
-        if (scenarioCase) return scenarioCase.id;
+        // Giữ nguyên lựa chọn hiện thời của người dùng nếu hồ sơ còn tồn tại
         if (prev && cases.some((c) => c.id === prev)) return prev;
+        if (scenarioCase) return scenarioCase.id;
         const pendingCtsv = cases.find((c) => !c.ctsvDecision);
         return pendingCtsv ? pendingCtsv.id : cases[0].id;
       });
     }
   }, [scenarioId, logLength]);
-
-  useEffect(() => {
-    setBrief(null);
-    setLoading(false);
-    setPending(null);
-    setZoomId(null);
-    resolved.current = false;
-  }, [selectedCaseId]);
-
-  useEffect(() => {
-    if (!zoomId) return undefined;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setZoomId(null);
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [zoomId]);
 
   const pendingCases = submittedCases.filter((c) => !c.ctsvDecision);
   const resolvedCases = submittedCases.filter((c) => Boolean(c.ctsvDecision));
@@ -426,6 +410,25 @@ export const CtsvDesk: React.FC = () => {
     activeCase =
       submittedCases.find((c) => c.id === selectedCaseId) || submittedCases[0] || null;
   }
+
+  const selectedCase = activeCase || submittedCases[0];
+
+  useEffect(() => {
+    setBrief(null);
+    setLoading(false);
+    setPending(null);
+    setZoomId(null);
+    resolved.current = false;
+  }, [selectedCase?.id]);
+
+  useEffect(() => {
+    if (!zoomId) return undefined;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setZoomId(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [zoomId]);
 
   const handleSelectCase = (id: string) => {
     sfx.playPaper();
@@ -465,8 +468,6 @@ export const CtsvDesk: React.FC = () => {
   if (submittedCases.length === 0) {
     return <DeskEmpty deskName="Bàn Phòng CTSV" reason="upcoming" />;
   }
-
-  const selectedCase = activeCase || submittedCases[0];
 
   const currentForm = selectedCase.form;
   const currentEvidence = selectedCase.evidence;
@@ -531,9 +532,18 @@ export const CtsvDesk: React.FC = () => {
       pending.marks
     );
     if (updated) {
-      setSubmittedCases(getCtsvCases());
+      const freshCases = getCtsvCases();
+      setSubmittedCases(freshCases);
+      if (filter === 'pending') {
+        const nextPending = freshCases.find((c) => !c.ctsvDecision && c.id !== selectedCase.id);
+        if (nextPending) {
+          setSelectedCaseId(nextPending.id);
+          useAppStore.getState().setCaseCode(nextPending.caseCode);
+        }
+      }
     }
     sfx.playStamp();
+    resolved.current = false;
 
     if (brief) {
       recordHumanDecision('T5', choice.outcome, brief.suggestedDecision);

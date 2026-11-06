@@ -349,8 +349,9 @@ export const PrincipalDesk: React.FC = () => {
       );
 
       setSelectedCaseId((prev) => {
-        if (scenarioCase) return scenarioCase.id;
+        // Giữ nguyên lựa chọn hiện thời của người dùng nếu hồ sơ còn tồn tại
         if (prev && cases.some((c) => c.id === prev)) return prev;
+        if (scenarioCase) return scenarioCase.id;
         const pendingBgh = cases.find((c) => !c.principalSigned);
         return pendingBgh ? pendingBgh.id : cases[0].id;
       });
@@ -358,36 +359,6 @@ export const PrincipalDesk: React.FC = () => {
       setSelectedCaseId('');
     }
   }, [scenarioId, logLength]);
-
-  useEffect(() => {
-    setSigning('idle');
-    resolved.current = false;
-  }, [selectedCaseId]);
-
-  useEffect(() => {
-    if (signing !== 'tokenInserted') return undefined;
-    const delay = reducedMotion ? 0 : 600 / speed;
-    const timer = setTimeout(() => {
-      setSigning((s) => nextSigningState(s, 'enterPin'));
-    }, delay);
-    return () => clearTimeout(timer);
-  }, [signing, speed, reducedMotion]);
-
-  useEffect(() => {
-    if (signing !== 'signing') return undefined;
-    sfx.playFountainPen();
-    const delay = reducedMotion ? 0 : MOTION.signatureDrawMs / speed;
-    const timer = setTimeout(() => {
-      setSigning((s) => nextSigningState(s, 'finish'));
-    }, delay);
-    return () => clearTimeout(timer);
-  }, [signing, speed, reducedMotion]);
-
-  const handleAction = useCallback((action: SigningAction) => {
-    if (action === 'insertToken') sfx.playDongleInsert();
-    if (action === 'confirm') sfx.playCrt();
-    setSigning((s) => nextSigningState(s, action));
-  }, []);
 
   const pendingCases = submittedCases.filter((c) => !c.principalSigned);
   const resolvedCases = submittedCases.filter((c) => Boolean(c.principalSigned));
@@ -416,6 +387,38 @@ export const PrincipalDesk: React.FC = () => {
     activeCase =
       submittedCases.find((c) => c.id === selectedCaseId) || submittedCases[0] || null;
   }
+
+  const selectedCase = activeCase || submittedCases[0];
+
+  useEffect(() => {
+    setSigning('idle');
+    resolved.current = false;
+  }, [selectedCase?.id]);
+
+  useEffect(() => {
+    if (signing !== 'tokenInserted') return undefined;
+    const delay = reducedMotion ? 0 : 600 / speed;
+    const timer = setTimeout(() => {
+      setSigning((s) => nextSigningState(s, 'enterPin'));
+    }, delay);
+    return () => clearTimeout(timer);
+  }, [signing, speed, reducedMotion]);
+
+  useEffect(() => {
+    if (signing !== 'signing') return undefined;
+    sfx.playFountainPen();
+    const delay = reducedMotion ? 0 : MOTION.signatureDrawMs / speed;
+    const timer = setTimeout(() => {
+      setSigning((s) => nextSigningState(s, 'finish'));
+    }, delay);
+    return () => clearTimeout(timer);
+  }, [signing, speed, reducedMotion]);
+
+  const handleAction = useCallback((action: SigningAction) => {
+    if (action === 'insertToken') sfx.playDongleInsert();
+    if (action === 'confirm') sfx.playCrt();
+    setSigning((s) => nextSigningState(s, action));
+  }, []);
 
   const handleSelectCase = (id: string) => {
     sfx.playPaper();
@@ -455,8 +458,6 @@ export const PrincipalDesk: React.FC = () => {
     return <DeskEmpty deskName="Bàn Ban Giám hiệu" reason="upcoming" />;
   }
 
-  const selectedCase = activeCase || submittedCases[0];
-
   // Chuẩn bị DecisionDoc cho hồ sơ
   const doc: DecisionDoc = selectedCase.decisionDoc ?? {
     number: `BL-${selectedCase.caseCode.replace(/[^0-9]/g, '') || '2001'}/QĐ-ĐHKT`,
@@ -477,9 +478,18 @@ export const PrincipalDesk: React.FC = () => {
 
     const updated = updateCasePrincipalSign(selectedCase.id, signerName);
     if (updated) {
-      setSubmittedCases(getPrincipalCases());
+      const freshCases = getPrincipalCases();
+      setSubmittedCases(freshCases);
+      if (filter === 'pending') {
+        const nextPending = freshCases.find((c) => !c.principalSigned && c.id !== selectedCase.id);
+        if (nextPending) {
+          setSelectedCaseId(nextPending.id);
+          useAppStore.getState().setCaseCode(nextPending.caseCode);
+        }
+      }
     }
     sfx.playStamp();
+    resolved.current = false;
 
     if (view.scenario?.form.mssv === selectedCase.studentMssv) {
       void completeUserTask('T9', { signerName });

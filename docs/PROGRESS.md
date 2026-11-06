@@ -2,6 +2,57 @@
 
 Mỗi session thêm một mục theo mẫu:
 
+## 2026-11-06 · Toàn diện Bug Fixes (B1–B7) trên mọi vai đăng nhập & Tối ưu đồng bộ Supabase Cloud
+- Đã làm:
+  - **Khắc phục lỗi "bị khựng" khi đóng dấu / ký duyệt liên tiếp nhiều hồ sơ (B1):**
+    - `src/ui/desks/AdvisorDesk.tsx`, `src/ui/desks/CtsvDesk.tsx`, `src/ui/desks/PrincipalDesk.tsx`:
+      + Phát hiện Root Cause: Biến cờ `resolved.current` bị kẹt ở `true` sau lần đóng dấu đầu tiên do `selectedCaseId` không được cập nhật khi hồ sơ chuyển khỏi danh sách `pending`, khiến `useEffect` reset không bao giờ chạy lại.
+      + Khắc phục: Sau khi hoàn tất hiệu ứng rơi dấu (`handleLanded` / `handleStampLanded`), tự động chuyển `selectedCaseId` sang hồ sơ chờ kế tiếp trong danh sách `pending` và reset ngay `resolved.current = false`. Đồng thời ràng buộc `useEffect` reset theo `[engine, selectedCase?.id]`. Cán bộ có thể đóng dấu liên tiếp 100% không bao giờ bị khựng.
+  - **Khắc phục lỗi nhảy chọn hồ sơ về S1 khi danh sách cập nhật (B2):**
+    - Cả 3 bàn làm việc (`AdvisorDesk`, `CtsvDesk`, `PrincipalDesk`): Sửa lại thứ tự ưu tiên trong `setSelectedCaseId((prev) => ...)`: Giữ nguyên lựa chọn hồ sơ hiện tại của người dùng (`prev`) nếu hồ sơ vẫn tồn tại trong danh sách, không bị timer/realtime đè nhảy về S1.
+  - **Bổ sung thanh chuyển vai (RoleTabs) cho cán bộ ở chế độ Portal (B3):**
+    - `src/ui/shell/Hud.tsx`: Hiển thị thanh chuyển vai trực tiếp cho cán bộ có phân quyền (Advisor, CTSV, BGH) ngay trong giao diện Portal mà không cần phải đăng xuất/đăng nhập lại.
+  - **Bổ sung tài khoản mẫu 1-click cho Sinh viên & Cán bộ (B4):**
+    - `src/ui/scenes/login/OfficerLogin.tsx`: Bổ sung các pill chọn nhanh tài khoản cán bộ mẫu (`advisor_nam` - ThS. Nguyễn Văn Nam, `ctsv_mai` - ThS. Lê Thị Mai, `bgh_khoi` - PGS.TS. Trần Đình Khôi) giúp đăng nhập 1 chạm.
+    - `src/ui/scenes/LoginPortal.tsx`: Tích hợp 2 tab lựa chọn cho Sinh viên: Tab kịch bản mẫu (S1 - S5) và Tab tự nhập MSSV / Mật khẩu tự do.
+  - **Đồng bộ trạng thái kết thúc quy trình BPMN & Director mode (B5):**
+    - `src/store/playback/controller.ts`: Lắng nghe sự kiện `case.ended`, cập nhật trạng thái kết thúc cuối cùng (`completed`, `rejected`, `returned`), văn bản quyết định và nhật ký vào `caseRegistry` và đồng bộ tức thì lên Supabase.
+    - `src/store/playback/director.ts`: Khi Director tự động hoàn thành T4, T5, T9, tự động gọi `updateCaseAdvisorDecision`, `updateCaseCtsvDecision`, `updateCasePrincipalSign` để đồng bộ dữ liệu vào sổ hồ sơ.
+    - `src/data/caseRegistry.ts`: Cập nhật bộ lọc `getAdvisorCases()` để loại trừ các hồ sơ bị dừng sớm tại G2/BT1 (vi phạm điều kiện học vụ), tuân thủ đúng BPMN 2.0 To-Be.
+  - **Tối ưu hóa đồng bộ Supabase Cloud & Xử lý dung lượng lớn (B6):**
+    - `src/services/supabaseClient.ts`:
+      + Bổ sung cơ chế lưu trữ cấu hình Supabase tùy chỉnh (`saveCustomSupabaseConfig`, `getSupabaseConfig`).
+      + Khử tải dung lượng lớn (`toSupabaseRow`): Tự động nén/thay thế chuỗi ảnh base64 lớn (>150 KB) bằng token đại diện dung lượng nhẹ trước khi đẩy lên Supabase REST/Realtime WebSocket, triệt tiêu hoàn toàn nguy cơ lỗi HTTP 413 Payload Too Large.
+      + Bổ sung hàm đồng bộ hàng loạt `syncAllCasesToSupabase`.
+    - `src/data/caseRegistry.ts`: Tự động nạp mẫu (seed) hồ sơ cục bộ lên Supabase nếu cơ sở dữ liệu trên cloud mới khởi tạo (0 bản ghi).
+    - `src/ui/shell/StorageManager.tsx`: Bổ sung các nút hành động trực quan: "Lưu cấu hình vào trình duyệt", "Đẩy toàn bộ hồ sơ lên Supabase (Sync Push)", và "Kéo toàn bộ hồ sơ từ Supabase (Sync Pull)".
+  - **Hiển thị tài liệu/ảnh minh chứng gốc tại Bàn CTSV (B7):**
+    - `src/ui/desks/ctsv/EvidencePaper.tsx`: Hiển thị khung xem tài liệu gốc (ảnh thumbnail hoặc bản vẽ SVG) trực tiếp trên bàn CTSV để cán bộ đối chiếu song song với kết quả OCR của AI.
+  - **Kiểm thử tự động:**
+    - Tạo `src/store/deskStampingAndSyncBugFixes.test.ts` (6 bài test kiểm tra: đóng dấu liên tiếp không bị khựng, phân luồng chặn hồ sơ vi phạm G2, khử dung lượng base64 Supabase, và lưu trữ cấu hình người dùng).
+    - Toàn bộ 43 test suites và 267 test cases đều vượt qua 100%.
+- File chính:
+  - `src/ui/desks/AdvisorDesk.tsx`
+  - `src/ui/desks/CtsvDesk.tsx`
+  - `src/ui/desks/PrincipalDesk.tsx`
+  - `src/ui/shell/Hud.tsx`
+  - `src/ui/scenes/login/OfficerLogin.tsx`
+  - `src/ui/scenes/LoginPortal.tsx`
+  - `src/store/playback/controller.ts`
+  - `src/store/playback/director.ts`
+  - `src/data/caseRegistry.ts`
+  - `src/services/supabaseClient.ts`
+  - `src/ui/shell/StorageManager.tsx`
+  - `src/ui/desks/ctsv/EvidencePaper.tsx`
+  - `src/store/deskStampingAndSyncBugFixes.test.ts`
+- ASSUMPTION: Khi minh chứng đính kèm dạng ảnh chụp có dung lượng base64 lớn, dữ liệu nhị phân đầy đủ được lưu cục bộ trên máy trạm của sinh viên/CTSV, trong khi bản sao trên Supabase lưu token tham chiếu để đảm bảo băng thông và tránh giới hạn payload của Supabase Free Tier.
+- Nợ / việc dở: Không.
+- Đã chạy: `npm test` (43/43 files, 267/267 passed 100%) · `npm run build` (Vite build thành công code 0, 581 modules).
+
+---
+
+Mỗi session thêm một mục theo mẫu:
+
 ## 2026-11-06 · Launch to Vercel & Supabase Cloud Realtime Database Integration
 - Đã làm:
   - **Cấu hình sẵn sàng triển khai Vercel (Production-Ready Vercel Launch):**

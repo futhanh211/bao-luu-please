@@ -1,5 +1,6 @@
 import { createClient, SupabaseClient, RealtimeChannel } from '@supabase/supabase-js';
 import { SubmittedCase } from '../data/caseRegistry';
+import { getStorageItem, setStorageItem } from '../data/userRegistry';
 
 // Environment variables
 const envUrl = typeof import.meta !== 'undefined' && import.meta.env ? (import.meta.env.VITE_SUPABASE_URL as string | undefined) : undefined;
@@ -16,12 +17,35 @@ function normalizeSupabaseUrl(rawUrl: string): string {
 }
 
 export function getSupabaseConfig(): { url: string; anonKey: string } | null {
+  // Ưu tiên cấu hình custom do người dùng cấu hình trực tiếp tại giao diện
+  const storedUrl = getStorageItem('bao_luu_custom_supabase_url');
+  const storedKey = getStorageItem('bao_luu_custom_supabase_key');
+  if (storedUrl && storedKey) {
+    return {
+      url: normalizeSupabaseUrl(storedUrl),
+      anonKey: storedKey.trim(),
+    };
+  }
+
   const url = normalizeSupabaseUrl(envUrl || '');
   const anonKey = (envAnonKey || '').trim();
   if (url && anonKey) {
     return { url, anonKey };
   }
   return null;
+}
+
+export function saveCustomSupabaseConfig(url: string, key: string): void {
+  const cleanedUrl = normalizeSupabaseUrl(url);
+  const cleanedKey = key.trim();
+  if (cleanedUrl && cleanedKey) {
+    setStorageItem('bao_luu_custom_supabase_url', cleanedUrl);
+    setStorageItem('bao_luu_custom_supabase_key', cleanedKey);
+  } else {
+    setStorageItem('bao_luu_custom_supabase_url', '');
+    setStorageItem('bao_luu_custom_supabase_key', '');
+  }
+  clientInstance = null;
 }
 
 export function isSupabaseConfigured(): boolean {
@@ -86,6 +110,20 @@ export interface SupabaseCaseRow {
 }
 
 export function toSupabaseRow(c: SubmittedCase): SupabaseCaseRow {
+  // Làm sạch tệp minh chứng: thay thế dataUrl base64 quá lớn (>150KB) để bảo đảm không bị lỗi HTTP 413
+  const safeEvidence = (c.evidence || []).map((item) => {
+    if (item && item.fileData && item.fileData.dataUrl && item.fileData.dataUrl.length > 150000) {
+      return {
+        ...item,
+        fileData: {
+          ...item.fileData,
+          dataUrl: `[DATA_URL_TRUNCATED_FOR_CLOUD_SYNC_${(item.fileData.size / 1024).toFixed(0)}KB]`,
+        },
+      };
+    }
+    return item;
+  });
+
   return {
     id: c.id,
     case_code: c.caseCode,
@@ -96,7 +134,7 @@ export function toSupabaseRow(c: SubmittedCase): SupabaseCaseRow {
     student_phone: c.studentPhone,
     student_email: c.studentEmail,
     form: c.form as unknown as Record<string, unknown>,
-    evidence: c.evidence,
+    evidence: safeEvidence,
     attached_evidence_ids: c.attachedEvidenceIds || [],
     submitted_at: c.submittedAt,
     day: c.day || 0,
@@ -195,6 +233,39 @@ export async function upsertSupabaseCase(caseData: SubmittedCase): Promise<boole
   } catch (err) {
     console.warn('Lỗi kết nối khi upsert Supabase case:', err);
     return false;
+  }
+}
+
+/**
+ * Đẩy/Cập nhật toàn bộ danh sách hồ sơ lên Supabase Cloud (Bulk Sync)
+ */
+export async function syncAllCasesToSupabase(
+  cases: SubmittedCase[]
+): Promise<{ success: boolean; count: number; message: string }> {
+  const client = getSupabaseClient();
+  if (!client) {
+    return { success: false, count: 0, message: 'Chưa cấu hình Supabase URL hoặc Anon Key!' };
+  }
+
+  try {
+    const rows = cases.map(toSupabaseRow);
+    const { error } = await client
+      .from('submitted_cases')
+      .upsert(rows, { onConflict: 'id' });
+
+    if (error) {
+      console.warn('Lỗi Supabase bulk upsert:', error.message);
+      return { success: false, count: 0, message: `Lỗi đồng bộ: ${error.message}` };
+    }
+    return {
+      success: true,
+      count: rows.length,
+      message: `Đồng bộ thành công ${rows.length} hồ sơ lên Supabase Cloud!`,
+    };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.warn('Lỗi ngoại lệ Supabase bulk sync:', err);
+    return { success: false, count: 0, message: `Lỗi ngoại lệ: ${msg}` };
   }
 }
 

@@ -362,36 +362,14 @@ export const AdvisorDesk: React.FC = () => {
       );
 
       setSelectedCaseId((prev) => {
-        // Nếu kịch bản đang chọn có trong danh sách thì ưu tiên ca đó
-        if (scenarioCase) return scenarioCase.id;
+        // Giữ nguyên lựa chọn hiện thời của người dùng nếu hồ sơ còn tồn tại
         if (prev && cases.some((c) => c.id === prev)) return prev;
+        if (scenarioCase) return scenarioCase.id;
         const pending = cases.find((c) => !c.advisorDecision);
         return pending ? pending.id : cases[0].id;
       });
     }
   }, [scenarioId, logLength]);
-
-  useEffect(() => {
-    setBrief(null);
-    setLoading(false);
-    setStamp(null);
-    resolved.current = false;
-    soundedReminderIds.clear();
-  }, [engine, selectedCaseId]);
-
-  const bellMs = 600 / speed;
-
-  useEffect(() => {
-    if (!reminder) return undefined;
-    if (!soundedReminderIds.has(reminder.id)) {
-      soundedReminderIds.add(reminder.id);
-      sfx.playPhoneRing();
-    }
-    if (reducedMotion) return undefined;
-    setRinging(true);
-    const timer = setTimeout(() => setRinging(false), bellMs);
-    return () => clearTimeout(timer);
-  }, [reminder?.id, reducedMotion, bellMs, reminder]);
 
   const pendingCases = submittedCases.filter((c) => !c.advisorDecision);
   const resolvedCases = submittedCases.filter((c) => Boolean(c.advisorDecision));
@@ -420,6 +398,30 @@ export const AdvisorDesk: React.FC = () => {
     activeCase =
       submittedCases.find((c) => c.id === selectedCaseId) || submittedCases[0] || null;
   }
+
+  const selectedCase = activeCase || submittedCases[0];
+
+  useEffect(() => {
+    setBrief(null);
+    setLoading(false);
+    setStamp(null);
+    resolved.current = false;
+    soundedReminderIds.clear();
+  }, [engine, selectedCase?.id]);
+
+  const bellMs = 600 / speed;
+
+  useEffect(() => {
+    if (!reminder) return undefined;
+    if (!soundedReminderIds.has(reminder.id)) {
+      soundedReminderIds.add(reminder.id);
+      sfx.playPhoneRing();
+    }
+    if (reducedMotion) return undefined;
+    setRinging(true);
+    const timer = setTimeout(() => setRinging(false), bellMs);
+    return () => clearTimeout(timer);
+  }, [reminder?.id, reducedMotion, bellMs, reminder]);
 
   const handleSelectCase = (id: string) => {
     sfx.playPaper();
@@ -460,8 +462,6 @@ export const AdvisorDesk: React.FC = () => {
     return <DeskEmpty deskName="Bàn Cố vấn học tập" reason="not-submitted" />;
   }
 
-  const selectedCase = activeCase || submittedCases[0];
-
   const handleAsk = useCallback(async () => {
     if (!selectedCase) return;
     setLoading(true);
@@ -497,7 +497,15 @@ export const AdvisorDesk: React.FC = () => {
       stamp.outcome as 'confirmed' | 'declined'
     );
     if (updated) {
-      setSubmittedCases(getAdvisorCases());
+      const freshCases = getAdvisorCases();
+      setSubmittedCases(freshCases);
+      if (filter === 'pending') {
+        const nextPending = freshCases.find((c) => !c.advisorDecision && c.id !== selectedCase.id);
+        if (nextPending) {
+          setSelectedCaseId(nextPending.id);
+          useAppStore.getState().setCaseCode(nextPending.caseCode);
+        }
+      }
     }
 
     // Nếu ca này là ca đang chạy trong BPMN engine thì hoàn tất task T4
@@ -505,6 +513,7 @@ export const AdvisorDesk: React.FC = () => {
       void completeUserTask('T4', stamp.outcome);
     }
     sfx.playStamp();
+    resolved.current = false;
   };
 
   const isCaseProcessed =

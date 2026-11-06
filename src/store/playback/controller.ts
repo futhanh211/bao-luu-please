@@ -4,6 +4,11 @@ import { useAppStore } from '../useApp';
 import { handleEventAnimation } from './animation';
 import { getDirectorNodeNarration, handleDirectorUserTask } from './director';
 import {
+  getSubmittedCaseById,
+  getSubmittedCaseByMssv,
+  saveSubmittedCase,
+} from '../../data/caseRegistry';
+import {
   getActiveStudentsDb,
   isQueueProcessing,
   queuedCount,
@@ -85,6 +90,30 @@ export async function processQueue(
           }
           if (event.endEventId !== 'E_END_REMIND') {
             set({ isPlaying: false });
+
+            // Đồng bộ trạng thái kết thúc ca vào Sổ tiếp nhận hồ sơ & Supabase Cloud
+            const caseCode = useAppStore.getState().caseCode || get().engine?.state.caseId;
+            const mssv = get().engine?.state.form.mssv || get().scenario?.form.mssv;
+            if (caseCode || mssv) {
+              const regCase =
+                (caseCode ? getSubmittedCaseById(caseCode) : null) ||
+                (mssv ? getSubmittedCaseByMssv(mssv) : null);
+              if (regCase) {
+                if (event.endEventId === 'E_END_OK') {
+                  regCase.status = 'completed';
+                  regCase.principalSigned = true;
+                  if (get().engine?.state.decisionDoc) {
+                    regCase.decisionDoc = { ...get().engine!.state.decisionDoc! };
+                  }
+                } else if (event.endEventId === 'E_END_REJECTED') {
+                  regCase.status = 'rejected';
+                } else if (event.endEventId === 'E_END_RETURNED') {
+                  regCase.status = 'returned';
+                }
+                regCase.log = [...get().currentEventLog, event];
+                saveSubmittedCase(regCase);
+              }
+            }
             break;
           }
           // Nhánh nhắc việc kết thúc, ca chính vẫn tiếp tục chờ T4.

@@ -108,19 +108,22 @@ export const Hud: React.FC = () => {
           </div>
         </div>
 
-        {/* Khối ở giữa: Thông tin tài khoản người dùng đang đăng nhập */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-            backgroundColor: 'rgba(0, 0, 0, 0.35)',
-            padding: '6px 16px',
-            borderRadius: 'var(--radius-sm)',
-            border: '1px solid var(--desk-700)',
-          }}
-        >
-          {currentUser ? (
+        {/* Khối ở giữa: Điều hướng bàn nghiệp vụ cho cán bộ & Thông tin tài khoản */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          {currentUser?.type === 'officer' && <RoleTabs />}
+
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              backgroundColor: 'rgba(0, 0, 0, 0.35)',
+              padding: '6px 14px',
+              borderRadius: 'var(--radius-sm)',
+              border: '1px solid var(--desk-700)',
+            }}
+          >
+            {currentUser ? (
             <>
               <span style={{ fontSize: '20px' }}>
                 {currentUser.type === 'student' ? '🎓' : currentUser.avatar}
@@ -157,6 +160,7 @@ export const Hud: React.FC = () => {
           ) : (
             <span style={{ fontSize: '13px', color: 'var(--paper-dim)' }}>Chưa xác thực</span>
           )}
+          </div>
         </div>
 
         {/* Khối bên phải: Âm thanh, Cài đặt, Trợ giúp, Đăng xuất */}

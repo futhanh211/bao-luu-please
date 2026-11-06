@@ -8,6 +8,7 @@ import {
   upsertSupabaseCase,
   deleteSupabaseCase,
   subscribeSupabaseRealtime,
+  syncAllCasesToSupabase,
 } from '../services/supabaseClient';
 
 export type CaseStatus =
@@ -319,6 +320,12 @@ export function initSupabaseSync(): () => void {
         const merged = Array.from(mergedMap.values());
         setStorageItem(STORAGE_KEY, JSON.stringify(merged));
         notifyCaseListeners(merged);
+      } else if (cloudCases && cloudCases.length === 0) {
+        // CSDL Cloud đang rỗng -> Tự động seed hồ sơ mẫu ban đầu lên Cloud
+        const localCases = getAllSubmittedCases();
+        if (localCases.length > 0) {
+          void syncAllCasesToSupabase(localCases);
+        }
       }
     } catch (e) {
       console.warn('Không thể đồng bộ dữ liệu ban đầu từ Supabase:', e);
@@ -593,7 +600,7 @@ export function ensureScenarioInCaseRegistry(scenario: ScenarioConfig, resetToPe
 export function getAdvisorCases(): SubmittedCase[] {
   const all = getAllSubmittedCases();
   return all
-    .filter((c) => c.status !== 'returned')
+    .filter((c) => c.status !== 'returned' && (c.status !== 'rejected' || c.advisorDecision === 'declined'))
     .sort((a, b) => {
       const aPending = !a.advisorDecision ? 0 : 1;
       const bPending = !b.advisorDecision ? 0 : 1;

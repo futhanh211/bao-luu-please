@@ -40,6 +40,27 @@ export const EvidencePaper: React.FC<EvidencePaperProps> = ({
 
       {fields.length === 0 && <p className="ctsv-muted">Tờ này không có trường dữ liệu đọc được.</p>}
 
+      {evidence.fileData && (
+        <div style={{ margin: '8px 0', padding: 8, backgroundColor: 'rgba(0,0,0,0.03)', border: '1px solid var(--paper-line)', borderRadius: 4 }}>
+          <div style={{ fontSize: 11, color: 'var(--stamp-blue)', fontWeight: 'bold', marginBottom: 4 }}>
+            📎 MINH CHỨNG GỐC: {evidence.fileData.name} ({(evidence.fileData.size / 1024).toFixed(0)} KB)
+          </div>
+          {evidence.fileData.svgRaw ? (
+            <div
+              className="sample-svg-preview"
+              style={{ width: '100%', maxHeight: large ? 320 : 150, display: 'flex', justifyContent: 'center', overflow: 'hidden', backgroundColor: '#fff', borderRadius: 3, padding: 4 }}
+              dangerouslySetInnerHTML={{ __html: evidence.fileData.svgRaw }}
+            />
+          ) : evidence.fileData.dataUrl && evidence.fileData.dataUrl.startsWith('data:image/') ? (
+            <img
+              src={evidence.fileData.dataUrl}
+              alt={evidence.fileData.name}
+              style={{ maxWidth: '100%', maxHeight: large ? 320 : 150, objectFit: 'contain', display: 'block', margin: '0 auto', backgroundColor: '#fff', borderRadius: 3, padding: 4 }}
+            />
+          ) : null}
+        </div>
+      )}
+
       <div className="evidence-fields">
         {fields.map((field) => {
           const key = fieldMarkKey(evidence.id, field.id);

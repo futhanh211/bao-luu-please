@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   getAllSubmittedCases,
+  saveAllSubmittedCases,
   resetSubmittedCasesToDefault,
   clearAllSubmittedCases,
   importCasesJson,
@@ -17,6 +18,9 @@ import {
   isSupabaseConfigured,
   testSupabaseConnection,
   getSupabaseConfig,
+  saveCustomSupabaseConfig,
+  syncAllCasesToSupabase,
+  fetchSupabaseCases,
 } from '../../services/supabaseClient';
 import { useAuthStore } from '../../store/useAuth';
 import { sfx } from '../audio/sfx';
@@ -207,6 +211,58 @@ export const StorageManager: React.FC = () => {
         message: `Lỗi kết nối: ${msg}`,
       });
       sfx.playBuzz();
+    } finally {
+      setIsTestingSupabase(false);
+    }
+  };
+
+  const handleSaveSupabaseConfig = () => {
+    saveCustomSupabaseConfig(supabaseUrlInput, supabaseKeyInput);
+    sfx.playStamp();
+    showToast('Đã lưu cấu hình kết nối Supabase vào bộ nhớ trình duyệt!');
+  };
+
+  const handlePushAllToSupabase = async () => {
+    setIsTestingSupabase(true);
+    setSupabaseResult(null);
+    try {
+      const allCases = getAllSubmittedCases();
+      const res = await syncAllCasesToSupabase(allCases);
+      setSupabaseResult({ ...res, latencyMs: 0 });
+      if (res.success) {
+        sfx.playStamp();
+        showToast(res.message);
+      } else {
+        sfx.playBuzz();
+      }
+    } finally {
+      setIsTestingSupabase(false);
+    }
+  };
+
+  const handlePullFromSupabase = async () => {
+    setIsTestingSupabase(true);
+    setSupabaseResult(null);
+    try {
+      const cloud = await fetchSupabaseCases();
+      if (!cloud) {
+        sfx.playBuzz();
+        setSupabaseResult({
+          success: false,
+          latencyMs: 0,
+          message: 'Không thể kết nối hoặc tải hồ sơ từ Supabase.',
+        });
+        return;
+      }
+      saveAllSubmittedCases(cloud);
+      refreshData();
+      sfx.playStamp();
+      setSupabaseResult({
+        success: true,
+        latencyMs: 0,
+        message: `Đã kéo thành công ${cloud.length} hồ sơ từ Supabase Cloud!`,
+      });
+      showToast(`Đã đồng bộ thành công ${cloud.length} hồ sơ từ Supabase Cloud về máy!`);
     } finally {
       setIsTestingSupabase(false);
     }
@@ -447,6 +503,36 @@ export const StorageManager: React.FC = () => {
                 disabled={isTestingSupabase}
               >
                 {isTestingSupabase ? 'Đang kiểm tra...' : '☁️ Ping Supabase'}
+              </button>
+            </div>
+
+            {/* Hàng nút tác vụ đồng bộ Supabase */}
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '6px' }}>
+              <button
+                type="button"
+                className="storage-btn"
+                style={{ padding: '6px 12px', fontSize: '12px' }}
+                onClick={handleSaveSupabaseConfig}
+              >
+                💾 Lưu cấu hình vào trình duyệt
+              </button>
+              <button
+                type="button"
+                className="storage-btn storage-btn-success"
+                style={{ padding: '6px 12px', fontSize: '12px' }}
+                onClick={handlePushAllToSupabase}
+                disabled={isTestingSupabase}
+              >
+                ⬆️ Đẩy toàn bộ hồ sơ lên Supabase (Sync Push)
+              </button>
+              <button
+                type="button"
+                className="storage-btn"
+                style={{ padding: '6px 12px', fontSize: '12px', backgroundColor: '#1565c0', color: '#fff', borderColor: '#1565c0' }}
+                onClick={handlePullFromSupabase}
+                disabled={isTestingSupabase}
+              >
+                ⬇️ Kéo toàn bộ hồ sơ từ Supabase (Sync Pull)
               </button>
             </div>
           </div>

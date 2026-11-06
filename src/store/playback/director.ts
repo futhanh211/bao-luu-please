@@ -1,5 +1,10 @@
 import { useAppStore } from '../useApp';
 import { collectAnomalies } from '../../data/inspection';
+import {
+  updateCaseAdvisorDecision,
+  updateCaseCtsvDecision,
+  updateCasePrincipalSign,
+} from '../../data/caseRegistry';
 import type { PlaybackStoreState } from './types';
 
 type Getter = () => PlaybackStoreState;
@@ -139,7 +144,12 @@ export async function handleDirectorUserTask(
     );
     await sleepWithPause(scaled(1800), get);
 
-    await get().completeUserTask('T4', plan.advisorOutcome);
+    const targetAdvisorId = engine.state.caseId ?? scenario.code ?? useAppStore.getState().caseCode;
+    const advisorDecision = plan.advisorOutcome === 'declined' ? 'declined' : 'confirmed';
+    if (targetAdvisorId) {
+      updateCaseAdvisorDecision(targetAdvisorId, advisorDecision);
+    }
+    await get().completeUserTask('T4', advisorDecision);
     return true;
   }
 
@@ -185,7 +195,12 @@ export async function handleDirectorUserTask(
     const ok2 = await sleepWithPause(scaled(2500), get);
     if (!ok2 || appStore.mode !== 'director' || get().isPaused) return false;
 
-    await get().completeUserTask('T5', plan.ctsvOutcome);
+    const targetCtsvId = engine.state.caseId ?? scenario.code ?? useAppStore.getState().caseCode;
+    const ctsvDecision = plan.ctsvOutcome === 'invalid' ? 'invalid' : 'valid';
+    if (targetCtsvId) {
+      updateCaseCtsvDecision(targetCtsvId, ctsvDecision, markedKeys);
+    }
+    await get().completeUserTask('T5', ctsvDecision);
     return true;
   }
 
@@ -206,8 +221,13 @@ export async function handleDirectorUserTask(
     const ok2 = await sleepWithPause(scaled(3500), get);
     if (!ok2 || appStore.mode !== 'director' || get().isPaused) return false;
 
+    const principalSignerName = plan.principalSigner ?? 'PGS.TS. Đoàn Ngọc Phi Anh - Phó Hiệu trưởng';
+    const targetBghId = engine.state.caseId ?? scenario.code ?? useAppStore.getState().caseCode;
+    if (targetBghId) {
+      updateCasePrincipalSign(targetBghId, principalSignerName);
+    }
     await get().completeUserTask('T9', {
-      signerName: plan.principalSigner ?? 'PGS.TS. Đoàn Ngọc Phi Anh - Phó Hiệu trưởng',
+      signerName: principalSignerName,
     });
 
     // Chuyển về màn hình Sinh viên để đón thư kết quả
