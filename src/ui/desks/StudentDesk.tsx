@@ -93,21 +93,38 @@ export const StudentDesk: React.FC = () => {
     }
   }, [scenario, submissionDraft, initScenario]);
 
-  const handleStartFillOption = (key: StudentEvidenceOptionKey) => {
-    setFillOptionKey(key);
+  const handleStartFillOption = (key?: StudentEvidenceOptionKey) => {
+    let targetKey = key;
+    if (!targetKey) {
+      const reason = submissionDraft?.form.reason;
+      if (reason === 'Nghĩa vụ quân sự') targetKey = 'military';
+      else if (reason === 'Hoàn cảnh gia đình') targetKey = 'hardship';
+      else if (reason === 'Lý do cá nhân khác') targetKey = 'personal';
+      else targetKey = 'medical';
+    }
+    setFillOptionKey(targetKey);
   };
 
-  const handleSaveEvidenceForm = (updatedData: StudentDetailedFormData) => {
-    setDetailedFormData(updatedData);
-    saveStudentFormData(studentMssv, updatedData);
-
-    const option = STUDENT_EVIDENCE_OPTIONS.find((o) => o.key === fillOptionKey);
+  const handleSaveEvidenceForm = (
+    updatedData: StudentDetailedFormData,
+    category?: StudentEvidenceOptionKey
+  ) => {
+    const finalCategory = category || fillOptionKey || 'medical';
+    const option = STUDENT_EVIDENCE_OPTIONS.find((o) => o.key === finalCategory);
     const matchingReason = option ? option.matchingReason : updatedData.reason;
+
+    const dataWithReason: StudentDetailedFormData = {
+      ...updatedData,
+      reason: matchingReason,
+    };
+
+    setDetailedFormData(dataWithReason);
+    saveStudentFormData(studentMssv, dataWithReason);
 
     updateDraftForm({ reason: matchingReason });
 
     // Nộp cả Giấy xác nhận và Minh chứng do người dùng tải lên từ máy tính
-    const items = buildEvidenceItemsFromFormData(updatedData, matchingReason);
+    const items = buildEvidenceItemsFromFormData(dataWithReason, matchingReason);
     setEvidenceList(items, true);
 
     setFillOptionKey(null);

@@ -2,6 +2,48 @@
 
 Mỗi session thêm một mục theo mẫu:
 
+## 2026-11-06 · Hợp nhất 1 cổng nộp minh chứng duy nhất, AI tự động phân loại 4 nhóm giấy tờ & Loại bỏ tệp rác
+- Đã làm:
+  - **Hợp nhất thành 1 nút chọn minh chứng duy nhất (Streamlined Single Evidence Picker):**
+    - `src/ui/desks/student/EvidenceBag.tsx`: Bỏ danh sách 4 lựa chọn picker rườm rà dễ gây nhầm lẫn (`isPickerOpen`, `STUDENT_EVIDENCE_OPTIONS`). Thay bằng **1 nút duy nhất**: `＋ THÊM MINH CHỨNG (Tải ảnh / giấy tờ (Bệnh viện, Quân sự, UBND...))`. Khi bấm vào, hệ thống mở thẳng cửa sổ khai báo và quét OCR thống nhất.
+  - **AI OCR tự động nhận diện danh mục giấy tờ (Universal Document Auto-Detection):**
+    - `src/ai/mockTemplates.ts`: Xây dựng hàm `detectEvidenceCategory(file, fallback)`:
+      + Phân tích nội dung và tên tệp (`file.name`, `file.svgRaw`, từ khóa hành chính).
+      + Tự động nhận diện chuẩn xác:
+        * Bệnh viện / Y tế (`medical`): Bệnh viện Đa khoa, Bác sĩ điều trị, Giấy ra viện, Mã bệnh án, ảnh chụp mẫu test UUID từ thiết bị (`12f3e20a-...`).
+        * Nghĩa vụ quân sự (`military`): Lệnh gọi công dân nhập ngũ, BCH Quân sự, ngày tập trung giao quân.
+        * Hoàn cảnh gia đình (`hardship`): Xác nhận UBND Phường/Xã, diện hộ nghèo / cận nghèo, biến cố kinh tế.
+        * Lý do cá nhân / Thực tập (`personal`): Đơn trình bày lý do cá nhân, giấy tiếp nhận thực tập doanh nghiệp ngoài trường.
+  - **Loại bỏ triệt để tài liệu rác / không hợp lệ ("Còn nếu không phải thì loại ra"):**
+    - Nếu tệp tải lên là tài liệu học tập, bài tập, tiểu luận, slide, chuyên đề (`Chuyên đề Bác .jpg`, `bai_tap.pdf`, `screenshot`), ảnh chụp giải trí hoặc tệp không có con dấu/tiêu đề hành chính:
+      + `detectEvidenceCategory` trả về `null`.
+      + `evaluateEvidenceFile` trả về `valid: false`.
+      + `ai.scanDocument` trả về cảnh báo `confidence: 0.2`, `extractedCount: 0`.
+      + Khung khai báo hiển thị biểu ngữ cảnh báo đỏ `⛔ TÀI LIỆU BỊ LOẠI BỎ: Không phát hiện tiêu đề hành chính hoặc dấu mộc đỏ`, không điền bất kỳ trường giả mạo nào vào form và chặn nộp hồ sơ không hợp lệ.
+  - **Cập nhật cửa sổ khai báo thông minh (Dynamic Evidence Form Modal):**
+    - `src/ui/desks/student/EvidenceFormModal.tsx`:
+      + Tích hợp thanh tab 4 loại minh chứng trực quan kèm nhãn `✨ AI tự động nhận diện đúng loại khi tải ảnh lên`.
+      + Khi người dùng tải ảnh lên hoặc bấm `📷 AI QUÉT & TỰ ĐỘNG ĐIỀN`, modal tự động nhận diện loại giấy tờ, tự động nhảy sang tab tương ứng và điền đầy đủ các trường thông tin.
+      + Khi lưu (`onSave`), tự động đồng bộ lý do nghỉ học trên đơn xin nghỉ (`StudentApplicationForm.reason`) tương ứng với minh chứng đã quét, triệt tiêu mọi lỗi lệch danh mục giữa đơn và minh chứng.
+    - `src/ui/desks/StudentDesk.tsx`: Cập nhật `handleStartFillOption` và `handleSaveEvidenceForm` nhận tham số `category` và tự động cập nhật lý do nộp đơn.
+  - **Kiểm thử tự động:**
+    - `src/ui/desks/student/evidenceFormModal.test.tsx`: Bổ sung bài test 7 kiểm tra `detectEvidenceCategory` phân loại chính xác 4 danh mục và loại bỏ tệp rác / không liên quan.
+    - Toàn bộ 43 test suites và 268 test cases đều pass 100%.
+- File chính:
+  - `src/ui/desks/student/EvidenceBag.tsx`
+  - `src/ui/desks/student/EvidenceFormModal.tsx`
+  - `src/ui/desks/StudentDesk.tsx`
+  - `src/ai/mockTemplates.ts`
+  - `src/ui/desks/student/evidenceFormModal.test.tsx`
+  - `docs/PROGRESS.md`
+- ASSUMPTION: Khi sinh viên tải một tệp minh chứng lên, hệ thống ưu tiên tự động nhận diện loại văn bản từ nội dung tệp; nếu tệp hợp lệ nhưng tên tệp không rõ danh mục (ví dụ ảnh chụp camera), hệ thống sử dụng danh mục đang chọn trên thanh tab của modal.
+- Nợ / việc dở: Không.
+- Đã chạy: `npm test` (43/43 files, 268/268 passed 100%) · `npm run build` (tsc & vite build thành công code 0, 3.42s).
+
+---
+
+Mỗi session thêm một mục theo mẫu:
+
 ## 2026-11-06 · Toàn diện Bug Fixes (B1–B7) trên mọi vai đăng nhập & Tối ưu đồng bộ Supabase Cloud
 - Đã làm:
   - **Khắc phục lỗi "bị khựng" khi đóng dấu / ký duyệt liên tiếp nhiều hồ sơ (B1):**
@@ -48,6 +90,48 @@ Mỗi session thêm một mục theo mẫu:
 - ASSUMPTION: Khi minh chứng đính kèm dạng ảnh chụp có dung lượng base64 lớn, dữ liệu nhị phân đầy đủ được lưu cục bộ trên máy trạm của sinh viên/CTSV, trong khi bản sao trên Supabase lưu token tham chiếu để đảm bảo băng thông và tránh giới hạn payload của Supabase Free Tier.
 - Nợ / việc dở: Không.
 - Đã chạy: `npm test` (43/43 files, 267/267 passed 100%) · `npm run build` (Vite build thành công code 0, 581 modules).
+
+---
+
+Mỗi session thêm một mục theo mẫu:
+
+## 2026-11-06 · Hợp nhất 1 cổng nộp minh chứng duy nhất, AI tự động phân loại 4 nhóm giấy tờ & Loại bỏ tệp rác
+- Đã làm:
+  - **Hợp nhất thành 1 nút chọn minh chứng duy nhất (Streamlined Single Evidence Picker):**
+    - `src/ui/desks/student/EvidenceBag.tsx`: Bỏ danh sách 4 lựa chọn picker rườm rà dễ gây nhầm lẫn (`isPickerOpen`, `STUDENT_EVIDENCE_OPTIONS`). Thay bằng **1 nút duy nhất**: `＋ THÊM MINH CHỨNG (Tải ảnh / giấy tờ (Bệnh viện, Quân sự, UBND...))`. Khi bấm vào, hệ thống mở thẳng cửa sổ khai báo và quét OCR thống nhất.
+  - **AI OCR tự động nhận diện danh mục giấy tờ (Universal Document Auto-Detection):**
+    - `src/ai/mockTemplates.ts`: Xây dựng hàm `detectEvidenceCategory(file, fallback)`:
+      + Phân tích nội dung và tên tệp (`file.name`, `file.svgRaw`, từ khóa hành chính).
+      + Tự động nhận diện chuẩn xác:
+        * Bệnh viện / Y tế (`medical`): Bệnh viện Đa khoa, Bác sĩ điều trị, Giấy ra viện, Mã bệnh án, ảnh chụp mẫu test UUID từ thiết bị (`12f3e20a-...`).
+        * Nghĩa vụ quân sự (`military`): Lệnh gọi công dân nhập ngũ, BCH Quân sự, ngày tập trung giao quân.
+        * Hoàn cảnh gia đình (`hardship`): Xác nhận UBND Phường/Xã, diện hộ nghèo / cận nghèo, biến cố kinh tế.
+        * Lý do cá nhân / Thực tập (`personal`): Đơn trình bày lý do cá nhân, giấy tiếp nhận thực tập doanh nghiệp ngoài trường.
+  - **Loại bỏ triệt để tài liệu rác / không hợp lệ ("Còn nếu không phải thì loại ra"):**
+    - Nếu tệp tải lên là tài liệu học tập, bài tập, tiểu luận, slide, chuyên đề (`Chuyên đề Bác .jpg`, `bai_tap.pdf`, `screenshot`), ảnh chụp giải trí hoặc tệp không có con dấu/tiêu đề hành chính:
+      + `detectEvidenceCategory` trả về `null`.
+      + `evaluateEvidenceFile` trả về `valid: false`.
+      + `ai.scanDocument` trả về cảnh báo `confidence: 0.2`, `extractedCount: 0`.
+      + Khung khai báo hiển thị biểu ngữ cảnh báo đỏ `⛔ TÀI LIỆU BỊ LOẠI BỎ: Không phát hiện tiêu đề hành chính hoặc dấu mộc đỏ`, không điền bất kỳ trường giả mạo nào vào form và chặn nộp hồ sơ không hợp lệ.
+  - **Cập nhật cửa sổ khai báo thông minh (Dynamic Evidence Form Modal):**
+    - `src/ui/desks/student/EvidenceFormModal.tsx`:
+      + Tích hợp thanh tab 4 loại minh chứng trực quan kèm nhãn `✨ AI tự động nhận diện đúng loại khi tải ảnh lên`.
+      + Khi người dùng tải ảnh lên hoặc bấm `📷 AI QUÉT & TỰ ĐỘNG ĐIỀN`, modal tự động nhận diện loại giấy tờ, tự động nhảy sang tab tương ứng và điền đầy đủ các trường thông tin.
+      + Khi lưu (`onSave`), tự động đồng bộ lý do nghỉ học trên đơn xin nghỉ (`StudentApplicationForm.reason`) tương ứng với minh chứng đã quét, triệt tiêu mọi lỗi lệch danh mục giữa đơn và minh chứng.
+    - `src/ui/desks/StudentDesk.tsx`: Cập nhật `handleStartFillOption` và `handleSaveEvidenceForm` nhận tham số `category` và tự động cập nhật lý do nộp đơn.
+  - **Kiểm thử tự động:**
+    - `src/ui/desks/student/evidenceFormModal.test.tsx`: Bổ sung bài test 7 kiểm tra `detectEvidenceCategory` phân loại chính xác 4 danh mục và loại bỏ tệp rác / không liên quan.
+    - Toàn bộ 43 test suites và 268 test cases đều pass 100%.
+- File chính:
+  - `src/ui/desks/student/EvidenceBag.tsx`
+  - `src/ui/desks/student/EvidenceFormModal.tsx`
+  - `src/ui/desks/StudentDesk.tsx`
+  - `src/ai/mockTemplates.ts`
+  - `src/ui/desks/student/evidenceFormModal.test.tsx`
+  - `docs/PROGRESS.md`
+- ASSUMPTION: Khi sinh viên tải một tệp minh chứng lên, hệ thống ưu tiên tự động nhận diện loại văn bản từ nội dung tệp; nếu tệp hợp lệ nhưng tên tệp không rõ danh mục (ví dụ ảnh chụp camera), hệ thống sử dụng danh mục đang chọn trên thanh tab của modal.
+- Nợ / việc dở: Không.
+- Đã chạy: `npm test` (43/43 files, 268/268 passed 100%) · `npm run build` (tsc & vite build thành công code 0, 3.42s).
 
 ---
 

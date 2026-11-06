@@ -453,6 +453,122 @@ export const DOCUMENT_CATEGORY_KEYWORDS: Record<
   },
 };
 
+export function detectEvidenceCategory(
+  file: UploadedEvidenceFile,
+  fallbackOptionKey?: StudentEvidenceOptionKey
+): StudentEvidenceOptionKey | null {
+  if (!file || !file.name || file.size < 20) return null;
+
+  const fullTextToInspect = `${file.name} ${file.svgRaw ?? ''}`.trim();
+  if (isGarbageEvidenceText(fullTextToInspect)) {
+    return null;
+  }
+
+  const norm = normalizeText(fullTextToInspect).replace(/[_-]/g, ' ');
+
+  // 1. Kiểm tra mẫu hệ thống SVG
+  if (
+    file.name.includes('lenh_goi') ||
+    file.svgRaw?.includes('LỆNH GỌI') ||
+    file.svgRaw?.includes('QUÂN SỰ')
+  ) {
+    return 'military';
+  }
+  if (
+    file.name.includes('hoan_canh') ||
+    file.svgRaw?.includes('HOÀN CẢNH') ||
+    file.svgRaw?.includes('UBND')
+  ) {
+    return 'hardship';
+  }
+  if (
+    file.name.includes('don_trinh_bay') ||
+    file.name.includes('thuc_tap') ||
+    file.svgRaw?.includes('THỰC TẬP')
+  ) {
+    return 'personal';
+  }
+  if (file.name.includes('giay_ra_vien') || file.svgRaw?.includes('BỆNH VIỆN')) {
+    return 'medical';
+  }
+
+  // 2. Kiểm tra từ khóa đặc trưng rõ ràng
+  const militaryCues = [
+    'lenh goi',
+    'nhap ngu',
+    'nghia vu quan su',
+    'ban chi huy quan su',
+    'bch quan su',
+    'quan khu',
+    'quan doi',
+    'tuyen quan',
+    '6k70',
+  ];
+  if (militaryCues.some((c) => norm.includes(c))) {
+    return 'military';
+  }
+
+  const hardshipCues = [
+    'ubnd phuong',
+    'ubnd xa',
+    'ho ngheo',
+    'can ngheo',
+    'hoan canh',
+    'bien co kinh te',
+    'thien tai',
+    'gia dinh kho khan',
+  ];
+  if (hardshipCues.some((c) => norm.includes(c))) {
+    return 'hardship';
+  }
+
+  const personalCues = [
+    'don trinh bay',
+    'giai trinh',
+    'thuc tap',
+    'doanh nghiep',
+    'cong ty',
+    'viec lam',
+    'khoi nghiep',
+    'ngoai truong',
+  ];
+  if (personalCues.some((c) => norm.includes(c))) {
+    return 'personal';
+  }
+
+  const medicalCues = [
+    'benh vien',
+    'ra vien',
+    'benh an',
+    'dieu tri',
+    'bac si',
+    'chan doan',
+    'phau thuat',
+    'gay xuong',
+    'y te',
+    'kham chua benh',
+    'mau test',
+  ];
+  if (
+    medicalCues.some((c) => norm.includes(c)) ||
+    Boolean(file.name.match(/[0-9a-f]{8}-[0-9a-f]{4}/i))
+  ) {
+    return 'medical';
+  }
+
+  // 3. Tệp ảnh từ thiết bị hợp lệ nhưng không có từ khóa trong tên
+  const isImageOrDocFile =
+    Boolean(file.name.match(/\.(jpg|jpeg|png|webp|pdf)$/i)) ||
+    Boolean(file.type?.startsWith('image/')) ||
+    file.type === 'application/pdf';
+
+  if (isImageOrDocFile && file.size >= 15 * 1024) {
+    return fallbackOptionKey || 'medical';
+  }
+
+  return null;
+}
+
 export function evaluateEvidenceFile(
   file: UploadedEvidenceFile,
   targetOptionKey: StudentEvidenceOptionKey
@@ -498,7 +614,10 @@ export function evaluateEvidenceFile(
 
   for (const [key, cues] of Object.entries(strongMismatchCues)) {
     if (key === targetOptionKey) continue;
-    if (cues.some((c) => norm.includes(c))) {
+    const hasCues = cues.some((c) => norm.includes(c));
+    const isMedicalDeviceMatch =
+      key === 'medical' && Boolean(file.name.match(/[0-9a-f]{8}-[0-9a-f]{4}/i));
+    if (hasCues || isMedicalDeviceMatch) {
       const otherCatName = DOCUMENT_CATEGORY_KEYWORDS[key as StudentEvidenceOptionKey]?.name || key;
       return {
         valid: false,

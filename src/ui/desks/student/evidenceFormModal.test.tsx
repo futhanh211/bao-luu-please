@@ -222,4 +222,60 @@ describe('EvidenceFormModal & AI Auto-Fill Integration (Session 3)', () => {
     expect(unchangedForm.medical.hospital).toBe('');
     expect(unchangedForm.medical.recordCode).toBe('');
   });
+
+  it('7. detectEvidenceCategory: Tự động phân loại chuẩn xác 4 loại giấy tờ và loại bỏ tệp rác', async () => {
+    const { detectEvidenceCategory } = await import('../../../ai/mockTemplates');
+
+    // Tệp bệnh viện (kể cả tệp UUID mẫu test do người dùng chụp)
+    expect(
+      detectEvidenceCategory({
+        name: '12f3e20a-9a64-48cf-a6ed-0799e32fecf0.jpg',
+        size: 205100,
+        type: 'image/jpeg',
+      })
+    ).toBe('medical');
+
+    // Tệp nghĩa vụ quân sự
+    expect(
+      detectEvidenceCategory({
+        name: 'lenh_goi_nhap_ngu_bch_quan_su.pdf',
+        size: 204800,
+        type: 'application/pdf',
+      })
+    ).toBe('military');
+
+    // Tệp hoàn cảnh gia đình
+    expect(
+      detectEvidenceCategory({
+        name: 'xac_nhan_hoan_canh_ubnd_phuong.jpg',
+        size: 150000,
+        type: 'image/jpeg',
+      })
+    ).toBe('hardship');
+
+    // Tệp lý do cá nhân / thực tập
+    expect(
+      detectEvidenceCategory({
+        name: 'don_trinh_bay_nguyen_vong_thuc_tap.pdf',
+        size: 120000,
+        type: 'application/pdf',
+      })
+    ).toBe('personal');
+
+    // Tệp rác / không hợp lệ -> loại ra (trả về null)
+    expect(
+      detectEvidenceCategory({
+        name: 'Chuyên đề Bác .jpg',
+        size: 350000,
+        type: 'image/jpeg',
+      })
+    ).toBeNull();
+    expect(
+      detectEvidenceCategory({
+        name: 'ho_so_rac.png',
+        size: 500,
+        type: 'image/png',
+      })
+    ).toBeNull();
+  });
 });

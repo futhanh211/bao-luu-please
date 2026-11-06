@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   StudentDetailedFormData,
   UploadedEvidenceFile,
@@ -14,11 +14,19 @@ import { getActiveAI } from '../../../store/playback/session';
 import { defaultMockAI } from '../../../ai/mock';
 import { AIService } from '../../../ai/service';
 import { sfx } from '../../audio/sfx';
+import { detectEvidenceCategory } from '../../../ai/mockTemplates';
+
+const CATEGORY_TABS: { key: StudentEvidenceOptionKey; icon: string; label: string }[] = [
+  { key: 'medical', icon: '🏥', label: 'Bệnh viện / Y tế' },
+  { key: 'military', icon: '🪖', label: 'Nghĩa vụ quân sự' },
+  { key: 'hardship', icon: '🏡', label: 'Hoàn cảnh gia đình' },
+  { key: 'personal', icon: '📝', label: 'Lý do cá nhân' },
+];
 
 interface Props {
-  optionKey: StudentEvidenceOptionKey;
+  optionKey?: StudentEvidenceOptionKey;
   initialData: StudentDetailedFormData;
-  onSave: (updatedData: StudentDetailedFormData) => void;
+  onSave: (updatedData: StudentDetailedFormData, category?: StudentEvidenceOptionKey) => void;
   onClose: () => void;
 }
 
@@ -29,6 +37,20 @@ export const EvidenceFormModal: React.FC<Props> = ({
   onClose,
 }) => {
   const [data, setData] = useState<StudentDetailedFormData>(() => ({ ...initialData }));
+  const [category, setCategory] = useState<StudentEvidenceOptionKey>(() => {
+    if (optionKey) return optionKey;
+    if (initialData.reason === 'Nghĩa vụ quân sự') return 'military';
+    if (initialData.reason === 'Hoàn cảnh gia đình') return 'hardship';
+    if (initialData.reason === 'Lý do cá nhân khác') return 'personal';
+    return 'medical';
+  });
+
+  useEffect(() => {
+    if (optionKey) {
+      setCategory(optionKey);
+    }
+  }, [optionKey]);
+
   const [uploadedFile, setUploadedFile] = useState<UploadedEvidenceFile | null>(
     () => initialData.uploadedFile || null
   );
@@ -66,19 +88,27 @@ export const EvidenceFormModal: React.FC<Props> = ({
         dataUrl: result,
       };
 
+      const finalizeUpload = (fData: UploadedEvidenceFile) => {
+        setUploadedFile(fData);
+        setData((prev) => ({ ...prev, uploadedFile: fData }));
+        // Tự động nhận diện loại tài liệu từ tệp tải lên
+        const detected = detectEvidenceCategory(fData, category);
+        if (detected && detected !== category) {
+          setCategory(detected);
+        }
+        sfx.playPaperSlide();
+      };
+
       if (file.type.includes('svg') || file.name.endsWith('.svg')) {
         const textReader = new FileReader();
         textReader.onload = () => {
           fileData.svgRaw = textReader.result as string;
-          setUploadedFile({ ...fileData });
-          setData((prev) => ({ ...prev, uploadedFile: { ...fileData } }));
+          finalizeUpload(fileData);
         };
         textReader.readAsText(file);
+      } else {
+        finalizeUpload(fileData);
       }
-
-      setUploadedFile(fileData);
-      setData((prev) => ({ ...prev, uploadedFile: fileData }));
-      sfx.playPaperSlide();
     };
     reader.onerror = () => {
       setFileError('Không thể đọc tệp từ thiết bị. Vui lòng thử lại.');
@@ -87,7 +117,7 @@ export const EvidenceFormModal: React.FC<Props> = ({
   };
 
   const handleLoadSample = () => {
-    const sample = createSampleEvidenceFile(optionKey, data.fullName || 'Nguyễn Minh Khoa');
+    const sample = createSampleEvidenceFile(category, data.fullName || 'Nguyễn Minh Khoa');
     setImgLoadError(false);
     setUploadedFile(sample);
     setData((prev) => ({ ...prev, uploadedFile: sample }));
@@ -104,19 +134,28 @@ export const EvidenceFormModal: React.FC<Props> = ({
     setFileError(null);
 
     try {
+      // 1. Tự động nhận diện loại giấy tờ (Bệnh viện, Nghĩa vụ quân sự, Hoàn cảnh, Cá nhân)
+      const detectedCat = detectEvidenceCategory(uploadedFile, category);
+      const effectiveCategory = detectedCat || category;
+
       const ai = getActiveAI() ?? new AIService(defaultMockAI, null, 'mock');
-      const result = await ai.scanDocument(uploadedFile, optionKey);
+      const result = await ai.scanDocument(uploadedFile, effectiveCategory);
 
       const isSuccess = result.confidence >= 0.6 && result.extractedCount > 0;
       setScanSummary(result.summary);
 
       if (isSuccess) {
+        // Cập nhật tab sang loại giấy tờ vừa trích xuất
+        const finalCategory = result.documentType || effectiveCategory;
+        if (finalCategory !== category) {
+          setCategory(finalCategory);
+        }
         setScanStatus('success');
         setFileError(null);
         sfx.playOcrSuccess();
 
         const filledKeys: string[] = [];
-        if (optionKey === 'medical' && result.data.medical) {
+        if (finalCategory === 'medical' && result.data.medical) {
           const m = result.data.medical;
           setData((prev) => ({
             ...prev,
@@ -133,7 +172,7 @@ export const EvidenceFormModal: React.FC<Props> = ({
             },
           }));
           filledKeys.push(...result.fields.map((f) => f.key));
-        } else if (optionKey === 'military' && result.data.military) {
+        } else if (finalCategory === 'military' && result.data.military) {
           const mil = result.data.military;
           setData((prev) => ({
             ...prev,
@@ -148,7 +187,7 @@ export const EvidenceFormModal: React.FC<Props> = ({
             },
           }));
           filledKeys.push(...result.fields.map((f) => f.key));
-        } else if (optionKey === 'hardship' && result.data.hardship) {
+        } else if (finalCategory === 'hardship' && result.data.hardship) {
           const h = result.data.hardship;
           setData((prev) => ({
             ...prev,
@@ -163,7 +202,7 @@ export const EvidenceFormModal: React.FC<Props> = ({
             },
           }));
           filledKeys.push(...result.fields.map((f) => f.key));
-        } else if (optionKey === 'personal' && result.data.personal) {
+        } else if (finalCategory === 'personal' && result.data.personal) {
           const p = result.data.personal;
           setData((prev) => ({
             ...prev,
@@ -184,10 +223,10 @@ export const EvidenceFormModal: React.FC<Props> = ({
         }
         setAutoFilledFields(filledKeys);
       } else {
-        // Tệp cảnh báo / rác / không hợp lệ: Không điền trường nào vào form
+        // Tệp cảnh báo / rác / không hợp lệ: Loại ra, không điền trường nào vào form
         setScanStatus('warning');
         setAutoFilledFields([]);
-        setFileError(`Cảnh báo kiểm tra minh chứng: ${result.summary}`);
+        setFileError(`TÀI LIỆU BỊ LOẠI BỎ: ${result.summary}`);
         sfx.playBuzz();
       }
     } catch {
@@ -227,8 +266,13 @@ export const EvidenceFormModal: React.FC<Props> = ({
       sfx.play('buzz');
       return;
     }
+    if (scanStatus === 'warning') {
+      setFileError('Tài liệu minh chứng không hợp lệ và đã bị hệ thống từ chối. Vui lòng tải giấy tờ có xác nhận hợp lệ trước khi nộp!');
+      sfx.play('buzz');
+      return;
+    }
     sfx.playStamp();
-    onSave({ ...data, uploadedFile });
+    onSave({ ...data, uploadedFile }, category);
   };
 
   const inputClass = (key: string): string =>
@@ -287,14 +331,60 @@ export const EvidenceFormModal: React.FC<Props> = ({
             HỆ THỐNG MỘT CỬA SỐ · KHAI BÁO THÔNG TIN MINH CHỨNG
           </div>
           <h3 style={{ fontSize: 18, marginTop: 4, color: 'var(--stamp-blue)', textTransform: 'uppercase' }}>
-            {optionKey === 'medical' && '🏥 Giấy xác nhận của bệnh viện (Ốm đau/tai nạn điều trị dài)'}
-            {optionKey === 'military' && '🪖 Giấy đi nghĩa vụ quân sự (Lệnh gọi công dân nhập ngũ)'}
-            {optionKey === 'hardship' && '🏡 Giấy chứng minh hoàn cảnh gia đình (Xác nhận UBND Phường/Xã)'}
-            {optionKey === 'personal' && '📝 Lý do cá nhân khác (Đơn trình bày / Thực tập ngoài trường)'}
+            {category === 'medical' && '🏥 Giấy xác nhận của bệnh viện (Ốm đau/tai nạn điều trị dài)'}
+            {category === 'military' && '🪖 Giấy đi nghĩa vụ quân sự (Lệnh gọi công dân nhập ngũ)'}
+            {category === 'hardship' && '🏡 Giấy chứng minh hoàn cảnh gia đình (Xác nhận UBND Phường/Xã)'}
+            {category === 'personal' && '📝 Lý do cá nhân khác (Đơn trình bày / Thực tập ngoài trường)'}
           </h3>
           <p style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 2 }}>
             Họ tên sinh viên: <strong>{data.fullName}</strong> · MSSV: <strong>{data.mssv}</strong>
           </p>
+
+          {/* Thanh chuyển / nhận diện loại minh chứng */}
+          <div style={{ marginTop: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+              <span style={{ fontSize: 11, fontWeight: 'bold', color: 'var(--ink-soft)', textTransform: 'uppercase' }}>
+                Loại minh chứng:
+              </span>
+              <span style={{ fontSize: 11, color: 'var(--stamp-green)', fontWeight: 600 }}>
+                ✨ Tự động nhận diện khi tải ảnh / quét OCR
+              </span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
+              {CATEGORY_TABS.map((tab) => {
+                const active = category === tab.key;
+                return (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    onClick={() => {
+                      setCategory(tab.key);
+                      sfx.playKeyClack();
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 4,
+                      padding: '5px 6px',
+                      fontSize: 11.5,
+                      fontFamily: 'var(--font-paper)',
+                      fontWeight: active ? 'bold' : 'normal',
+                      border: active ? '2px solid var(--stamp-blue)' : '1px solid var(--paper-line)',
+                      background: active ? 'var(--wash-blue)' : 'var(--paper-dim)',
+                      color: active ? 'var(--stamp-blue)' : 'var(--ink)',
+                      borderRadius: 'var(--radius-sm)',
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    <span>{tab.icon}</span>
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -382,7 +472,7 @@ export const EvidenceFormModal: React.FC<Props> = ({
                 {/* Khung ngắm xem trước tài liệu có tích hợp máy quét laser OCR */}
                 <DocumentScanOverlay
                   isScanning={isScanning}
-                  documentType={optionKey}
+                  documentType={category}
                   fileName={uploadedFile.name}
                   className="paper-lifted"
                 >
@@ -539,7 +629,7 @@ export const EvidenceFormModal: React.FC<Props> = ({
           </div>
 
           {/* 1. Form điền: Giấy xác nhận của bệnh viện */}
-          {optionKey === 'medical' && (
+          {category === 'medical' && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 14px' }}>
               <div>
                 {renderLabel('Bệnh viện cấp giấy', 'm-hospital', 'hospital')}
@@ -648,7 +738,7 @@ export const EvidenceFormModal: React.FC<Props> = ({
           )}
 
           {/* 2. Form điền: Giấy đi nghĩa vụ quân sự */}
-          {optionKey === 'military' && (
+          {category === 'military' && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 14px' }}>
               <div>
                 {renderLabel('Cơ quan cấp lệnh (BCH Quân sự)', 'mil-unit', 'militaryUnit')}
@@ -733,7 +823,7 @@ export const EvidenceFormModal: React.FC<Props> = ({
           )}
 
           {/* 3. Form điền: Giấy chứng minh hoàn cảnh gia đình */}
-          {optionKey === 'hardship' && (
+          {category === 'hardship' && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 14px' }}>
               <div>
                 {renderLabel('UBND Phường/Xã xác nhận', 'h-auth', 'authority')}
@@ -824,7 +914,7 @@ export const EvidenceFormModal: React.FC<Props> = ({
           )}
 
           {/* 4. Form điền: Lý do cá nhân khác */}
-          {optionKey === 'personal' && (
+          {category === 'personal' && (
             <div>
               <div style={{ marginBottom: 12 }}>
                 <label className="student-label">Loại hồ sơ cá nhân *</label>

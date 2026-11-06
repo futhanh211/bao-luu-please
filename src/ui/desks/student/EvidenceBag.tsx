@@ -1,9 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { EvidenceItem } from '../../../engine/types';
-import {
-  STUDENT_EVIDENCE_OPTIONS,
-  StudentEvidenceOptionKey,
-} from '../../../data/customTestData';
+import { StudentEvidenceOptionKey } from '../../../data/customTestData';
 
 const TYPE_LABELS: Record<string, string> = {
   medical_record: 'Giấy y tế',
@@ -21,7 +18,7 @@ interface Props {
   onAttach: (id: string) => void;
   onDetach: (id: string) => void;
   onOpen: (item: EvidenceItem) => void;
-  onStartFillOption?: (key: StudentEvidenceOptionKey) => void;
+  onStartFillOption?: (key?: StudentEvidenceOptionKey) => void;
   onRemoveItem?: (id: string) => void;
   onEditItem?: (item: EvidenceItem) => void;
   onDirectFileUpload?: (file: File) => void;
@@ -40,7 +37,6 @@ export const EvidenceBag: React.FC<Props> = ({
   onDirectFileUpload,
 }) => {
   const [dragOver, setDragOver] = useState(false);
-  const [isPickerOpen, setIsPickerOpen] = useState(false);
   const directFileInputRef = useRef<HTMLInputElement>(null);
   const attached = evidence.filter((e) => attachedIds.includes(e.id));
 
@@ -62,56 +58,20 @@ export const EvidenceBag: React.FC<Props> = ({
 
       {/* Danh sách giấy tờ bên trong túi nhựa */}
       <div className="plastic-bag-body student-scroll">
-        {/* Nút dấu cộng (+) lớn khi túi chưa có minh chứng và picker chưa mở */}
-        {evidence.length === 0 && !isPickerOpen && (
+        {/* Nút thêm minh chứng 1-chạm: Mở thẳng cửa sổ khai báo & AI quét tự động nhận diện */}
+        {evidence.length === 0 && onStartFillOption && (
           <div className="plastic-add-area">
             <button
               type="button"
               className="plastic-add-button"
-              onClick={() => setIsPickerOpen(true)}
+              onClick={() => onStartFillOption()}
               disabled={locked}
-              title="Bấm dấu cộng để chọn minh chứng"
+              title="Bấm để tải ảnh hoặc giấy tờ minh chứng"
             >
               <span className="plastic-add-plus">＋</span>
               <span className="plastic-add-title">THÊM MINH CHỨNG</span>
-              <span className="plastic-add-sub">Bấm dấu cộng để chọn giấy tờ</span>
+              <span className="plastic-add-sub">Tải ảnh / giấy tờ (Bệnh viện, Quân sự, UBND...)</span>
             </button>
-          </div>
-        )}
-
-        {/* Bảng các ô tùy chọn khi bấm dấu cộng (+) */}
-        {isPickerOpen && (
-          <div className="plastic-picker-container">
-            <div className="plastic-picker-header">
-              <span className="plastic-picker-title">CHỌN LOẠI GIẤY TỜ:</span>
-              <button
-                type="button"
-                onClick={() => setIsPickerOpen(false)}
-                className="plastic-picker-close-btn"
-                title="Đóng bảng chọn"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="plastic-picker-list">
-              {STUDENT_EVIDENCE_OPTIONS.map((opt) => (
-                <button
-                  key={opt.key}
-                  type="button"
-                  onClick={() => {
-                    setIsPickerOpen(false);
-                    onStartFillOption?.(opt.key);
-                  }}
-                  className="plastic-picker-opt-btn"
-                >
-                  <div className="plastic-picker-opt-title">
-                    <span className="plastic-picker-opt-icon">{opt.icon}</span>
-                    <span>{opt.title}</span>
-                  </div>
-                  <div className="plastic-picker-opt-sub">{opt.description}</div>
-                </button>
-              ))}
-            </div>
           </div>
         )}
 
@@ -203,14 +163,14 @@ export const EvidenceBag: React.FC<Props> = ({
         })}
 
         {/* Nút thêm/đổi giấy tờ khi đã có giấy tờ trong túi */}
-        {!locked && evidence.length > 0 && !isPickerOpen && onStartFillOption && (
+        {!locked && evidence.length > 0 && onStartFillOption && (
           <button
             type="button"
             className="plastic-add-secondary-btn"
-            onClick={() => setIsPickerOpen(true)}
-            title="Đổi hoặc thêm minh chứng khác"
+            onClick={() => onStartFillOption()}
+            title="Đổi hoặc nạp minh chứng khác"
           >
-            <span>＋</span> Đổi / Chọn giấy tờ khác
+            <span>＋</span> Tải / Đổi giấy tờ minh chứng khác
           </button>
         )}
 
