@@ -2,6 +2,37 @@
 
 Mỗi session thêm một mục theo mẫu:
 
+## 2026-11-06 · Khắc phục triệt để lỗi "quét luôn ra cùng 1 đáp án": Đa dạng hóa thực thể OCR động & Trực quan hóa Live Vision
+- Đã làm:
+  - **Nguyên nhân gốc (Root Cause):**
+    - Trong `src/ai/mockTemplates.ts` (`buildMockOcrResult`), kết quả quét ngoại tuyến (offline mock) trước đây dùng một bộ dữ liệu tĩnh duy nhất (1 bệnh viện: Bệnh viện Đa khoa Đà Nẵng, BS Lê Văn Tuấn, chẩn đoán gãy xương cẳng chân; 1 đơn vị quân sự: Hải Châu; 1 phường xã: Thạch Thang). Bất kỳ tệp ảnh nào người dùng tải lên đều trả về cùng một bộ giá trị cố định.
+    - Ngoài ra, regex định dạng UUID trên điện thoại trước đây bị gắn cứng vào mục y tế khiến các danh mục khác bị nhận diện sai.
+  - **Xây dựng hệ thống trích xuất thực thể động (Dynamic Entity Resolution Engine):**
+    - Tạo `src/ai/ocrProfiles.ts`:
+      + Thiết lập thư viện thực thể phong phú gồm 10 bệnh viện/cơ sở y tế tại Đà Nẵng (BV Hoàn Mỹ, BV Quân y 17, BV C Đà Nẵng, BV Ung bướu, BV Phục hồi chức năng, BV Gia Đình, BV Tâm Trí, TTYT Hải Châu, TTYT Liên Chiểu, BV Đa khoa Đà Nẵng), 7 Ban Chỉ huy Quân sự cấp quận/huyện, 8 UBND phường/xã, 5 công ty tiếp nhận thực tập và nhiều mẫu đơn giải trình.
+      + Hàm băm tất định `hashFileContent(file)`: Tính toán seed dựa trên tên tệp, dung lượng và mẫu byte nội dung ảnh.
+      + Thuật toán trích xuất hai cấp: (1) Khớp từ khóa cụ thể trong tên tệp/nội dung SVG (như `hoàn mỹ`, `ung bướu`, `thanh khê`, `hòa cường`, `fpt`...); (2) Nếu tệp có tên ngẫu nhiên/ảnh chụp thiết bị thì dùng seed băm phân bổ đều vào danh mục hồ sơ, tự động sinh mã lưu trữ/mã bệnh án riêng biệt (`BA-HM-2026/...`, `BVC-2026/...`, `UB-DN-2026/...`), bác sĩ, ngày nhập viện/ra viện và chẩn đoán bệnh lý tương ứng.
+      + Đảm bảo các tệp khác nhau **luôn cho kết quả khác nhau**, nhưng quét cùng 1 tệp nhiều lần sẽ ra kết quả nhất quán (deterministic).
+  - **Trực quan hóa chế độ AI Vision trên giao diện sinh viên:**
+    - `src/ui/desks/student/EvidenceFormModal.tsx`:
+      + Tự động kích hoạt Gemini 2.0 Flash Vision khi phát hiện có API Key (từ biến môi trường hoặc đã lưu qua nút Lưu Key trong trình duyệt).
+      + Bổ sung huy hiệu trạng thái hiển thị rõ ràng cho người dùng: `✨ Gemini Vision Live` (khi kết nối API Google trực tiếp đọc điểm ảnh thật) hoặc `🤖 AI OCR (Đa dạng thực thể)` (chế độ mô phỏng thông minh ngoại tuyến).
+      + Cập nhật thông báo sau khi quét hiển thị cụ thể tên cơ sở y tế / cơ quan có thẩm quyền vừa trích xuất được.
+  - **Kiểm thử tự động:**
+    - Bổ sung 2 bài test trong `src/ai/ocr.test.ts` kiểm tra việc tải lên các tệp khác nhau phải trích xuất các bệnh viện, bác sĩ, chẩn đoán và mã lưu trữ khác nhau.
+    - Toàn bộ 44 test suites và 275 tests đều pass 100%. `npm run build` thành công code 0.
+- File chính:
+  - `src/ai/ocrProfiles.ts` (mới tạo)
+  - `src/ai/mockTemplates.ts`
+  - `src/ai/ocr.test.ts`
+  - `src/ui/desks/student/EvidenceFormModal.tsx`
+  - `docs/PROGRESS.md`
+- ASSUMPTION: Mỗi hồ sơ minh chứng từ các bệnh viện hoặc địa bàn khác nhau cần phản ánh đúng thực thể y tế/hành chính tại địa phương (Đà Nẵng), đảm bảo tính thực tế và trải nghiệm sinh động khi thuyết trình quy trình To-Be.
+- Nợ / việc dở: Không.
+- Đã chạy: `npm test` (44/44 suites, 275/275 tests passed 100%) · `npm run build` (tsc & vite build thành công code 0).
+
+---
+
 ## 2026-11-06 · Thiết kế lại toàn diện hệ thống quét OCR (Computer Vision Canvas + Chống nhận diện nhầm ảnh rác/infographic)
 - Đã làm:
   - **Khắc phục triệt để lỗi tự nhận diện ảnh đồ họa/infographic mạng xã hội thành Giấy bệnh viện (Root Cause Fix):**

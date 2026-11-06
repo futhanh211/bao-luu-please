@@ -152,6 +152,69 @@ describe('AI OCR Document Scanner (Session 1)', () => {
       expect(resIntern.data.personal?.subType).toBe('internship');
       expect(resIntern.data.personal?.companyName).toContain('Danang Tech Solutions');
     });
+
+    it('Đa dạng hóa thông minh (Khắc phục lỗi luôn ra cùng 1 đáp án): Các tệp khác nhau trích xuất bệnh viện, bác sĩ và chẩn đoán khác nhau', async () => {
+      const fileHoanMy: UploadedEvidenceFile = {
+        name: 'giay_xac_nhan_bv_hoan_my_da_nang.jpg',
+        size: 245000,
+        type: 'image/jpeg',
+      };
+      const resHoanMy = await mock.scanDocument(fileHoanMy, 'medical');
+      expect(resHoanMy.data.medical?.hospital).toContain('Hoàn Mỹ');
+      expect(resHoanMy.data.medical?.doctorName).toContain('Phan Hoàng Nam');
+      expect(resHoanMy.data.medical?.diagnosis).toContain('dây chằng');
+
+      const fileUngBuou: UploadedEvidenceFile = {
+        name: 'benh_an_dieu_tri_ung_buou.png',
+        size: 310000,
+        type: 'image/png',
+      };
+      const resUngBuou = await mock.scanDocument(fileUngBuou, 'medical');
+      expect(resUngBuou.data.medical?.hospital).toContain('Ung bướu');
+      expect(resUngBuou.data.medical?.doctorName).toContain('Hoàng Trung Thông');
+
+      const filePHCN: UploadedEvidenceFile = {
+        name: 'chung_nhan_phuc_hoi_chuc_nang.pdf',
+        size: 190000,
+        type: 'application/pdf',
+      };
+      const resPHCN = await mock.scanDocument(filePHCN, 'medical');
+      expect(resPHCN.data.medical?.hospital).toContain('Phục hồi chức năng');
+
+      // Hai tệp ảnh khác nhau ngẫu nhiên từ thiết bị sẽ tạo ra mã bệnh án và thông tin khác nhau
+      const fileA: UploadedEvidenceFile = {
+        name: 'anh_giay_vien_01.jpg',
+        size: 231450,
+        type: 'image/jpeg',
+      };
+      const fileB: UploadedEvidenceFile = {
+        name: 'anh_giay_vien_02.jpg',
+        size: 452100,
+        type: 'image/jpeg',
+      };
+      const resA = await mock.scanDocument(fileA, 'medical');
+      const resB = await mock.scanDocument(fileB, 'medical');
+      expect(resA.data.medical?.recordCode).not.toBe(resB.data.medical?.recordCode);
+    });
+
+    it('Đa dạng hóa thông tin quân sự và hoàn cảnh xã hội theo địa bàn các quận/huyện', async () => {
+      const milThanhKhe: UploadedEvidenceFile = {
+        name: 'lenh_nhap_ngu_bch_thanh_khe.pdf',
+        size: 210000,
+        type: 'application/pdf',
+      };
+      const resMil = await mock.scanDocument(milThanhKhe, 'military');
+      expect(resMil.data.military?.militaryUnit).toContain('Thanh Khê');
+
+      const hardHoaCuong: UploadedEvidenceFile = {
+        name: 'xac_nhan_ubnd_hoa_cuong_bac.png',
+        size: 180000,
+        type: 'image/png',
+      };
+      const resHard = await mock.scanDocument(hardHoaCuong, 'hardship');
+      expect(resHard.data.hardship?.authority).toContain('Hòa Cường Bắc');
+      expect(resHard.data.hardship?.guardianName).toContain('Lê Tấn Phát');
+    });
   });
 
   describe('2. AIService.scanDocument (Điều phối & Fallback an toàn)', () => {

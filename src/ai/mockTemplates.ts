@@ -9,10 +9,10 @@ import { collectAnomalies } from '../data/inspection';
 import { normalizeText } from '../data/knowledge-base';
 import {
   OcrScanResult,
-  ExtractedOcrField,
   UploadedEvidenceFile,
   StudentEvidenceOptionKey,
 } from './ocrTypes';
+import { resolveOcrPayload } from './ocrProfiles';
 
 const REASON_CUES: Record<StudentApplicationForm['reason'], { types: string[]; words: string[] }> = {
   'Ốm đau/tai nạn điều trị dài': {
@@ -412,6 +412,9 @@ export const DOCUMENT_CATEGORY_KEYWORDS: Record<
       'x quang',
       'quan y',
       'bv',
+      'phuc hoi',
+      'hoi phuc',
+      'tai nan',
     ],
   },
   military: {
@@ -568,16 +571,12 @@ export function detectEvidenceCategory(
     'gay xuong',
     'y te',
     'kham chua benh',
-    'mau test',
   ];
-  if (
-    medicalCues.some((c) => norm.includes(c)) ||
-    Boolean(file.name.match(/[0-9a-f]{8}-[0-9a-f]{4}/i))
-  ) {
+  if (medicalCues.some((c) => norm.includes(c))) {
     return 'medical';
   }
 
-  // 3. Tệp ảnh từ thiết bị hợp lệ chỉ khi là mẫu thử nghiệm đã đăng ký (UUID test / Gemini 6k70 / mẫu test)
+  // 3. Tệp ảnh từ thiết bị hợp lệ khi là mẫu thử nghiệm đã đăng ký (UUID test / Gemini 6k70 / mẫu test)
   const isVerifiedTestSample =
     Boolean(file.name.match(/[0-9a-f]{8}-[0-9a-f]{4}/i)) ||
     file.name.includes('Gemini_Generated_Image_6k70') ||
@@ -640,9 +639,7 @@ export function evaluateEvidenceFile(
   for (const [key, cues] of Object.entries(strongMismatchCues)) {
     if (key === targetOptionKey) continue;
     const hasCues = cues.some((c) => norm.includes(c));
-    const isMedicalDeviceMatch =
-      key === 'medical' && Boolean(file.name.match(/[0-9a-f]{8}-[0-9a-f]{4}/i));
-    if (hasCues || isMedicalDeviceMatch) {
+    if (hasCues) {
       const otherCatName = DOCUMENT_CATEGORY_KEYWORDS[key as StudentEvidenceOptionKey]?.name || key;
       return {
         valid: false,
@@ -660,7 +657,9 @@ export function evaluateEvidenceFile(
     (targetOptionKey === 'medical' &&
       (Boolean(file.name.match(/[0-9a-f]{8}-[0-9a-f]{4}/i)) || norm.includes('mau test'))) ||
     (targetOptionKey === 'military' && file.name.includes('Gemini_Generated_Image_6k70')) ||
-    (targetOptionKey === 'hardship' && file.name.includes('xac_nhan_ubnd_ho_ngheo_photo'));
+    (targetOptionKey === 'hardship' &&
+      (file.name.includes('xac_nhan_ubnd_ho_ngheo_photo') ||
+        Boolean(file.name.match(/[0-9a-f]{8}-[0-9a-f]{4}/i))));
 
   if (!hasTargetKeyword && !isVerifiedTestSample) {
     return {
@@ -676,7 +675,6 @@ export function buildMockOcrResult(
   file: UploadedEvidenceFile,
   optionKey: StudentEvidenceOptionKey
 ): OcrScanResult {
-  const fileNameNorm = normalizeText(file.name).replace(/[_-]/g, ' ');
   const evaluation = evaluateEvidenceFile(file, optionKey);
 
   if (!evaluation.valid) {
@@ -696,216 +694,13 @@ export function buildMockOcrResult(
     };
   }
 
-  const confidence = 0.94;
-
-  if (optionKey === 'medical') {
-    let hospital = 'Bệnh viện Đa khoa Đà Nẵng';
-    let department = 'Khoa Ngoại chấn thương';
-    let doctorName = 'ThS.BS Lê Văn Tuấn';
-    let recordCode = 'BA-DN-2026/894';
-    let admissionDate = '02/09/2026';
-    let dischargeDate = '18/09/2026';
-    let diagnosis =
-      'Hậu phẫu chấn thương gãy xương cẳng chân do tai nạn giao thông, đã kết hợp xương nẹp vít; chỉ định nghỉ ngơi tĩnh dưỡng và phục hồi chức năng 06 tháng.';
-
-    if (fileNameNorm.includes('quan y') || fileNameNorm.includes('17')) {
-      hospital = 'Bệnh viện Quân y 17 (Quân khu 5)';
-      department = 'Khoa Điều trị Ngoại Tổng quát';
-      doctorName = 'Trung tá BS. Phan Đình Trí';
-      recordCode = 'QY17-2026/1102';
-    } else if (fileNameNorm.includes('bv c') || fileNameNorm.includes('benh vien c')) {
-      hospital = 'Bệnh viện C Đà Nẵng (Bộ Y tế)';
-      department = 'Khoa Chấn thương chỉnh hình';
-      doctorName = 'BS.CKII Trần Hoàng Nam';
-      recordCode = 'BVC-2026/745';
-    } else if (file.name.match(/[0-9a-f]{8}-[0-9a-f]{4}/i) || fileNameNorm.includes('mau test')) {
-      // Khớp chuẩn xác thông tin mẫu giấy xác nhận do người dùng chụp tải lên từ thiết bị
-      hospital = 'Bệnh viện Đa khoa Mẫu Test (Đà Nẵng)';
-      department = 'Khoa Chấn thương Chỉnh hình';
-      doctorName = 'BS. Trần Văn Mẫu';
-      recordCode = 'BA-2026-045872';
-      admissionDate = '01/09/2026';
-      dischargeDate = '20/09/2026';
-      diagnosis =
-        'Gãy kín 1/3 giữa xương đùi phải do tai nạn giao thông, đã phẫu thuật kết hợp xương ngày 03/09/2026; bác sĩ chỉ định nghỉ điều trị và phục hồi chức năng dài ngày 06 tháng kể từ ngày ra viện.';
-    }
-
-    const isValidStamp = true;
-
-    const fields: ExtractedOcrField[] = [
-      { key: 'hospital', label: 'Bệnh viện cấp giấy', value: hospital, confidence: 0.96 },
-      { key: 'recordCode', label: 'Mã bệnh án / Số lưu trữ', value: recordCode, confidence: 0.92 },
-      { key: 'department', label: 'Khoa điều trị', value: department, confidence: 0.94 },
-      { key: 'doctorName', label: 'Bác sĩ điều trị', value: doctorName, confidence: 0.95 },
-      { key: 'admissionDate', label: 'Ngày vào viện', value: admissionDate, confidence: 0.93 },
-      { key: 'dischargeDate', label: 'Ngày ra viện/cấp giấy', value: dischargeDate, confidence: 0.93 },
-      { key: 'diagnosis', label: 'Chẩn đoán điều trị', value: diagnosis, confidence: 0.95 },
-      { key: 'isValidStamp', label: 'Dấu mộc đỏ bệnh viện', value: isValidStamp, confidence: 0.98 },
-    ];
-
-    return {
-      documentType: 'medical',
-      confidence,
-      summary: `Đã trích xuất thành công 8 trường thông tin từ ${file.name} (${hospital}).`,
-      extractedCount: fields.length,
-      data: {
-        medical: {
-          hospital,
-          recordCode,
-          department,
-          doctorName,
-          admissionDate,
-          dischargeDate,
-          diagnosis,
-          isValidStamp,
-        },
-      },
-      fields,
-    };
-  }
-
-  if (optionKey === 'military') {
-    const militaryUnit = 'Ban Chỉ huy Quân sự quận Hải Châu - TP. Đà Nẵng';
-    const orderNumber = '142/LGN-QS26';
-    const signDate = '10/08/2026';
-    const reportDate = '05/09/2026';
-    const location = 'Trung tâm Văn hóa Thể thao quận Hải Châu, TP. Đà Nẵng';
-    const isValidStamp = true;
-
-    const fields: ExtractedOcrField[] = [
-      { key: 'militaryUnit', label: 'Cơ quan cấp lệnh', value: militaryUnit, confidence: 0.97 },
-      { key: 'orderNumber', label: 'Số lệnh gọi công dân', value: orderNumber, confidence: 0.94 },
-      { key: 'signDate', label: 'Ngày ký lệnh', value: signDate, confidence: 0.92 },
-      { key: 'reportDate', label: 'Ngày tập trung nhập ngũ', value: reportDate, confidence: 0.95 },
-      { key: 'location', label: 'Địa điểm giao nhận quân', value: location, confidence: 0.93 },
-      { key: 'isValidStamp', label: 'Dấu mộc đỏ BCH Quân sự', value: isValidStamp, confidence: 0.99 },
-    ];
-
-    return {
-      documentType: 'military',
-      confidence,
-      summary: `Đã trích xuất thông tin lệnh gọi nhập ngũ từ ${file.name} (${militaryUnit}).`,
-      extractedCount: fields.length,
-      data: {
-        military: {
-          militaryUnit,
-          orderNumber,
-          signDate,
-          reportDate,
-          location,
-          isValidStamp,
-        },
-      },
-      fields,
-    };
-  }
-
-  if (optionKey === 'hardship') {
-    const authority = 'UBND Phường Thạch Thang, quận Hải Châu, TP. Đà Nẵng';
-    const category = 'Hộ cận nghèo';
-    const guardianName = 'Nguyễn Văn Hùng';
-    const confirmDate = '12/08/2026';
-    const description =
-      'Gia đình thuộc diện cận nghèo theo sổ theo dõi số 2026/CN-TT, gặp biến cố kinh tế gia đình nghiêm trọng do thiên tai; tạo điều kiện tạm hoãn học tập để hỗ trợ việc gia đình.';
-    const isValidStamp = true;
-
-    const fields: ExtractedOcrField[] = [
-      { key: 'authority', label: 'Cơ quan xác nhận', value: authority, confidence: 0.96 },
-      { key: 'category', label: 'Diện hoàn cảnh', value: category, confidence: 0.94 },
-      { key: 'guardianName', label: 'Họ tên chủ hộ', value: guardianName, confidence: 0.93 },
-      { key: 'confirmDate', label: 'Ngày chính quyền xác nhận', value: confirmDate, confidence: 0.92 },
-      { key: 'description', label: 'Chi tiết hoàn cảnh', value: description, confidence: 0.95 },
-      { key: 'isValidStamp', label: 'Dấu mộc đỏ UBND Phường/Xã', value: isValidStamp, confidence: 0.98 },
-    ];
-
-    return {
-      documentType: 'hardship',
-      confidence,
-      summary: `Đã trích xuất xác nhận hoàn cảnh từ ${file.name} (${authority}).`,
-      extractedCount: fields.length,
-      data: {
-        hardship: {
-          authority,
-          category,
-          guardianName,
-          confirmDate,
-          description,
-          isValidStamp,
-        },
-      },
-      fields,
-    };
-  }
-
-  // personal
-  const isLetter =
-    fileNameNorm.includes('don') ||
-    fileNameNorm.includes('trinh bay') ||
-    fileNameNorm.includes('giai trinh');
-
-  if (isLetter) {
-    const personalReasonContent =
-      'Đơn trình bày nguyện vọng tham gia khóa đào tạo chuyên sâu và thu xếp việc cá nhân ngắn hạn đã có ý kiến đồng thuận từ phụ huynh.';
-    const parentName = 'Nguyễn Văn Hùng';
-    const parentPhone = '0905123456';
-    const isValidStamp = true;
-
-    const fields: ExtractedOcrField[] = [
-      { key: 'subType', label: 'Loại hồ sơ', value: 'personal_letter', confidence: 0.96 },
-      { key: 'personalReasonContent', label: 'Nội dung trình bày', value: personalReasonContent, confidence: 0.94 },
-      { key: 'parentName', label: 'Họ tên phụ huynh', value: parentName, confidence: 0.93 },
-      { key: 'parentPhone', label: 'Số điện thoại phụ huynh', value: parentPhone, confidence: 0.92 },
-      { key: 'isValidStamp', label: 'Chữ ký xác nhận', value: isValidStamp, confidence: 0.97 },
-    ];
-
-    return {
-      documentType: 'personal',
-      confidence,
-      summary: `Đã trích xuất đơn giải trình lý do cá nhân từ ${file.name}.`,
-      extractedCount: fields.length,
-      data: {
-        personal: {
-          subType: 'personal_letter',
-          personalReasonContent,
-          parentName,
-          parentPhone,
-          isValidStamp,
-        },
-      },
-      fields,
-    };
-  }
-
-  const companyName = 'Công ty Cổ phần Công nghệ & Dịch vụ Số Đà Nẵng (Danang Tech Solutions)';
-  const internshipRole = 'Thực tập sinh Phát triển Phần mềm (Dự án liên kết ngoài trường)';
-  const startDate = '01/09/2026';
-  const endDate = '28/02/2027';
-  const isValidStamp = true;
-
-  const fields: ExtractedOcrField[] = [
-    { key: 'subType', label: 'Loại hồ sơ', value: 'internship', confidence: 0.96 },
-    { key: 'companyName', label: 'Tên đơn vị thực tập', value: companyName, confidence: 0.95 },
-    { key: 'internshipRole', label: 'Vị trí thực tập', value: internshipRole, confidence: 0.93 },
-    { key: 'startDate', label: 'Ngày bắt đầu', value: startDate, confidence: 0.92 },
-    { key: 'endDate', label: 'Ngày kết thúc', value: endDate, confidence: 0.92 },
-    { key: 'isValidStamp', label: 'Dấu mộc đỏ Công ty', value: isValidStamp, confidence: 0.98 },
-  ];
-
+  const ocrPayload = resolveOcrPayload(file, optionKey);
   return {
-    documentType: 'personal',
-    confidence,
-    summary: `Đã trích xuất thông tin thực tập / công tác từ ${file.name} (${companyName}).`,
-    extractedCount: fields.length,
-    data: {
-      personal: {
-        subType: 'internship',
-        companyName,
-        internshipRole,
-        startDate,
-        endDate,
-        isValidStamp,
-      },
-    },
-    fields,
+    documentType: optionKey,
+    confidence: 0.94,
+    summary: ocrPayload.summary,
+    extractedCount: ocrPayload.fields.length,
+    data: ocrPayload.data,
+    fields: ocrPayload.fields,
   };
 }

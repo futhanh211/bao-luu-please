@@ -15,6 +15,7 @@ import { AIService } from '../../../ai/service';
 import { sfx } from '../../audio/sfx';
 import { detectEvidenceCategory } from '../../../ai/mockTemplates';
 import { analyzeImageVisualFeatures } from '../../../ai/imageScanner';
+import { isLiveAvailable, createLiveAIFromEnv } from '../../../ai/live';
 
 const CATEGORY_TABS: { key: StudentEvidenceOptionKey; icon: string; label: string }[] = [
   { key: 'medical', icon: '🏥', label: 'Bệnh viện / Y tế' },
@@ -149,7 +150,17 @@ export const EvidenceFormModal: React.FC<Props> = ({
       }
 
       const effectiveCategory = detectedCat;
-      const ai = getActiveAI() ?? new AIService(defaultMockAI, null, 'mock');
+      const activeAi = getActiveAI();
+      const ai =
+        activeAi ??
+        new AIService(
+          defaultMockAI,
+          createLiveAIFromEnv(),
+          isLiveAvailable() ? 'live' : 'mock'
+        );
+      if (isLiveAvailable() && ai.mode !== 'live') {
+        ai.setMode('live');
+      }
       const result = await ai.scanDocument(uploadedFile, effectiveCategory);
 
       const isSuccess = result.confidence >= 0.6 && result.extractedCount > 0;
@@ -424,6 +435,39 @@ export const EvidenceFormModal: React.FC<Props> = ({
                 <span style={{ fontWeight: 'bold', fontSize: 12.5, textTransform: 'uppercase', color: 'var(--stamp-blue)' }}>
                   Tệp minh chứng & AI Quét (OCR)
                 </span>
+              </div>
+              <div>
+                {isLiveAvailable() ? (
+                  <span
+                    style={{
+                      fontSize: 11,
+                      padding: '2px 8px',
+                      borderRadius: 12,
+                      background: '#e0f2fe',
+                      color: '#0369a1',
+                      border: '1px solid #7dd3fc',
+                      fontWeight: 'bold',
+                    }}
+                    title="Đang sử dụng Gemini Vision để nhận diện trực tiếp ảnh tải lên"
+                  >
+                    ✨ Gemini Vision Live
+                  </span>
+                ) : (
+                  <span
+                    style={{
+                      fontSize: 11,
+                      padding: '2px 8px',
+                      borderRadius: 12,
+                      background: '#f1f5f9',
+                      color: '#475569',
+                      border: '1px solid #cbd5e1',
+                      fontWeight: 'bold',
+                    }}
+                    title="Hệ thống OCR ngoại tuyến tự động trích xuất thực thể theo hồ sơ"
+                  >
+                    🤖 AI OCR (Đa dạng thực thể)
+                  </span>
+                )}
               </div>
             </div>
 
