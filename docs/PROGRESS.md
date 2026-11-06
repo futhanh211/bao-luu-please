@@ -2,6 +2,25 @@
 
 Mỗi session thêm một mục theo mẫu:
 
+## 2026-11-06 · Tinh giản giao diện thực tế nộp bài: Loại bỏ nút demo kịch bản & dữ liệu mẫu trên cổng đăng nhập
+- Đã làm:
+  - **Loại bỏ nút demo kịch bản trên trang chủ (Title screen):**
+    - `src/ui/scenes/Title.tsx`: Loại bỏ nút `▶ CHỌN KỊCH BẢN (DEMO TOÀN DIỆN)`. Màn hình chính tập trung làm nổi bật nút đăng nhập chính thức `🔐 CỔNG ĐĂNG NHẬP`, cùng hai tùy chọn phụ `📝 ĐĂNG KÝ TÀI KHOẢN MỚI` và `📁 XEM BẢN AS-IS (22 NGÀY)`.
+  - **Loại bỏ tab kịch bản mẫu và nhãn "Dữ liệu mẫu" ở Cổng Sinh viên:**
+    - `src/ui/scenes/LoginPortal.tsx`: Loại bỏ hoàn toàn thanh chọn sub-tab `★ Kịch bản mẫu (S1 - S5)` và component `StudentPresetLogin`. Cổng sinh viên chuyển thẳng vào form đăng nhập chuẩn thực tế `StudentCustomLogin` (nhập MSSV, Mật khẩu, liên kết Đăng ký tài khoản).
+  - **Loại bỏ khối "Chọn nhanh tài khoản mẫu" ở Cổng Cán bộ:**
+    - `src/ui/scenes/login/OfficerLogin.tsx`: Loại bỏ cụm 3 nút chọn nhanh tài khoản mẫu. Giữ giao diện đăng nhập công vụ thực tế với trường tên đăng nhập và mật khẩu, thêm gợi ý placeholder trực quan (`advisor_nam`, `ctsv_mai`, `bgh_khoi`).
+- File chính:
+  - `src/ui/scenes/Title.tsx`
+  - `src/ui/scenes/LoginPortal.tsx`
+  - `src/ui/scenes/login/OfficerLogin.tsx`
+  - `docs/PROGRESS.md`
+- ASSUMPTION: Không còn chế độ nạp kịch bản thuyết trình trực tiếp từ trang chủ và cổng đăng nhập để hệ thống hiển thị đúng quy chuẩn cổng dịch vụ Một Cửa Số thực tế khi nộp bài cho giảng viên; các tài khoản vẫn được xác thực đầy đủ qua CSDL và người dùng có thể tự đăng ký tài khoản mới hoặc nhập tài khoản sẵn có.
+- Nợ / việc dở: Không.
+- Đã chạy: `npm test` (43/43 files, 268/268 passed 100%) · `npm run build` (tsc & vite build thành công code 0).
+
+---
+
 ## 2026-11-06 · Hợp nhất 1 cổng nộp minh chứng duy nhất, AI tự động phân loại 4 nhóm giấy tờ & Loại bỏ tệp rác
 - Đã làm:
   - **Hợp nhất thành 1 nút chọn minh chứng duy nhất (Streamlined Single Evidence Picker):**

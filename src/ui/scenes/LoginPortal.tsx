@@ -5,9 +5,7 @@ import { useAuthStore } from '../../store/useAuth';
 import { usePlaybackStore } from '../../store/playback';
 import { OFFICER_ACCOUNTS } from '../../data/accounts';
 import { findRegisteredOfficer, RegisteredStudent, RegisteredOfficer } from '../../data/userRegistry';
-import { DemoStudentPreset } from '../../data/loginPresets';
 import { StudentCustomLogin } from './login/StudentCustomLogin';
-import { StudentPresetLogin } from './login/StudentPresetLogin';
 import { OfficerLogin } from './login/OfficerLogin';
 import { RegisterForm } from './login/RegisterForm';
 import { screenVariants } from '../motion';
@@ -31,22 +29,7 @@ export const LoginPortal: React.FC<Props> = ({ initialMode = 'login' }) => {
 
   const [portalMode, setPortalMode] = useState<PortalMode>(initialMode);
   const [activeTab, setActiveTab] = useState<PortalTab>('student');
-  const [studentSubTab, setStudentSubTab] = useState<'preset' | 'custom'>('preset');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
-  const handleSelectStudentPreset = (preset: DemoStudentPreset) => {
-    loginAsStudent(preset.mssv, {
-      name: preset.name,
-      className: preset.className,
-      faculty: preset.faculty,
-      email: `${preset.mssv}@due.udn.vn`,
-    });
-
-    setScenario(preset.scenarioId);
-    usePlaybackStore.getState().initStudentSession(preset, preset.scenarioId);
-    setRole('student');
-    setScreen('desk');
-  };
 
   const handleCustomStudentLogin = (student: { mssv: string; name: string; className: string; faculty: string }) => {
     loginAsStudent(student.mssv, {
@@ -274,77 +257,14 @@ export const LoginPortal: React.FC<Props> = ({ initialMode = 'login' }) => {
               )}
 
               {activeTab === 'student' ? (
-                <div>
-                  {/* Thanh chọn 2 chế độ: Kịch bản mẫu vs Nhập tự do */}
-                  <div
-                    style={{
-                      display: 'flex',
-                      gap: '6px',
-                      marginBottom: '12px',
-                      borderBottom: '1.5px dashed var(--paper-line)',
-                      paddingBottom: '8px',
-                    }}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setStudentSubTab('preset');
-                        setErrorMsg(null);
-                        sfx.play('type');
-                      }}
-                      style={{
-                        padding: '4px 10px',
-                        fontSize: '11.5px',
-                        fontWeight: 'bold',
-                        fontFamily: 'var(--font-paper)',
-                        borderRadius: 'var(--radius-sm)',
-                        border: studentSubTab === 'preset' ? '1.5px solid var(--amber)' : '1px solid var(--paper-line)',
-                        backgroundColor: studentSubTab === 'preset' ? 'var(--desk-900)' : 'var(--paper-dim)',
-                        color: studentSubTab === 'preset' ? 'var(--amber)' : 'var(--ink)',
-                        cursor: 'pointer',
-                        transition: 'all 0.15s ease',
-                      }}
-                    >
-                      ★ Kịch bản mẫu (S1 - S5)
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setStudentSubTab('custom');
-                        setErrorMsg(null);
-                        sfx.play('type');
-                      }}
-                      style={{
-                        padding: '4px 10px',
-                        fontSize: '11.5px',
-                        fontWeight: 'bold',
-                        fontFamily: 'var(--font-paper)',
-                        borderRadius: 'var(--radius-sm)',
-                        border: studentSubTab === 'custom' ? '1.5px solid var(--amber)' : '1px solid var(--paper-line)',
-                        backgroundColor: studentSubTab === 'custom' ? 'var(--desk-900)' : 'var(--paper-dim)',
-                        color: studentSubTab === 'custom' ? 'var(--amber)' : 'var(--ink)',
-                        cursor: 'pointer',
-                        transition: 'all 0.15s ease',
-                      }}
-                    >
-                      ✎ Tự nhập MSSV / Mật khẩu
-                    </button>
-                  </div>
-
-                  {studentSubTab === 'preset' ? (
-                    <StudentPresetLogin onSelectPreset={handleSelectStudentPreset} />
-                  ) : (
-                    <StudentCustomLogin
-                      onLogin={handleCustomStudentLogin}
-                      onError={(msg) => setErrorMsg(msg)}
-                      onSwitchToRegister={() => {
-                        setPortalMode('register');
-                        setErrorMsg(null);
-                      }}
-                    />
-                  )}
-                </div>
+                <StudentCustomLogin
+                  onLogin={handleCustomStudentLogin}
+                  onError={(msg) => setErrorMsg(msg)}
+                  onSwitchToRegister={() => {
+                    setPortalMode('register');
+                    setErrorMsg(null);
+                  }}
+                />
               ) : (
                 <OfficerLogin
                   onLogin={handleOfficerLogin}

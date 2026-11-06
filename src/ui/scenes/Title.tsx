@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAppStore } from '../../store/useApp';
-import { useAuthStore } from '../../store/useAuth';
 import { screenVariants } from '../motion';
 
 export const Title: React.FC = () => {
   const setScreen = useAppStore((s) => s.setScreen);
   const setSessionMode = useAppStore((s) => s.setSessionMode);
   const toggleAsIs = useAppStore((s) => s.toggleAsIs);
-  const logout = useAuthStore((s) => s.logout);
 
   const [bootLines, setBootLines] = useState<string[]>([]);
   const fullLines = [
@@ -155,7 +153,7 @@ export const Title: React.FC = () => {
                 fontWeight: 'bold',
                 backgroundColor: 'var(--amber)',
                 color: 'var(--desk-900)',
-                padding: '14px 28px',
+                padding: '14px 36px',
                 borderRadius: 'var(--radius-sm)',
                 border: '2px solid var(--desk-900)',
                 boxShadow: 'var(--shadow-hard)',
@@ -170,41 +168,6 @@ export const Title: React.FC = () => {
             >
               <span>🔐</span>
               <span>CỔNG ĐĂNG NHẬP</span>
-            </button>
-
-            <button
-              onClick={() => {
-                logout();
-                setSessionMode('demo');
-                setScreen('scenario');
-              }}
-              style={{
-                fontFamily: 'var(--font-paper)',
-                fontSize: '18px',
-                fontWeight: 'bold',
-                backgroundColor: 'var(--desk-900)',
-                color: 'var(--amber)',
-                padding: '14px 28px',
-                borderRadius: 'var(--radius-sm)',
-                border: '2px solid var(--amber)',
-                boxShadow: 'var(--shadow-hard)',
-                cursor: 'var(--cursor-pointer)',
-                letterSpacing: '0.5px',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                transition: 'transform 0.15s ease, background-color 0.15s ease',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--desk-700)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--desk-900)';
-              }}
-              title="Vận hành trực tiếp toàn bộ 5 bàn nghiệp vụ với 6 kịch bản mẫu không cần đăng nhập"
-            >
-              <span>▶</span>
-              <span>CHỌN KỊCH BẢN (DEMO TOÀN DIỆN)</span>
             </button>
           </div>
 

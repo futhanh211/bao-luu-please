@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Role } from '../../../store/useApp';
 import { useAuthStore } from '../../../store/useAuth';
-import { OFFICER_ACCOUNTS } from '../../../data/accounts';
 import { sfx } from '../../audio/sfx';
 
 interface Props {
@@ -44,49 +43,6 @@ export const OfficerLogin: React.FC<Props> = ({ onLogin, onError, onSwitchToRegi
         Dành cho Cố vấn học tập (L2), Phòng CTSV (L3) và Ban Giám hiệu (L4) tiếp nhận, thẩm tra và ký số quyết định.
       </div>
 
-      {/* Chọn nhanh tài khoản cán bộ mẫu */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-        <div style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--amber)', letterSpacing: 0.5, textTransform: 'uppercase' }}>
-          Chọn nhanh tài khoản mẫu:
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
-          {OFFICER_ACCOUNTS.map((acc) => (
-            <button
-              key={acc.username}
-              type="button"
-              onClick={() => {
-                sfx.play('stamp');
-                setUsername(acc.username);
-                setPassword('');
-              }}
-              style={{
-                padding: '6px 8px',
-                borderRadius: 'var(--radius-sm)',
-                border: username === acc.username ? '1.5px solid var(--amber)' : '1px solid var(--paper-line)',
-                backgroundColor: username === acc.username ? 'var(--desk-900)' : 'var(--paper-dim)',
-                color: username === acc.username ? 'var(--amber)' : 'var(--ink)',
-                fontSize: '11.5px',
-                fontWeight: 'bold',
-                cursor: 'pointer',
-                textAlign: 'center',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: '2px',
-                transition: 'all 0.15s ease',
-              }}
-              title={`${acc.name} (${acc.title})`}
-            >
-              <span style={{ fontSize: '14px' }}>{acc.avatar}</span>
-              <span>{acc.username}</span>
-              <span style={{ fontSize: '9.5px', opacity: 0.8, fontWeight: 'normal' }}>
-                {acc.targetRole === 'advisor' ? 'Cố vấn' : acc.targetRole === 'ctsv' ? 'CTSV' : 'BGH'}
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
-
       <div>
         <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 'bold', color: 'var(--ink)', marginBottom: '4px' }}>
           TÊN ĐĂNG NHẬP / MÃ CÁN BỘ (GV):
@@ -95,7 +51,7 @@ export const OfficerLogin: React.FC<Props> = ({ onLogin, onError, onSwitchToRegi
           type="text"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          placeholder="Nhập tên đăng nhập..."
+          placeholder="Nhập tên đăng nhập (vd: advisor_nam, ctsv_mai, bgh_khoi)..."
           autoFocus
           style={{
             width: '100%',
