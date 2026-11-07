@@ -1,51 +1,55 @@
 ====================================================================
-           BẢO LƯU, PLEASE — HƯỚNG DẪN CHẠY LOCALHOST
+           BẢO LƯU, PLEASE! — HƯỚNG DẪN KHỞI CHẠY DỰ ÁN
+      Mô phỏng quy trình To-Be Nghỉ học tạm thời / Bảo lưu
+     Trường Đại học Kinh tế – Đại học Đà Nẵng (BPMN 2.0)
 ====================================================================
 
-Dự án mô phỏng quy trình To-Be "Nghỉ học tạm thời / Bảo lưu" 
-(Trường ĐH Kinh tế – ĐH Đà Nẵng, BPMN 2.0).
-
-YÊU CẦU TIÊN QUYẾT:
-- Máy tính đã cài đặt Node.js (khuyến nghị phiên bản 18 trở lên).
-  Nếu chưa có, tải tại: https://nodejs.org
-
+CÁCH 1: KHỞI CHẠY NHANH NHẤT (KHUYẾN NGHỊ CHO NGƯỜI DÙNG / GIẢNG VIÊN)
 --------------------------------------------------------------------
-CÁC BƯỚC KHỞI CHẠY (CHỈ 3 BƯỚC):
---------------------------------------------------------------------
+1. Đảm bảo máy tính có cài đặt Node.js (tải miễn phí tại https://nodejs.org).
+2. Nhấn đúp chuột (Double Click) vào file:
+      👉 CHAY-NGAY.bat
+   (Hoặc file "run-web.bat")
 
-Bước 1: Mở thư mục này trong PowerShell hoặc Command Prompt / VS Code.
-
-Bước 2: Cài đặt thư viện phụ thuộc (chỉ cần chạy 1 lần):
-   npm install
-
-Bước 3: Chạy chương trình:
-   npm run dev
-
-   -> Terminal sẽ hiển thị đường link: http://localhost:5173
-   -> Giữ phím Ctrl và click chuột vào link hoặc mở trình duyệt gõ:
+-> Trình duyệt web sẽ tự động mở ứng dụng tại địa chỉ:
       http://localhost:5173
+-> Ứng dụng đã được đóng gói sẵn (Built), khởi chạy ngay trong 1 giây mà KHÔNG cần phải tốn thời gian tải thư viện hay cấu hình gì thêm!
+
+
+CÁCH 2: DÀNH CHO LẬP TRÌNH VIÊN MUỐN SỬA ĐỔI CODE (DEV MODE)
+--------------------------------------------------------------------
+1. Nhấn đúp chuột vào file:
+      👉 CHAY-DEV-(CHINH-SUA-CODE).bat
+2. File này sẽ tự động chạy "npm install" và "npm run dev" với tính năng tự cập nhật code tức thì (Hot-Reload).
+
 
 --------------------------------------------------------------------
-CHẾ ĐỘ THUYẾT TRÌNH KHUYẾN NGHỊ (OFFLINE PREVIEW):
+TÀI KHOẢN MẪU ĐỂ TEST HỆ THỐNG
 --------------------------------------------------------------------
-Khi lên lớp hoặc tổng duyệt không phụ thuộc internet:
-1. Chạy lệnh:
-   npm run build
-2. Chạy tiếp lệnh:
-   npm run preview
-3. Mở: http://localhost:4173 và bấm F11 để vào chế độ Toàn màn hình.
+Bạn có thể tự bấm "Đăng ký tài khoản ngay" trên màn hình hoặc dùng các tài khoản mẫu sau:
+
+1. CỔNG SINH VIÊN (Tab "CỔNG SINH VIÊN"):
+   - Phạm Minh Khôi:    MSSV "251121536115"
+   - Khai:              MSSV "251121536114"
+   - Hoặc nhập bất kỳ MSSV nào bạn đã đăng ký mới.
+
+2. CỔNG CÁN BỘ / GIẢNG VIÊN (Tab "CỔNG CÁN BỘ / GIẢNG VIÊN"):
+   - Cố vấn học tập:    Username "advisor_nam" (ThS. Nguyễn Hoài Nam - Khoa CNTTKD)
+                        hoặc "Phamminkhoi"
+   - Chuyên viên CTSV:  Username "ctsv_mai" (ThS. Nguyễn Thị Mai - Phòng CTSV)
+   - Ban Giám hiệu:     Username "principal_anh" (PGS.TS. Đoàn Ngọc Phi Anh)
+
 
 --------------------------------------------------------------------
-CÁC PHÍM TẮT QUAN TRỌNG KHI DEMO:
+CÁC PHÍM TẮT THAO TÁC NHANH TRÊN MÀN HÌNH:
 --------------------------------------------------------------------
-- Phím [ D ] : Bật chế độ Đạo diễn (Director mode) — Tự động chạy toàn bộ kịch bản S1 trong 90s và thuyết minh.
-- Phím [ B ] : Bật / tắt Bản đồ BPMN toàn màn hình (xem 2 Pool, 4 Lane, token di chuyển).
-- Phím [ S ] : Bật chế độ Từng bước (Step mode).
-- Phím [ Space ] : Tạm dừng / Tiếp tục hoặc Bước tiếp 1 bước.
-- Phím [ 1 – 5 ] : Chuyển đổi nhanh 5 bàn làm việc (1: SV, 2: Hệ thống, 3: Cố vấn, 4: CTSV, 5: BGH).
-- Phím [ T ] : Tua +1 ngày làm việc.
-- Phím [ Shift + T ] : Tua +3 ngày làm việc (kích hoạt chuông nhắc việc quá hạn SLA).
-- Phím [ M ] : Bật / tắt âm thanh văn phòng cơ học (WebAudio).
-- Phím [ R ] : Đặt lại trạng thái ca làm việc (Reset).
-- Phím [ ? ] : Mở bảng trợ giúp chi tiết và hướng dẫn các kịch bản mẫu.
+- Phím [ F11 ]     : Bật chế độ Toàn màn hình (Presentation Mode).
+- Phím [ D ]       : Bật chế độ Đạo diễn (Director Mode - tự động chạy kịch bản mẫu trong 90s).
+- Phím [ B ]       : Bật / tắt Bản đồ quy trình BPMN 2.0 toàn màn hình.
+- Phím [ 1 – 5 ]   : Chuyển đổi nhanh 5 bàn làm việc (1: Sinh viên, 2: Hệ thống tự động, 3: Cố vấn, 4: CTSV, 5: BGH).
+- Phím [ Space ]   : Tạm dừng / Tiếp tục diễn tiến.
+- Phím [ T ]       : Tua +1 ngày làm việc.
+- Phím [ Shift+T ] : Tua +3 ngày làm việc (kích hoạt chuông điện thoại SLA quá hạn).
+- Phím [ M ]       : Bật / tắt âm thanh tiếng gõ máy chữ, đóng dấu cơ học.
+- Phím [ ? ]       : Bật bảng trợ giúp chi tiết.
 ====================================================================

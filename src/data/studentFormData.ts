@@ -197,6 +197,13 @@ export function createDefaultStudentFormData(student: {
 
 const STORAGE_PREFIX = 'bao_luu_student_form_v5_';
 
+// Bộ nhớ RAM lưu trữ Base64 dataUrl của tệp để không làm vỡ giới hạn 5MB của localStorage
+export const uploadedFileDataUrlCache = new Map<string, string>();
+
+function getFileCacheKey(name: string, size: number): string {
+  return `${name}_${size}`;
+}
+
 export function getStudentFormData(
   mssv: string,
   profile?: {
@@ -224,6 +231,16 @@ export function getStudentFormData(
       if (profile?.email) parsed.email = profile.email;
       if (profile?.phone) parsed.phone = profile.phone;
       parsed.mssv = trimmedMssv;
+
+      // Phục hồi lại dataUrl từ RAM cache nếu có
+      if (parsed.uploadedFile) {
+        const cacheKey = getFileCacheKey(parsed.uploadedFile.name, parsed.uploadedFile.size);
+        const cachedUrl = uploadedFileDataUrlCache.get(cacheKey) || uploadedFileDataUrlCache.get(`mssv_${trimmedMssv}`);
+        if (cachedUrl && !parsed.uploadedFile.dataUrl) {
+          parsed.uploadedFile.dataUrl = cachedUrl;
+        }
+      }
+
       return parsed;
     } catch {
       // Bỏ qua lỗi parse, tạo mới
@@ -245,8 +262,30 @@ export function getStudentFormData(
 export function saveStudentFormData(mssv: string, data: StudentDetailedFormData): void {
   const trimmedMssv = (mssv || '').trim();
   if (!trimmedMssv) return;
+
+  // Cache dataUrl vào RAM trước khi lưu trữ
+  if (data.uploadedFile && data.uploadedFile.dataUrl) {
+    const cacheKey = getFileCacheKey(data.uploadedFile.name, data.uploadedFile.size);
+    uploadedFileDataUrlCache.set(cacheKey, data.uploadedFile.dataUrl);
+    uploadedFileDataUrlCache.set(`mssv_${trimmedMssv}`, data.uploadedFile.dataUrl);
+  }
+
+  // Tách dataUrl dung lượng lớn (>2KB) ra khỏi payload lưu trữ localStorage
+  const toPersist: StudentDetailedFormData = {
+    ...data,
+    uploadedFile: data.uploadedFile
+      ? {
+          ...data.uploadedFile,
+          dataUrl:
+            data.uploadedFile.dataUrl && data.uploadedFile.dataUrl.length > 2048
+              ? undefined
+              : data.uploadedFile.dataUrl,
+        }
+      : null,
+  };
+
   const key = STORAGE_PREFIX + trimmedMssv;
-  setStorageItem(key, JSON.stringify(data));
+  setStorageItem(key, JSON.stringify(toPersist));
 }
 
 /**

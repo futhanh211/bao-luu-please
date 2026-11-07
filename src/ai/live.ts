@@ -93,9 +93,17 @@ export class LiveAIProvider implements AIProvider {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), this.timeoutMs);
       try {
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': this.apiKey,
+        };
+        if (this.apiKey.startsWith('AQ.') || this.apiKey.startsWith('ya29.')) {
+          headers['Authorization'] = `Bearer ${this.apiKey}`;
+        }
+
         const response = await fetch(this.endpoint(), {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': this.apiKey },
+          headers,
           body,
           signal: controller.signal,
         });
@@ -171,8 +179,8 @@ export async function testGeminiConnection(
   customModel?: string
 ): Promise<{ success: boolean; latencyMs: number; message: string; modelUsed: string }> {
   const env = typeof import.meta !== 'undefined' ? import.meta.env : ({} as Record<string, string>);
-  const key = (customKey || env?.VITE_GEMINI_API_KEY || '').trim();
-  const model = (customModel || env?.VITE_GEMINI_MODEL || 'gemini-1.5-flash').trim();
+  const key = (customKey !== undefined ? customKey : env?.VITE_GEMINI_API_KEY || '').trim();
+  const model = (customModel !== undefined ? customModel : env?.VITE_GEMINI_MODEL || 'gemini-1.5-flash').trim();
 
   if (!key) {
     return {

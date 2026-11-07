@@ -28,6 +28,8 @@ import { LetterModal } from './student/LetterModal';
 import { buildStudentTimeline } from './studentProgress';
 import { DeskTab, StudentRightPanel } from './student/StudentRightPanel';
 import { StudentPortalTracker } from './student/StudentPortalTracker';
+import { getSubmittedCaseByMssv, getSubmittedCaseById } from '../../data/caseRegistry';
+import { useAuthStore } from '../../store/useAuth';
 
 export const StudentDesk: React.FC = () => {
   const caseCode = useAppStore((s) => s.caseCode);
@@ -59,14 +61,19 @@ export const StudentDesk: React.FC = () => {
   const [openLetter, setOpenLetter] = useState<LetterDoc | null>(null);
   const [flying, setFlying] = useState(false);
 
-  const studentMssv = submissionDraft?.form.mssv || studentRecord?.mssv || '251121536115';
+  const currentUser = useAuthStore((s) => s.currentUser);
+  const studentMssv =
+    (currentUser && currentUser.type === 'student' ? currentUser.mssv : null) ||
+    submissionDraft?.form.mssv ||
+    studentRecord?.mssv ||
+    '251121536115';
 
   const [detailedFormData, setDetailedFormData] = useState<StudentDetailedFormData>(() =>
     getStudentFormData(studentMssv, {
-      name: submissionDraft?.form.fullName || studentRecord?.name,
-      className: submissionDraft?.form.className || studentRecord?.className,
-      faculty: submissionDraft?.form.faculty || studentRecord?.faculty,
-      email: submissionDraft?.form.email || studentRecord?.email,
+      name: (currentUser && currentUser.type === 'student' ? currentUser.name : null) || submissionDraft?.form.fullName || studentRecord?.name,
+      className: (currentUser && currentUser.type === 'student' ? currentUser.className : null) || submissionDraft?.form.className || studentRecord?.className,
+      faculty: (currentUser && currentUser.type === 'student' ? currentUser.faculty : null) || submissionDraft?.form.faculty || studentRecord?.faculty,
+      email: (currentUser && currentUser.type === 'student' ? currentUser.email : null) || submissionDraft?.form.email || studentRecord?.email,
       phone: submissionDraft?.form.phone || studentRecord?.phone,
     })
   );
@@ -221,16 +228,32 @@ export const StudentDesk: React.FC = () => {
     endEventId: endedEvent && endedEvent.type === 'case.ended' ? endedEvent.endEventId : null,
   };
 
-  if (sessionMode === 'portal' && submitted && !flying) {
+  const [storageVersion, setStorageVersion] = useState(0);
+
+  useEffect(() => {
+    const handleStorageChange = () => setStorageVersion((v) => v + 1);
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('app:storage_change', handleStorageChange);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('app:storage_change', handleStorageChange);
+    };
+  }, []);
+
+  const existingCaseForTracker = useMemo(() => {
+    return getSubmittedCaseByMssv(studentMssv) || getSubmittedCaseById(caseCode);
+  }, [studentMssv, caseCode, storageVersion]);
+
+  if ((sessionMode === 'portal' || Boolean(currentUser)) && (submitted || Boolean(existingCaseForTracker)) && !flying) {
     return (
       <StudentPortalTracker
-        caseCode={caseCode}
-        studentName={submissionDraft.form.fullName}
-        mssv={submissionDraft.form.mssv}
-        faculty={submissionDraft.form.faculty}
+        caseCode={caseCode || existingCaseForTracker?.caseCode || 'BL-2026-90'}
+        studentName={submissionDraft?.form.fullName || existingCaseForTracker?.studentName || studentRecord?.name || 'Sinh viên'}
+        mssv={submissionDraft?.form.mssv || existingCaseForTracker?.studentMssv || studentMssv}
+        faculty={submissionDraft?.form.faculty || existingCaseForTracker?.studentFaculty || studentRecord?.faculty || 'Khoa Công nghệ thông tin kinh doanh'}
         log={currentEventLog}
         day={day}
-        decisionDoc={engine?.state.decisionDoc}
+        decisionDoc={engine?.state.decisionDoc || existingCaseForTracker?.decisionDoc}
       />
     );
   }

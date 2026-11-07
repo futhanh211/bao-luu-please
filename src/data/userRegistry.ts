@@ -32,29 +32,46 @@ export type RegisteredAccount = RegisteredStudent | RegisteredOfficer;
 
 const REGISTERED_ACCOUNTS_KEY = 'bao_luu_registered_accounts_v1';
 
-// Bộ nhớ đệm fallback khi chạy môi trường kiểm thử Node.js không có sẵn window.localStorage
+// Bộ nhớ đệm fallback khi chạy môi trường kiểm thử Node.js hoặc khi localStorage bị đầy quota
 export const memoryFallback: Record<string, string> = {};
 
 export function getStorageItem(key: string): string | null {
+  if (memoryFallback[key] !== undefined) {
+    return memoryFallback[key];
+  }
   if (typeof localStorage !== 'undefined') {
     try {
-      return localStorage.getItem(key);
+      const val = localStorage.getItem(key);
+      if (val !== null) {
+        memoryFallback[key] = val;
+        return val;
+      }
     } catch {
       // Fallback
     }
   }
-  return memoryFallback[key] || null;
+  return null;
 }
 
 export function setStorageItem(key: string, value: string): void {
+  memoryFallback[key] = value;
   if (typeof localStorage !== 'undefined') {
     try {
       localStorage.setItem(key, value);
-    } catch {
-      // Fallback
+    } catch (err) {
+      console.warn(
+        `[Storage] localStorage.setItem cho "${key}" không thành công (có thể do quota), lưu vào bộ nhớ RAM fallback:`,
+        err
+      );
     }
   }
-  memoryFallback[key] = value;
+  if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+    try {
+      window.dispatchEvent(new CustomEvent('app:storage_change', { detail: { key } }));
+    } catch {
+      // Ignore
+    }
+  }
 }
 
 export function getRegisteredAccounts(): RegisteredAccount[] {

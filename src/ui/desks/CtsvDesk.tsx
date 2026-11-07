@@ -19,6 +19,7 @@ import { CtsvResult, InspectionResult } from './ctsv/InspectionResult';
 import { CtsvPortalResult } from './ctsv/CtsvPortalResult';
 import {
   getCtsvCases,
+  getAllSubmittedCases,
   updateCaseCtsvDecision,
   SubmittedCase,
 } from '../../data/caseRegistry';
@@ -241,12 +242,15 @@ export const CtsvDesk: React.FC = () => {
   const isCustomCase = usePlaybackStore((s) => s.isCustomCase);
   const isCustomFlow = isCustomCase || sessionMode === 'portal';
 
+  const currentCaseCode = useAppStore((s) => s.caseCode);
   const [submittedCases, setSubmittedCases] = useState<SubmittedCase[]>(() =>
     getCtsvCases()
   );
   const [selectedCaseId, setSelectedCaseId] = useState<string>(() => {
     const cases = getCtsvCases();
-    // Ưu tiên chọn hồ sơ Cố vấn đã duyệt và đang chờ CTSV thẩm định
+    const activeCode = useAppStore.getState().caseCode;
+    const matchActive = cases.find((c) => c.caseCode === activeCode || c.id === activeCode);
+    if (matchActive) return matchActive.id;
     const pendingCtsv = cases.find((c) => !c.ctsvDecision);
     if (pendingCtsv) return pendingCtsv.id;
     return cases[0]?.id || '';
@@ -259,18 +263,34 @@ export const CtsvDesk: React.FC = () => {
   const resolved = useRef(false);
 
   useEffect(() => {
-    const cases = getCtsvCases();
-    setSubmittedCases(cases);
-    if (cases.length > 0) {
-      if (!selectedCaseId || !cases.some((c) => c.id === selectedCaseId)) {
-        const pendingCtsv = cases.find((c) => !c.ctsvDecision);
-        const targetId = pendingCtsv ? pendingCtsv.id : cases[0].id;
-        setSelectedCaseId(targetId);
-        const target = cases.find((c) => c.id === targetId);
-        if (target) useAppStore.getState().setCaseCode(target.caseCode);
+    const refresh = () => {
+      const cases = getCtsvCases();
+      setSubmittedCases(cases);
+      if (cases.length > 0) {
+        setSelectedCaseId((prev) => {
+          const activeCode = useAppStore.getState().caseCode;
+          const matchActive = cases.find((c) => c.caseCode === activeCode || c.id === activeCode);
+          if (matchActive) return matchActive.id;
+          if (prev && cases.some((c) => c.id === prev)) return prev;
+          const pendingCtsv = cases.find((c) => !c.ctsvDecision);
+          const targetId = pendingCtsv ? pendingCtsv.id : cases[0].id;
+          const target = cases.find((c) => c.id === targetId);
+          if (target) useAppStore.getState().setCaseCode(target.caseCode);
+          return targetId;
+        });
       }
-    }
-  }, [view]);
+    };
+
+    refresh();
+
+    const handleStorageChange = () => refresh();
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('app:storage_change', handleStorageChange);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('app:storage_change', handleStorageChange);
+    };
+  }, [view, currentCaseCode]);
 
   useEffect(() => {
     setBrief(null);
@@ -302,7 +322,63 @@ export const CtsvDesk: React.FC = () => {
   };
 
   if (submittedCases.length === 0) {
-    return <DeskEmpty deskName="Bàn Phòng CTSV" reason="upcoming" />;
+    const all = getAllSubmittedCases();
+    const pendingAtAdvisor = all.filter((c) => !c.advisorDecision);
+
+    return (
+      <div className="desk-page ctsv-page" style={{ width: '100%', maxWidth: '980px', margin: '0 auto' }}>
+        <Paper minHeight={420} width="100%" elevated style={{ padding: 32, textAlign: 'center' }}>
+          <div style={{ fontSize: 44, marginBottom: 12 }}>🏢</div>
+          <h2 style={{ fontFamily: 'var(--font-paper)', fontSize: 22, textTransform: 'uppercase', marginBottom: 8, color: 'var(--ink)' }}>
+            BÀN PHÒNG CÔNG TÁC SINH VIÊN (CTSV)
+          </h2>
+          <p style={{ color: 'var(--ink-soft)', fontSize: 15, maxWidth: 620, margin: '0 auto 20px', lineHeight: 1.6 }}>
+            Theo quy trình Một cửa số (BPMN 2.0), Phòng CTSV chỉ tiếp nhận thẩm định minh chứng sau khi <strong>Cố vấn học tập (L2)</strong> đã xác nhận nguyện vọng của sinh viên.
+          </p>
+
+          {pendingAtAdvisor.length > 0 ? (
+            <div style={{ maxWidth: 520, margin: '0 auto', textAlign: 'left', padding: '16px 20px', background: 'var(--paper-dim)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--paper-line)' }}>
+              <div style={{ fontSize: 12, fontWeight: 'bold', color: 'var(--amber)', textTransform: 'uppercase', marginBottom: 8 }}>
+                ⏳ Danh sách hồ sơ đang chờ Cố vấn học tập (L2) xác nhận ({pendingAtAdvisor.length} hồ sơ):
+              </div>
+              <ul style={{ margin: '0 0 14px 0', paddingLeft: 20, fontSize: 13.5, color: 'var(--ink)' }}>
+                {pendingAtAdvisor.map((c) => (
+                  <li key={c.id} style={{ marginBottom: 6 }}>
+                    <strong>{c.caseCode}</strong> — {c.studentName} (MSSV: {c.studentMssv} · {c.studentFaculty})
+                  </li>
+                ))}
+              </ul>
+              <button
+                type="button"
+                onClick={() => {
+                  sfx.play('paper');
+                  useAppStore.getState().setRole('advisor');
+                }}
+                style={{
+                  width: '100%',
+                  padding: '10px 14px',
+                  backgroundColor: 'var(--desk-900)',
+                  color: 'var(--paper)',
+                  border: 'none',
+                  borderRadius: 'var(--radius-sm)',
+                  fontFamily: 'var(--font-paper)',
+                  fontWeight: 'bold',
+                  fontSize: 14,
+                  cursor: 'pointer',
+                  boxShadow: 'var(--shadow-hard)',
+                }}
+              >
+                👉 Chuyển sang Bàn Cố vấn học tập (L2) để xem xét & đóng dấu phê duyệt
+              </button>
+            </div>
+          ) : (
+            <div style={{ fontSize: 14, color: 'var(--ink-soft)', fontStyle: 'italic' }}>
+              Hiện chưa có hồ sơ nào được sinh viên nộp vào hệ thống Một cửa số.
+            </div>
+          )}
+        </Paper>
+      </div>
+    );
   }
 
   const selectedCase =
@@ -356,19 +432,26 @@ export const CtsvDesk: React.FC = () => {
     if (!pending || resolved.current) return;
     resolved.current = true;
     const choice = pending.choice;
-    const score = scoreInspection(pending.marks, anomalies);
+    const effectiveMarks =
+      pending.marks.length > 0
+        ? pending.marks
+        : choice.outcome === 'invalid' && anomalies.length > 0
+        ? anomalies.map((a) => a.key)
+        : [];
+
+    const score = scoreInspection(effectiveMarks, anomalies);
     const nextResult: CtsvResult = {
       outcome: choice.outcome as 'valid' | 'invalid',
       score,
       anomalies,
-      markedKeys: pending.marks,
+      markedKeys: effectiveMarks,
     };
 
     sealCtsvInspection(selectedCase.caseCode, nextResult);
     const updated = updateCaseCtsvDecision(
       selectedCase.id,
       choice.outcome as 'valid' | 'invalid',
-      pending.marks
+      effectiveMarks
     );
     if (updated) {
       setSubmittedCases(getCtsvCases());
@@ -516,6 +599,55 @@ export const CtsvDesk: React.FC = () => {
           <span className="desk-hint">Soi từng trường · <kbd>T</kbd>/<kbd>Shift+T</kbd> tua ngày</span>
         </div>
       </div>
+
+      {selectedCase.aiAudit && (
+        <Paper
+          className="portal-docket-paper"
+          elevated
+          width="100%"
+          style={{
+            padding: '14px 18px',
+            borderLeft: `5px solid ${selectedCase.aiAudit.status === 'passed' ? 'var(--stamp-green)' : 'var(--stamp-red)'}`,
+            backgroundColor: 'var(--paper)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6, flexWrap: 'wrap', gap: 6 }}>
+            <span style={{ fontWeight: 'bold', fontSize: 13, color: selectedCase.aiAudit.status === 'passed' ? 'var(--stamp-green)' : 'var(--stamp-red)', textTransform: 'uppercase' }}>
+              🤖 CHỨNG THƯ THẨM ĐỊNH MINH CHỨNG SỐ HÓA (AI VISION & DATA MATCH) — {selectedCase.aiAudit.evidenceCheck.pass ? 'HỢP LỆ 100%' : 'CẢNH BÁO'}
+            </span>
+            <span style={{ fontSize: 11, color: 'var(--ink-soft)' }}>
+              Độ tin cậy AI: {Math.round(selectedCase.aiAudit.evidenceCheck.confidence * 100)}%
+            </span>
+          </div>
+          <div style={{ fontSize: 12.5, color: 'var(--ink)', lineHeight: 1.5, marginBottom: 8 }}>
+            Hệ thống AI đã tự động quét văn bản minh chứng, kiểm tra dấu mộc đỏ, chữ ký bác sĩ / cơ quan thẩm quyền và đối chiếu chẩn đoán y khoa với lý do xin bảo lưu. Chuyên viên CTSV chỉ cần kiểm tra nhanh kết quả thẩm định và thực hiện đóng dấu.
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 8, fontSize: 11.5 }}>
+            <div style={{ padding: '6px 10px', background: 'var(--paper-dim)', border: '1px solid var(--paper-line)', borderRadius: 4 }}>
+              {selectedCase.aiAudit.evidenceCheck.hasRedStamp ? '✅' : '❌'} <strong>Dấu mộc đỏ:</strong> {selectedCase.aiAudit.evidenceCheck.hasRedStamp ? 'Có mộc đỏ hợp pháp' : 'Không có dấu mộc đỏ'}
+            </div>
+            <div style={{ padding: '6px 10px', background: 'var(--paper-dim)', border: '1px solid var(--paper-line)', borderRadius: 4 }}>
+              {selectedCase.aiAudit.evidenceCheck.doctorSigned ? '✅' : '❌'} <strong>Chữ ký thẩm quyền:</strong> {selectedCase.aiAudit.evidenceCheck.doctorSigned ? 'Đã ký xác nhận' : 'Thiếu chữ ký'}
+            </div>
+            <div style={{ padding: '6px 10px', background: 'var(--paper-dim)', border: '1px solid var(--paper-line)', borderRadius: 4 }}>
+              {selectedCase.aiAudit.evidenceCheck.diagnosisMatch ? '✅' : '⚠️'} <strong>Khớp lý do:</strong> Phù hợp nghỉ học tạm thời
+            </div>
+          </div>
+          {selectedCase.aiAudit.evidenceCheck.anomalies.length > 0 && (
+            <div style={{ marginTop: 8, padding: '8px 12px', background: 'rgba(239, 68, 68, 0.08)', border: '1px solid var(--stamp-red)', borderRadius: 4, fontSize: 11.5, color: 'var(--stamp-red)' }}>
+              ⚠️ <strong>Chi tiết điểm bất thường do AI phát hiện:</strong>
+              <ul style={{ margin: '4px 0 0 0', paddingLeft: 18 }}>
+                {selectedCase.aiAudit.evidenceCheck.anomalies.map((anom, idx) => (
+                  <li key={idx}>{anom}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          <div style={{ marginTop: 8, fontSize: 12, color: 'var(--amber)', fontStyle: 'italic', paddingTop: 6, borderTop: '1px dashed var(--paper-line)' }}>
+            👉 <strong>Đề xuất cho Phòng CTSV:</strong> {selectedCase.aiAudit.ctsvRationale}
+          </div>
+        </Paper>
+      )}
 
       <div className="ctsv-grid">
         <div className="ctsv-col">

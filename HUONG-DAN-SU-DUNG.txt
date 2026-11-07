@@ -1,0 +1,69 @@
+====================================================================
+           BẢO LƯU, PLEASE! — HƯỚNG DẪN SỬ DỤNG DỰ ÁN
+      Mô phỏng quy trình To-Be Nghỉ học tạm thời / Bảo lưu
+     Trường Đại học Kinh tế – Đại học Đà Nẵng (BPMN 2.0)
+====================================================================
+
+CÁCH KHỞI CHẠY (DÀNH CHO NGƯỜI NHẬN FILE KHÔNG CÓ CÔNG CỤ ĐẶC BIỆT):
+--------------------------------------------------------------------
+1. Đảm bảo máy tính có cài đặt Node.js (tải miễn phí tại https://nodejs.org).
+2. Nhấn đúp chuột (Double Click) vào file:
+      👉 CHAY-DU-AN.bat  (hoặc CHAY-NGAY.bat / run-web.bat)
+
+-> Trình duyệt web sẽ tự động mở ứng dụng tại địa chỉ:
+      http://localhost:5173
+-> Ứng dụng đã được đóng gói sẵn (Built), khởi chạy ngay trong 1 giây mà KHÔNG cần phải tốn thời gian tải thư viện hay cấu hình gì thêm!
+
+
+CÁCH DÀNH CHO LẬP TRÌNH VIÊN MUỐN SỬA ĐỔI CODE (DEV MODE):
+--------------------------------------------------------------------
+1. Nhấn đúp chuột vào file:
+      👉 CHAY-DEV-(CHINH-SUA-CODE).bat
+2. File này sẽ tự động chạy "npm install" và "npm run dev" với tính năng tự cập nhật code tức thì (Hot-Reload).
+
+
+--------------------------------------------------------------------
+DANH SÁCH TÀI KHOẢN ĐỂ TEST ĐẦY ĐỦ QUY TRÌNH
+--------------------------------------------------------------------
+Hệ thống chia làm 2 Cổng (chọn ở tab trên màn hình Đăng nhập):
+
+1. CỔNG SINH VIÊN (Tab "CỔNG SINH VIÊN"):
+   - Phạm Minh Khôi:    MSSV: 251121536115
+   - Khai:              MSSV: 251121536114
+   - Hoặc bấm "Đăng ký tài khoản ngay" để tạo tài khoản sinh viên mới tùy thích.
+
+2. CỔNG CÁN BỘ / GIẢNG VIÊN (Tab "CỔNG CÁN BỘ / GIẢNG VIÊN"):
+   - L2 - Cố vấn học tập:   Username "advisor_nam" (ThS. Nguyễn Hoài Nam) hoặc "Phamminhkhoi"
+   - L3 - Phòng CTSV:       Username "ctsv_mai" (ThS. Nguyễn Thị Mai) hoặc "kkk"
+   - L4 - Ban Giám hiệu:    Username "principal_anh" (PGS.TS. Đoàn Ngọc Phi Anh)
+
+
+--------------------------------------------------------------------
+TÍNH NĂNG AI THẨM ĐỊNH TỰ ĐỘNG & VAI TRÒ CỦA CÁC BÀN L2, L3, L4
+--------------------------------------------------------------------
+- AI TỰ ĐỘNG KIỂM TRA (T1 Automated Check):
+  Ngay khi Sinh viên nộp hồ sơ, mô hình Gemini AI sẽ tự động phân tích:
+  + Đối chiếu thông tin sinh viên với Cơ sở dữ liệu trường.
+  + Kiểm tra điều kiện bảo lưu theo quy chế (R1: Quá hạn đào tạo, R2: Buộc thôi học, R3: Nợ học phí, R4: Lý do hợp lệ).
+  + Thẩm định tính hợp lệ của tài liệu minh chứng (bệnh án, giấy nhập ngũ, công văn).
+  + Xuất "Chứng Thư Thẩm Định AI" đính kèm theo hồ sơ.
+
+- VAI TRÒ MỚI CỦA CÁC BÀN XÉT DUYỆT (Co-Pilot, Không kiểm thử thủ công):
+  + Cố vấn học tập (L2): Xem Báo cáo thẩm định của AI và đóng dấu Xác nhận nguyện vọng.
+  + Phòng CTSV (L3): Xem Chứng thư thẩm định minh chứng số hóa của AI (AI Vision & Data Match) và đóng dấu Thẩm tra đạt chuẩn (không cần khoanh tròn/soi kính thủ công).
+  + Ban Giám hiệu (L4): Xem chuỗi thẩm định (AI -> Cố vấn -> CTSV) và Ký số Quyết định ban hành.
+
+
+--------------------------------------------------------------------
+CÁC PHÍM TẮT THAO TÁC TRÊN MÀN HÌNH:
+--------------------------------------------------------------------
+- [ F11 ]     : Toàn màn hình (Presentation Mode).
+- [ D ]       : Bật chế độ Đạo diễn (Director Mode - tự động chạy demo trong 90s).
+- [ B ]       : Bật / tắt Bản đồ quy trình BPMN 2.0 toàn màn hình.
+- [ 1 – 5 ]   : Chuyển đổi nhanh giữa 5 bàn làm việc.
+- [ Space ]   : Tạm dừng / Tiếp tục diễn tiến.
+- [ T ]       : Tua +1 ngày làm việc.
+- [ Shift+T ] : Tua +3 ngày làm việc (kích hoạt cảnh báo SLA).
+- [ M ]       : Bật / tắt âm thanh cơ học retro.
+- [ ? ]       : Bật bảng trợ giúp phím tắt.
+====================================================================

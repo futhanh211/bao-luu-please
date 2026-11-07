@@ -174,9 +174,9 @@ export const StudentPortalTracker: React.FC<StudentPortalTrackerProps> = ({
   const steps = [
     {
       title: 'Nộp đơn trực tuyến',
-      actor: 'Sinh viên',
+      actor: 'Sinh viên & AI Thẩm định',
       status: 'done' as const,
-      tag: `Ngày ${day}`,
+      tag: regCase?.aiAudit?.status === 'passed' ? '🤖 AI: Hợp lệ' : `Ngày ${day}`,
     },
     {
       title: 'Xác nhận nguyện vọng',

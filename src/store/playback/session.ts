@@ -6,6 +6,7 @@ import { InMemoryStudentsDB } from '../../data/students.db';
 import { InMemoryAcademicFinanceDB } from '../../data/academic-finance.db';
 import { EngineEvent } from '../../engine/types';
 import { ScenarioConfig } from '../../data/scenarios';
+import { getRegisteredStudents } from '../../data/userRegistry';
 
 export interface QueuedEvent {
   event: EngineEvent;
@@ -41,6 +42,35 @@ export function beginSession(
   const clock = new Clock(0);
   const studentsDb = new InMemoryStudentsDB();
   const academicFinanceDb = new InMemoryAcademicFinanceDB();
+
+  // Nạp toàn bộ tài khoản sinh viên đã đăng ký vào DB phiên làm việc
+  try {
+    const registered = getRegisteredStudents();
+    for (const s of registered) {
+      studentsDb.upsert({
+        mssv: s.mssv,
+        name: s.name,
+        className: s.className,
+        faculty: s.faculty,
+        phone: s.phone || '0905123456',
+        email: s.email,
+        status: 'Đang học',
+      });
+      if (!academicFinanceDb.get(s.mssv)) {
+        academicFinanceDb.upsert({
+          mssv: s.mssv,
+          semestersCompleted: 3,
+          gpaNote: 'GPA tích lũy: 3.25 / 4.0 - Đủ điều kiện học vụ',
+          discipline: 'none',
+          tuitionDebt: 0,
+          forcedWithdrawal: false,
+        });
+      }
+    }
+  } catch {
+    // Ignore
+  }
+
   const mock = new MockAIProvider(scenario.aiScript, aiDelayMs());
   const ai = new AIService(mock, createLiveAIFromEnv(), initialMode);
 

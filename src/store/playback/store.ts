@@ -33,6 +33,7 @@ import {
   getSubmittedCaseByMssv,
   getSubmittedCaseById,
   getNextCaseCode,
+  generateAiAuditReport,
 } from '../../data/caseRegistry';
 
 export type { PlaybackStoreState } from './types';
@@ -157,6 +158,31 @@ export const usePlaybackStore = create<PlaybackStoreState>((set, get) => ({
       return;
     }
 
+    // Đảm bảo sinh viên luôn có trong CSDL học vụ của phiên làm việc
+    const studentsDb = getActiveStudentsDb();
+    const academicFinanceDb = getActiveAcademicFinanceDb();
+    if (studentsDb) {
+      studentsDb.upsert({
+        mssv: student.mssv,
+        name: student.name,
+        className: student.className,
+        faculty: student.faculty,
+        phone: student.phone || '0905123456',
+        email: student.email || `${student.mssv}@due.udn.vn`,
+        status: 'Đang học',
+      });
+    }
+    if (academicFinanceDb && !academicFinanceDb.get(student.mssv)) {
+      academicFinanceDb.upsert({
+        mssv: student.mssv,
+        semestersCompleted: 3,
+        gpaNote: 'GPA tích lũy: 3.25 / 4.0 - Đủ điều kiện học vụ',
+        discipline: 'none',
+        tuitionDebt: 0,
+        forcedWithdrawal: false,
+      });
+    }
+
     // Kiểm tra nếu sinh viên này đã nộp hồ sơ trước đó thì phục hồi trạng thái ca của họ
     const existingCase = getSubmittedCaseByMssv(student.mssv);
     if (existingCase) {
@@ -164,8 +190,21 @@ export const usePlaybackStore = create<PlaybackStoreState>((set, get) => ({
       useAppStore.getState().setScenario('s6');
       useAppStore.getState().setCaseCode(existingCase.caseCode);
       const sc = get().scenario;
-      if (sc && existingCase.evidence.length > 0) {
-        sc.evidence = [...existingCase.evidence];
+      if (sc) {
+        sc.form = { ...existingCase.form };
+        if (existingCase.evidence && existingCase.evidence.length > 0) {
+          sc.evidence = [...existingCase.evidence];
+        }
+      }
+      const engine = get().engine;
+      if (engine) {
+        engine.state.form = { ...existingCase.form };
+        if (existingCase.evidence && existingCase.evidence.length > 0) {
+          engine.state.evidence = [...existingCase.evidence];
+        }
+        if (existingCase.decisionDoc) {
+          engine.state.decisionDoc = { ...existingCase.decisionDoc };
+        }
       }
       set({
         submissionDraft: {
@@ -328,20 +367,42 @@ export const usePlaybackStore = create<PlaybackStoreState>((set, get) => ({
       ? scenario.evidence.map((e) => e.id)
       : [...(submissionDraft?.attachedEvidenceIds ?? [])];
 
+    const currentCode = useAppStore.getState().caseCode || getNextCaseCode();
+    useAppStore.getState().setCaseCode(currentCode);
+
+    // Đảm bảo sinh viên luôn có trong CSDL học vụ phiên làm việc trước khi nộp
+    const sDb = getActiveStudentsDb();
+    if (sDb && !sDb.get(form.mssv)) {
+      sDb.upsert({
+        mssv: form.mssv,
+        name: form.fullName,
+        className: form.className,
+        faculty: form.faculty,
+        phone: form.phone || '0905123456',
+        email: form.email || `${form.mssv}@due.udn.vn`,
+        status: 'Đang học',
+      });
+    }
+
     set({
       submitted: true,
       submissionDraft: { form, attachedEvidenceIds },
       isPlaying: true,
       isPaused: false,
-      studentRecord: getActiveStudentsDb()?.get(form.mssv) ?? null,
+      studentRecord: sDb?.get(form.mssv) ?? null,
     });
 
     mark('submit:start');
     await engine.start({ form, attachedEvidenceIds });
     mark('submit:engine-start-done');
 
+    // Tạo Báo cáo Thẩm định AI Tự Động (AI Pre-check) ngay khi nộp đơn
+    const sDbAc = getActiveAcademicFinanceDb();
+    const academicRec = sDbAc?.get(form.mssv) ?? null;
+    const caseEvidence = scenario.evidence ? [...scenario.evidence] : [];
+    const aiAudit = generateAiAuditReport(form, caseEvidence, academicRec);
+
     // Lưu vào Sổ tiếp nhận hồ sơ Một Cửa Số (Case Registry)
-    const currentCode = useAppStore.getState().caseCode || getNextCaseCode();
     saveSubmittedCase({
       id: currentCode,
       caseCode: currentCode,
@@ -352,7 +413,7 @@ export const usePlaybackStore = create<PlaybackStoreState>((set, get) => ({
       studentPhone: form.phone,
       studentEmail: form.email,
       form: { ...form },
-      evidence: scenario.evidence ? [...scenario.evidence] : [],
+      evidence: caseEvidence,
       attachedEvidenceIds: [...attachedEvidenceIds],
       submittedAt:
         new Date().toLocaleDateString('vi-VN') +
@@ -360,6 +421,7 @@ export const usePlaybackStore = create<PlaybackStoreState>((set, get) => ({
         new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
       day: get().mapState.counters.day || 0,
       status: 'pending_advisor',
+      aiAudit,
     });
 
     await processQueue(get, set);

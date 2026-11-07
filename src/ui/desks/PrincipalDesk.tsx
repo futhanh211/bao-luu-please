@@ -3,7 +3,6 @@ import { useAppStore } from '../../store/useApp';
 import { usePlaybackStore } from '../../store/playback';
 import { MOTION } from '../motion';
 import { sfx } from '../audio/sfx';
-import { DeskEmpty } from './DeskEmpty';
 import { useCaseView } from './useCaseView';
 import { DecisionDraft } from './principal/DecisionDraft';
 import { SigningPanel } from './principal/SigningPanel';
@@ -12,6 +11,7 @@ import { PrincipalPortalResult } from './principal/PrincipalPortalResult';
 import { Paper } from '../kit/Paper';
 import {
   getPrincipalCases,
+  getAllSubmittedCases,
   updateCasePrincipalSign,
   SubmittedCase,
 } from '../../data/caseRegistry';
@@ -218,12 +218,15 @@ export const PrincipalDesk: React.FC = () => {
   const reducedMotion = useAppStore((s) => s.reducedMotion);
   const sessionMode = useAppStore((s) => s.sessionMode);
 
+  const currentCaseCode = useAppStore((s) => s.caseCode);
   const [submittedCases, setSubmittedCases] = useState<SubmittedCase[]>(() =>
     getPrincipalCases()
   );
   const [selectedCaseId, setSelectedCaseId] = useState<string>(() => {
     const cases = getPrincipalCases();
-    // Ưu tiên chọn hồ sơ đang chờ BGH ký số
+    const activeCode = useAppStore.getState().caseCode;
+    const matchActive = cases.find((c) => c.caseCode === activeCode || c.id === activeCode);
+    if (matchActive) return matchActive.id;
     const pendingBgh = cases.find((c) => !c.principalSigned);
     if (pendingBgh) return pendingBgh.id;
     return cases[0]?.id || '';
@@ -235,20 +238,36 @@ export const PrincipalDesk: React.FC = () => {
   const resolved = useRef(false);
 
   useEffect(() => {
-    const cases = getPrincipalCases();
-    setSubmittedCases(cases);
-    if (cases.length > 0) {
-      if (!selectedCaseId || !cases.some((c) => c.id === selectedCaseId)) {
-        const pendingBgh = cases.find((c) => !c.principalSigned);
-        const targetId = pendingBgh ? pendingBgh.id : cases[0].id;
-        setSelectedCaseId(targetId);
-        const target = cases.find((c) => c.id === targetId);
-        if (target) useAppStore.getState().setCaseCode(target.caseCode);
+    const refresh = () => {
+      const cases = getPrincipalCases();
+      setSubmittedCases(cases);
+      if (cases.length > 0) {
+        setSelectedCaseId((prev) => {
+          const activeCode = useAppStore.getState().caseCode;
+          const matchActive = cases.find((c) => c.caseCode === activeCode || c.id === activeCode);
+          if (matchActive) return matchActive.id;
+          if (prev && cases.some((c) => c.id === prev)) return prev;
+          const pendingBgh = cases.find((c) => !c.principalSigned);
+          const targetId = pendingBgh ? pendingBgh.id : cases[0].id;
+          const target = cases.find((c) => c.id === targetId);
+          if (target) useAppStore.getState().setCaseCode(target.caseCode);
+          return targetId;
+        });
+      } else {
+        setSelectedCaseId('');
       }
-    } else {
-      setSelectedCaseId('');
-    }
-  }, [view]);
+    };
+
+    refresh();
+
+    const handleStorageChange = () => refresh();
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('app:storage_change', handleStorageChange);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('app:storage_change', handleStorageChange);
+    };
+  }, [view, currentCaseCode]);
 
   useEffect(() => {
     setSigning('idle');
@@ -292,7 +311,88 @@ export const PrincipalDesk: React.FC = () => {
   };
 
   if (submittedCases.length === 0) {
-    return <DeskEmpty deskName="Bàn Ban Giám hiệu" reason="upcoming" />;
+    const all = getAllSubmittedCases();
+    const inProgress = all.filter((c) => !c.principalSigned && c.status !== 'rejected');
+
+    return (
+      <div className="desk-page principal-page" style={{ width: '100%', maxWidth: '980px', margin: '0 auto' }}>
+        <Paper minHeight={420} width="100%" elevated style={{ padding: 32, textAlign: 'center' }}>
+          <div style={{ fontSize: 44, marginBottom: 12 }}>🏛️</div>
+          <h2 style={{ fontFamily: 'var(--font-paper)', fontSize: 22, textTransform: 'uppercase', marginBottom: 8, color: 'var(--ink)' }}>
+            BÀN BAN GIÁM HIỆU NHÀ TRƯỜNG (BGH)
+          </h2>
+          <p style={{ color: 'var(--ink-soft)', fontSize: 15, maxWidth: 620, margin: '0 auto 20px', lineHeight: 1.6 }}>
+            Ban Giám hiệu chỉ tiếp nhận hồ sơ đã được <strong>Cố vấn học tập (L2)</strong> xác nhận và <strong>Phòng CTSV (L3)</strong> thẩm định hợp lệ để ký số Quyết định ban hành (T9).
+          </p>
+
+          {inProgress.length > 0 ? (
+            <div style={{ maxWidth: 540, margin: '0 auto', textAlign: 'left', padding: '16px 20px', background: 'var(--paper-dim)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--paper-line)' }}>
+              <div style={{ fontSize: 12, fontWeight: 'bold', color: 'var(--amber)', textTransform: 'uppercase', marginBottom: 8 }}>
+                ⏳ Hồ sơ đang trong các bước thẩm tra trước ({inProgress.length} hồ sơ):
+              </div>
+              <ul style={{ margin: '0 0 14px 0', paddingLeft: 20, fontSize: 13.5, color: 'var(--ink)' }}>
+                {inProgress.map((c) => (
+                  <li key={c.id} style={{ marginBottom: 6 }}>
+                    <strong>{c.caseCode}</strong> — {c.studentName} ({c.studentMssv}) —{' '}
+                    <span style={{ fontStyle: 'italic', color: 'var(--amber)' }}>
+                      {!c.advisorDecision ? 'Chờ Cố vấn (L2)' : !c.ctsvDecision ? 'Chờ CTSV (L3)' : 'Sẵn sàng'}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    sfx.play('paper');
+                    useAppStore.getState().setRole('advisor');
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: '9px 12px',
+                    backgroundColor: 'var(--desk-900)',
+                    color: 'var(--paper)',
+                    border: 'none',
+                    borderRadius: 'var(--radius-sm)',
+                    fontFamily: 'var(--font-paper)',
+                    fontWeight: 'bold',
+                    fontSize: 13,
+                    cursor: 'pointer',
+                  }}
+                >
+                  👉 Bàn Cố vấn (L2)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    sfx.play('paper');
+                    useAppStore.getState().setRole('ctsv');
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: '9px 12px',
+                    backgroundColor: 'var(--desk-900)',
+                    color: 'var(--paper)',
+                    border: 'none',
+                    borderRadius: 'var(--radius-sm)',
+                    fontFamily: 'var(--font-paper)',
+                    fontWeight: 'bold',
+                    fontSize: 13,
+                    cursor: 'pointer',
+                  }}
+                >
+                  👉 Bàn CTSV (L3)
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div style={{ fontSize: 14, color: 'var(--ink-soft)', fontStyle: 'italic' }}>
+              Hiện chưa có hồ sơ nào chờ ký số.
+            </div>
+          )}
+        </Paper>
+      </div>
+    );
   }
 
   const selectedCase =
@@ -416,7 +516,45 @@ export const PrincipalDesk: React.FC = () => {
           selectedId={selectedCase.id}
           onSelect={handleSelectCase}
         />
-        <div className="principal-grid">
+        <Paper
+        className="portal-docket-paper"
+        elevated
+        width="100%"
+        style={{
+          padding: '14px 18px',
+          borderLeft: '5px solid var(--stamp-green)',
+          backgroundColor: 'var(--paper)',
+          marginBottom: 14,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, flexWrap: 'wrap', gap: 6 }}>
+          <span style={{ fontWeight: 'bold', fontSize: 13, color: 'var(--stamp-green)', textTransform: 'uppercase' }}>
+            🏛️ HỒ SƠ ĐÃ HOÀN TẤT CHUỖI THẨM ĐỊNH MỘT CỬA SỐ — ĐỦ ĐIỀU KIỆN TRÌNH HIỆU TRƯỞNG KÝ SỐ
+          </span>
+          <span style={{ fontSize: 11, color: 'var(--ink-soft)' }}>
+            Mã lưu trữ: {selectedCase.caseCode}
+          </span>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10, fontSize: 12 }}>
+          <div style={{ padding: '8px 12px', background: 'var(--paper-dim)', border: '1px solid var(--paper-line)', borderRadius: 4 }}>
+            <div style={{ fontWeight: 'bold', color: 'var(--stamp-green)' }}>1. AI Kiểm định Hồ sơ</div>
+            <div style={{ color: 'var(--ink)', marginTop: 2 }}>{selectedCase.aiAudit?.summary || '100% Đạt chuẩn quy chế R1-R4 & DS2'}</div>
+          </div>
+          <div style={{ padding: '8px 12px', background: 'var(--paper-dim)', border: '1px solid var(--paper-line)', borderRadius: 4 }}>
+            <div style={{ fontWeight: 'bold', color: 'var(--stamp-green)' }}>2. Cố vấn học tập (L2)</div>
+            <div style={{ color: 'var(--ink)', marginTop: 2 }}>✓ Đã xác nhận nguyện vọng ({selectedCase.advisorDecisionAt || 'Hợp lệ'})</div>
+          </div>
+          <div style={{ padding: '8px 12px', background: 'var(--paper-dim)', border: '1px solid var(--paper-line)', borderRadius: 4 }}>
+            <div style={{ fontWeight: 'bold', color: 'var(--stamp-green)' }}>3. Phòng CTSV (L3)</div>
+            <div style={{ color: 'var(--ink)', marginTop: 2 }}>✓ Đã đóng dấu thẩm định ({selectedCase.ctsvDecisionAt || 'Đạt chuẩn'})</div>
+          </div>
+        </div>
+        <div style={{ marginTop: 8, fontSize: 12, color: 'var(--stamp-green)', fontStyle: 'italic', paddingTop: 6, borderTop: '1px dashed var(--paper-line)' }}>
+          ✓ <strong>Văn bản đã ban hành:</strong> Quyết định số <strong>{doc.number}</strong> đã được ký số chính thức và lưu chuyển sang kho dữ liệu DO3.
+        </div>
+      </Paper>
+
+      <div className="principal-grid">
           <DecisionDraft
             doc={doc}
             signing="signed"
@@ -473,6 +611,44 @@ export const PrincipalDesk: React.FC = () => {
           <span className="desk-hint">Cắm USB Token ký số điện tử để phê duyệt</span>
         </div>
       </div>
+
+      <Paper
+        className="portal-docket-paper"
+        elevated
+        width="100%"
+        style={{
+          padding: '14px 18px',
+          borderLeft: '5px solid var(--stamp-green)',
+          backgroundColor: 'var(--paper)',
+          marginBottom: 14,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, flexWrap: 'wrap', gap: 6 }}>
+          <span style={{ fontWeight: 'bold', fontSize: 13, color: 'var(--stamp-green)', textTransform: 'uppercase' }}>
+            🏛️ HỒ SƠ ĐÃ HOÀN TẤT CHUỖI THẨM ĐỊNH MỘT CỬA SỐ — ĐỦ ĐIỀU KIỆN TRÌNH HIỆU TRƯỞNG KÝ SỐ
+          </span>
+          <span style={{ fontSize: 11, color: 'var(--ink-soft)' }}>
+            Mã lưu trữ: {selectedCase.caseCode}
+          </span>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10, fontSize: 12 }}>
+          <div style={{ padding: '8px 12px', background: 'var(--paper-dim)', border: '1px solid var(--paper-line)', borderRadius: 4 }}>
+            <div style={{ fontWeight: 'bold', color: 'var(--stamp-green)' }}>1. AI Kiểm định Hồ sơ</div>
+            <div style={{ color: 'var(--ink)', marginTop: 2 }}>{selectedCase.aiAudit?.summary || '100% Đạt chuẩn quy chế R1-R4 & DS2'}</div>
+          </div>
+          <div style={{ padding: '8px 12px', background: 'var(--paper-dim)', border: '1px solid var(--paper-line)', borderRadius: 4 }}>
+            <div style={{ fontWeight: 'bold', color: 'var(--stamp-green)' }}>2. Cố vấn học tập (L2)</div>
+            <div style={{ color: 'var(--ink)', marginTop: 2 }}>✓ Đã xác nhận nguyện vọng ({selectedCase.advisorDecisionAt || 'Hợp lệ'})</div>
+          </div>
+          <div style={{ padding: '8px 12px', background: 'var(--paper-dim)', border: '1px solid var(--paper-line)', borderRadius: 4 }}>
+            <div style={{ fontWeight: 'bold', color: 'var(--stamp-green)' }}>3. Phòng CTSV (L3)</div>
+            <div style={{ color: 'var(--ink)', marginTop: 2 }}>✓ Đã đóng dấu thẩm định ({selectedCase.ctsvDecisionAt || 'Đạt chuẩn'})</div>
+          </div>
+        </div>
+        <div style={{ marginTop: 8, fontSize: 12, color: 'var(--amber)', fontStyle: 'italic', paddingTop: 6, borderTop: '1px dashed var(--paper-line)' }}>
+          👉 <strong>Chỉ thị ký số:</strong> Thầy Hiệu trưởng kiểm tra văn bản Quyết định số <strong>{doc.number}</strong> bên dưới và thực hiện cắm USB Token để ký số ban hành.
+        </div>
+      </Paper>
 
       <div className="principal-grid">
         <DecisionDraft

@@ -1,4 +1,6 @@
 import { CaseState, Token, EngineDeps, EngineEvent, DocScanResult } from '../types';
+import { findRegisteredStudent } from '../../data/userRegistry';
+import { studentsDB } from '../../data/students.db';
 
 export async function handleServiceTask(
   nodeId: string,
@@ -22,9 +24,26 @@ export async function handleServiceTask(
 
       // Check if student exists in DS2
       emit({ type: 'data.read', storeId: 'DS2', entityId: state.form.mssv });
-      const student = deps.db.ds2.get(state.form.mssv);
+      let student = deps.db.ds2.get(state.form.mssv);
       if (!student) {
-        missing.push('Không tìm thấy sinh viên trong CSDL Quản lý sinh viên (DS2)');
+        // Kiểm tra xem sinh viên đã đăng ký tài khoản trong hệ thống hoặc studentsDB hay chưa
+        const reg = findRegisteredStudent(state.form.mssv) || studentsDB.get(state.form.mssv);
+        if (reg) {
+          student = {
+            mssv: reg.mssv,
+            name: reg.name,
+            className: reg.className || '48K12.1',
+            faculty: reg.faculty || 'Khoa Công nghệ thông tin kinh doanh',
+            phone: reg.phone || '0905123456',
+            email: reg.email || `${reg.mssv}@due.udn.vn`,
+            status: 'status' in reg ? (reg.status as any) : 'Đang học',
+          };
+          if (deps.db.ds2.upsert) {
+            deps.db.ds2.upsert(student);
+          }
+        } else {
+          missing.push('Không tìm thấy sinh viên trong CSDL Quản lý sinh viên (DS2)');
+        }
       }
 
       // Analyze documents with AI

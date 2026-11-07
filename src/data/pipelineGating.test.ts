@@ -282,4 +282,43 @@ describe('Multi-Role Pipeline Gating & Access Control (Luật gating giữa các
     expect(target?.principalSignerName).toBeUndefined();
     expect(getPrincipalCases().some((c) => c.id === 'BL-DIRTY-01')).toBe(false);
   });
+
+  it('7. Hồ sơ bị trả về ngay tại cổng kiểm tra tự động T1 (status: returned) không chuyển tới L2, L3, L4', () => {
+    const returnedCase: SubmittedCase = {
+      id: 'BL-TEST-RETURNED',
+      caseCode: 'BL-TEST-RETURNED',
+      studentMssv: '251121536907',
+      studentName: 'Trần Thị Thiếu',
+      studentClass: '51K36',
+      studentFaculty: 'Khoa Thương mại',
+      form: {
+        fullName: 'Trần Thị Thiếu',
+        mssv: '251121536907',
+        className: '51K36',
+        faculty: 'Khoa Thương mại',
+        phone: '0905123456',
+        email: '251121536907@due.udn.vn',
+        reason: 'Ốm đau/tai nạn điều trị dài',
+        semesterCount: 1,
+        startSemester: 'Học kỳ 1 năm học 2026–2027',
+        commitment: true,
+      },
+      evidence: [],
+      attachedEvidenceIds: [],
+      submittedAt: '30/10/2026 10:00',
+      day: 0,
+      status: 'returned', // AI phát hiện thiếu minh chứng ngay tại T1/G1
+    };
+
+    saveSubmittedCase(returnedCase);
+
+    // Bàn Cố vấn (L2): Không được nhận hồ sơ này
+    expect(getAdvisorCases().some((c) => c.id === 'BL-TEST-RETURNED')).toBe(false);
+
+    // Bàn CTSV (L3): Không được nhận hồ sơ này
+    expect(getCtsvCases().some((c) => c.id === 'BL-TEST-RETURNED')).toBe(false);
+
+    // Bàn Ban Giám hiệu (L4): Không được nhận hồ sơ này
+    expect(getPrincipalCases().some((c) => c.id === 'BL-TEST-RETURNED')).toBe(false);
+  });
 });

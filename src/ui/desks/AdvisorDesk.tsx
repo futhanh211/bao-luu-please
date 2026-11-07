@@ -164,6 +164,8 @@ const AdvisorCaseDocketList: React.FC<{
                     ? '✓ ĐÃ XÁC NHẬN'
                     : isDeclined
                     ? '✗ KHÔNG XÁC NHẬN'
+                    : c.status === 'returned'
+                    ? '⚠️ TRẢ ĐƠN (BỔ SUNG)'
                     : '⏳ CHỜ DUYỆT (T4)'}
                 </span>
               </div>
@@ -222,11 +224,15 @@ export const AdvisorDesk: React.FC = () => {
   const isCustomCase = usePlaybackStore((s) => s.isCustomCase);
   const isCustomFlow = isCustomCase || sessionMode === 'portal';
 
+  const currentCaseCode = useAppStore((s) => s.caseCode);
   const [submittedCases, setSubmittedCases] = useState<SubmittedCase[]>(() =>
     getAdvisorCases()
   );
   const [selectedCaseId, setSelectedCaseId] = useState<string>(() => {
     const cases = getAdvisorCases();
+    const activeCode = useAppStore.getState().caseCode;
+    const matchActive = cases.find((c) => c.caseCode === activeCode || c.id === activeCode);
+    if (matchActive) return matchActive.id;
     const pending = cases.find((c) => !c.advisorDecision);
     return pending ? pending.id : cases[0]?.id || '';
   });
@@ -244,18 +250,34 @@ export const AdvisorDesk: React.FC = () => {
   const reminder = engine?.state.messages.filter((m) => m.recipient === 'advisor').slice(-1)[0];
 
   useEffect(() => {
-    const cases = getAdvisorCases();
-    setSubmittedCases(cases);
-    if (cases.length > 0) {
-      if (!selectedCaseId || !cases.some((c) => c.id === selectedCaseId)) {
-        const pending = cases.find((c) => !c.advisorDecision);
-        const targetId = pending ? pending.id : cases[0].id;
-        setSelectedCaseId(targetId);
-        const target = cases.find((c) => c.id === targetId);
-        if (target) useAppStore.getState().setCaseCode(target.caseCode);
+    const refresh = () => {
+      const cases = getAdvisorCases();
+      setSubmittedCases(cases);
+      if (cases.length > 0) {
+        setSelectedCaseId((prev) => {
+          const activeCode = useAppStore.getState().caseCode;
+          const matchActive = cases.find((c) => c.caseCode === activeCode || c.id === activeCode);
+          if (matchActive) return matchActive.id;
+          if (prev && cases.some((c) => c.id === prev)) return prev;
+          const pending = cases.find((c) => !c.advisorDecision);
+          const targetId = pending ? pending.id : cases[0].id;
+          const target = cases.find((c) => c.id === targetId);
+          if (target) useAppStore.getState().setCaseCode(target.caseCode);
+          return targetId;
+        });
       }
-    }
-  }, [view]);
+    };
+
+    refresh();
+
+    const handleStorageChange = () => refresh();
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('app:storage_change', handleStorageChange);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('app:storage_change', handleStorageChange);
+    };
+  }, [view, currentCaseCode]);
 
   useEffect(() => {
     setBrief(null);
@@ -457,6 +479,46 @@ export const AdvisorDesk: React.FC = () => {
 
       <div className="advisor-tablet">
         <div className="tablet-screen">
+          {selectedCase.aiAudit && (
+            <Paper
+              className="portal-docket-paper"
+              elevated
+              width="100%"
+              style={{
+                padding: '14px 18px',
+                marginBottom: '14px',
+                borderLeft: `5px solid ${selectedCase.aiAudit.status === 'passed' ? 'var(--stamp-green)' : 'var(--stamp-red)'}`,
+                backgroundColor: 'var(--paper)',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6, flexWrap: 'wrap', gap: 6 }}>
+                <span style={{ fontWeight: 'bold', fontSize: 13, color: selectedCase.aiAudit.status === 'passed' ? 'var(--stamp-green)' : 'var(--stamp-red)', textTransform: 'uppercase' }}>
+                  🤖 BÁO CÁO THẨM ĐỊNH AI TỰ ĐỘNG (KIỂM ĐỊNH TRƯỚC KHI TRÌNH CỐ VẤN) — {selectedCase.aiAudit.score}/100 ĐIỂM
+                </span>
+                <span style={{ fontSize: 11, color: 'var(--ink-soft)' }}>
+                  Thời gian thẩm tra: {selectedCase.aiAudit.auditDate}
+                </span>
+              </div>
+              <div style={{ fontSize: 12.5, color: 'var(--ink)', lineHeight: 1.5, marginBottom: 8 }}>
+                {selectedCase.aiAudit.summary}
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 8, fontSize: 11.5 }}>
+                <div style={{ padding: '6px 10px', background: 'var(--paper-dim)', border: '1px solid var(--paper-line)', borderRadius: 4 }}>
+                  {selectedCase.aiAudit.studentCheck.pass ? '✅' : '❌'} <strong>Người học:</strong> {selectedCase.aiAudit.studentCheck.pass ? 'Hợp lệ chính quy' : 'Thiếu dữ liệu'}
+                </div>
+                <div style={{ padding: '6px 10px', background: 'var(--paper-dim)', border: '1px solid var(--paper-line)', borderRadius: 4 }}>
+                  {selectedCase.aiAudit.ruleCheck.pass ? '✅' : '❌'} <strong>Quy chế R1-R4:</strong> {selectedCase.aiAudit.ruleCheck.pass ? 'Đạt chuẩn 4/4 tiêu chí' : 'Vi phạm quy chế'}
+                </div>
+                <div style={{ padding: '6px 10px', background: 'var(--paper-dim)', border: '1px solid var(--paper-line)', borderRadius: 4 }}>
+                  {selectedCase.aiAudit.evidenceCheck.pass ? '✅' : '⚠️'} <strong>Minh chứng:</strong> {selectedCase.aiAudit.evidenceCheck.pass ? 'Chuẩn xác & Đủ mộc đỏ' : 'Có bất thường'}
+                </div>
+              </div>
+              <div style={{ marginTop: 8, fontSize: 12, color: 'var(--amber)', fontStyle: 'italic', paddingTop: 6, borderTop: '1px dashed var(--paper-line)' }}>
+                👉 <strong>Khuyến nghị cho Thầy/Cô Cố vấn:</strong> {selectedCase.aiAudit.advisorRationale}
+              </div>
+            </Paper>
+          )}
+
           <AdvisorFile
             form={selectedCase.form}
             evidence={selectedCase.evidence}
