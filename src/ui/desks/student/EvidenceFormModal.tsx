@@ -18,10 +18,6 @@ import { analyzeImageVisualFeatures } from '../../../ai/imageScanner';
 import {
   isLiveAvailable,
   createLiveAIFromEnv,
-  getCustomGeminiKey,
-  saveCustomGeminiKey,
-  testGeminiConnection,
-  DEFAULT_GEMINI_API_KEY,
 } from '../../../ai/live';
 import { createSampleEvidenceFile } from '../../../data/sampleEvidenceImages';
 
@@ -71,53 +67,8 @@ export const EvidenceFormModal: React.FC<Props> = ({
   const [scanSummary, setScanSummary] = useState<string | null>(null);
   const [scanStatus, setScanStatus] = useState<'idle' | 'success' | 'warning'>('idle');
 
-  // Quản lý trạng thái kết nối Gemini Vision Live
-  const [isLiveMode, setIsLiveMode] = useState<boolean>(() => isLiveAvailable());
-  const [apiKeyInput, setApiKeyInput] = useState<string>(
-    () => getCustomGeminiKey() || (import.meta.env.VITE_GEMINI_API_KEY ?? '') || DEFAULT_GEMINI_API_KEY
-  );
-  const [showApiKeyInput, setShowApiKeyInput] = useState<boolean>(false);
-  const [keyFeedbackMsg, setKeyFeedbackMsg] = useState<string | null>(null);
-  const [isTestingKey, setIsTestingKey] = useState<boolean>(false);
-
-  const handleSaveApiKey = () => {
-    saveCustomGeminiKey(apiKeyInput);
-    const available = isLiveAvailable();
-    setIsLiveMode(available);
-    if (available) {
-      setKeyFeedbackMsg('✓ Đã kết nối Gemini Vision Live! Hệ thống sẽ đọc ảnh thật trực tiếp.');
-      sfx.playStamp();
-    } else {
-      setKeyFeedbackMsg('Đã xóa API Key (hệ thống quay về chế độ Mock giả lập).');
-      sfx.playKeyClack();
-    }
-  };
-
-  const handleTestConnection = async () => {
-    if (!apiKeyInput.trim()) {
-      setKeyFeedbackMsg('Vui lòng nhập API Key trước khi kiểm tra.');
-      return;
-    }
-    setIsTestingKey(true);
-    setKeyFeedbackMsg('Đang gửi truy vấn kiểm tra đến Google Gemini...');
-    try {
-      const res = await testGeminiConnection(apiKeyInput);
-      if (res.success) {
-        setKeyFeedbackMsg(`✓ ${res.message}`);
-        saveCustomGeminiKey(apiKeyInput);
-        setIsLiveMode(true);
-        sfx.playStamp();
-      } else {
-        setKeyFeedbackMsg(`✕ ${res.message}`);
-        sfx.playBuzz();
-      }
-    } catch (e: unknown) {
-      setKeyFeedbackMsg(`✕ Lỗi kết nối: ${e instanceof Error ? e.message : String(e)}`);
-      sfx.playBuzz();
-    } finally {
-      setIsTestingKey(false);
-    }
-  };
+  // Trạng thái AI Vision (tự động nhận diện)
+  const [isLiveMode] = useState<boolean>(() => isLiveAvailable());
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -529,213 +480,29 @@ export const EvidenceFormModal: React.FC<Props> = ({
                 >
                   📄 Tạo đơn mẫu (ĐHĐN)
                 </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowApiKeyInput((prev) => !prev);
-                    setKeyFeedbackMsg(null);
-                  }}
+                <span
                   style={{
                     fontSize: 11.5,
                     padding: '4px 10px',
                     borderRadius: 14,
-                    background: isLiveMode ? '#e0f2fe' : '#fef3c7',
-                    color: isLiveMode ? '#0369a1' : '#92400e',
-                    border: isLiveMode ? '1.5px solid #0284c7' : '1.5px solid #d97706',
+                    background: '#e0f2fe',
+                    color: '#0369a1',
+                    border: '1.5px solid #0284c7',
                     fontWeight: 'bold',
-                    cursor: 'pointer',
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: 6,
                     boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
                   }}
-                  title="Bấm vào đây để cấu hình kết nối Gemini Vision hoặc chuyển đổi Mock"
+                  title="Hệ thống tự động sử dụng trí tuệ nhân tạo (AI Vision OCR) để nhận diện văn bản trên ảnh"
                 >
-                  {isLiveMode ? (
-                    <>
-                      <span>✨ Gemini Vision Live</span>
-                      <span style={{ fontSize: 10, opacity: 0.85 }}>⚙ Đổi Key</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>🤖 AI OCR (Đa dạng thực thể)</span>
-                      <span style={{ fontSize: 10, background: '#ca8a04', color: '#fff', padding: '1px 6px', borderRadius: 8 }}>
-                        🔑 Gắn Gemini
-                      </span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {/* Thanh trạng thái Gemini Vision & Cấu hình nhanh API Key */}
-            <div
-              style={{
-                marginBottom: 10,
-                padding: '8px 12px',
-                borderRadius: 'var(--radius-sm)',
-                background: isLiveMode ? 'rgba(34, 197, 94, 0.08)' : 'rgba(234, 179, 8, 0.12)',
-                border: `1.5px solid ${isLiveMode ? 'var(--stamp-green)' : '#eab308'}`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                flexWrap: 'wrap',
-                gap: 8,
-                fontSize: 12,
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontSize: 14 }}>{isLiveMode ? '⚡' : '💡'}</span>
-                <span style={{ color: isLiveMode ? 'var(--stamp-green)' : '#854d0e', fontWeight: 600 }}>
-                  {isLiveMode
-                    ? 'Gemini Vision LIVE: Đang đọc ảnh thật trực tiếp qua API Google Gemini (Đã tự động kết nối AI)'
-                    : 'Gemini OCR: Đang ở chế độ Mock giả lập (Chưa gắn API Key)'}
+                  <span>✨ AI Vision OCR</span>
+                  <span style={{ fontSize: 10, background: '#0284c7', color: '#fff', padding: '1px 6px', borderRadius: 8 }}>
+                    Tự động
+                  </span>
                 </span>
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowApiKeyInput((prev) => !prev);
-                  setKeyFeedbackMsg(null);
-                }}
-                style={{
-                  background: isLiveMode ? 'var(--stamp-blue)' : '#ca8a04',
-                  color: '#fff',
-                  border: 'none',
-                  padding: '4px 10px',
-                  borderRadius: 4,
-                  fontSize: 11.5,
-                  fontWeight: 'bold',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 4,
-                }}
-              >
-                <span>{showApiKeyInput ? '✕ Đóng cấu hình' : (isLiveMode ? '⚙ Đổi Key' : '🔑 Gắn Gemini Key')}</span>
-              </button>
             </div>
-
-            {showApiKeyInput && (
-              <div
-                style={{
-                  marginBottom: 12,
-                  padding: '12px 14px',
-                  background: '#fdfcf7',
-                  border: '2px solid var(--stamp-blue)',
-                  borderRadius: 'var(--radius-sm)',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <div style={{ fontSize: 12.5, fontWeight: 'bold', color: 'var(--stamp-blue)' }}>
-                    CẤU HÌNH GOOGLE GEMINI VISION OCR (ĐỌC ẢNH THẬT TRỰC TIẾP)
-                  </div>
-                  <a
-                    href="https://aistudio.google.com/app/apikey"
-                    target="_blank"
-                    rel="noreferrer"
-                    style={{ fontSize: 11.5, color: 'var(--stamp-blue)', textDecoration: 'underline' }}
-                  >
-                    🔗 Lấy API Key miễn phí (Google AI Studio)
-                  </a>
-                </div>
-                <p style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginBottom: 8, lineHeight: 1.4 }}>
-                  Hệ thống đã tự động kết nối sẵn Gemini API Key. Bạn có thể kiểm tra kết nối hoặc dán key khác nếu muốn.
-                </p>
-                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                  <input
-                    type="password"
-                    value={apiKeyInput}
-                    placeholder="Dán Gemini API Key (AIzaSy...) vào đây"
-                    onChange={(e) => setApiKeyInput(e.target.value)}
-                    style={{
-                      flex: '1 1 240px',
-                      padding: '6px 10px',
-                      fontSize: 12,
-                      fontFamily: 'monospace',
-                      border: '1px solid var(--paper-line)',
-                      borderRadius: 'var(--radius-sm)',
-                      background: '#fff',
-                    }}
-                  />
-                  <button
-                    type="button"
-                    disabled={isTestingKey}
-                    onClick={handleTestConnection}
-                    style={{
-                      padding: '6px 12px',
-                      background: 'var(--stamp-blue)',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: 'var(--radius-sm)',
-                      fontWeight: 'bold',
-                      fontSize: 11.5,
-                      cursor: isTestingKey ? 'wait' : 'pointer',
-                      whiteSpace: 'nowrap',
-                    }}
-                    title="Kiểm tra kết nối và độ trễ tới Google Gemini"
-                  >
-                    {isTestingKey ? '⏳ Đang kiểm tra...' : '⚡ Test & Kích hoạt'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleSaveApiKey}
-                    style={{
-                      padding: '6px 12px',
-                      background: 'var(--stamp-green)',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: 'var(--radius-sm)',
-                      fontWeight: 'bold',
-                      fontSize: 11.5,
-                      cursor: 'pointer',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    Lưu
-                  </button>
-                  {apiKeyInput && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setApiKeyInput('');
-                        saveCustomGeminiKey('');
-                        setIsLiveMode(false);
-                        setKeyFeedbackMsg('Đã xóa API Key. Hệ thống quay về chế độ Mock.');
-                      }}
-                      style={{
-                        padding: '6px 10px',
-                        background: '#f1f5f9',
-                        color: '#64748b',
-                        border: '1px solid #cbd5e1',
-                        borderRadius: 'var(--radius-sm)',
-                        fontSize: 11.5,
-                        cursor: 'pointer',
-                      }}
-                    >
-                      Xóa key
-                    </button>
-                  )}
-                </div>
-                {keyFeedbackMsg && (
-                  <div
-                    style={{
-                      marginTop: 8,
-                      padding: '6px 10px',
-                      borderRadius: 4,
-                      fontSize: 11.5,
-                      fontWeight: 600,
-                      background: keyFeedbackMsg.startsWith('✓') ? '#f0fdf4' : '#fef2f2',
-                      color: keyFeedbackMsg.startsWith('✓') ? 'var(--stamp-green)' : 'var(--stamp-red)',
-                      border: `1px solid ${keyFeedbackMsg.startsWith('✓') ? '#bbf7d0' : '#fecaca'}`,
-                    }}
-                  >
-                    {keyFeedbackMsg}
-                  </div>
-                )}
-              </div>
-            )}
 
             <input
               ref={fileInputRef}
