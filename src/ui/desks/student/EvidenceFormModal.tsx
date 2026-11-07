@@ -15,7 +15,14 @@ import { AIService } from '../../../ai/service';
 import { sfx } from '../../audio/sfx';
 import { detectEvidenceCategory } from '../../../ai/mockTemplates';
 import { analyzeImageVisualFeatures } from '../../../ai/imageScanner';
-import { isLiveAvailable, createLiveAIFromEnv, getCustomGeminiKey, saveCustomGeminiKey, testGeminiConnection } from '../../../ai/live';
+import {
+  isLiveAvailable,
+  createLiveAIFromEnv,
+  getCustomGeminiKey,
+  saveCustomGeminiKey,
+  testGeminiConnection,
+  DEFAULT_GEMINI_API_KEY,
+} from '../../../ai/live';
 import { createSampleEvidenceFile } from '../../../data/sampleEvidenceImages';
 
 const CATEGORY_TABS: { key: StudentEvidenceOptionKey; icon: string; label: string }[] = [
@@ -67,7 +74,7 @@ export const EvidenceFormModal: React.FC<Props> = ({
   // Quản lý trạng thái kết nối Gemini Vision Live
   const [isLiveMode, setIsLiveMode] = useState<boolean>(() => isLiveAvailable());
   const [apiKeyInput, setApiKeyInput] = useState<string>(
-    () => getCustomGeminiKey() || (import.meta.env.VITE_GEMINI_API_KEY ?? '')
+    () => getCustomGeminiKey() || (import.meta.env.VITE_GEMINI_API_KEY ?? '') || DEFAULT_GEMINI_API_KEY
   );
   const [showApiKeyInput, setShowApiKeyInput] = useState<boolean>(false);
   const [keyFeedbackMsg, setKeyFeedbackMsg] = useState<string | null>(null);
@@ -581,7 +588,7 @@ export const EvidenceFormModal: React.FC<Props> = ({
                 <span style={{ fontSize: 14 }}>{isLiveMode ? '⚡' : '💡'}</span>
                 <span style={{ color: isLiveMode ? 'var(--stamp-green)' : '#854d0e', fontWeight: 600 }}>
                   {isLiveMode
-                    ? 'Gemini Vision LIVE: Đang đọc ảnh thật trực tiếp qua API Google Gemini'
+                    ? 'Gemini Vision LIVE: Đang đọc ảnh thật trực tiếp qua API Google Gemini (Đã tự động kết nối AI)'
                     : 'Gemini OCR: Đang ở chế độ Mock giả lập (Chưa gắn API Key)'}
                 </span>
               </div>
@@ -634,7 +641,7 @@ export const EvidenceFormModal: React.FC<Props> = ({
                   </a>
                 </div>
                 <p style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginBottom: 8, lineHeight: 1.4 }}>
-                  Dán Google Gemini API Key để hệ thống gửi ảnh tài liệu trực tiếp lên Gemini Vision AI.
+                  Hệ thống đã tự động kết nối sẵn Gemini API Key. Bạn có thể kiểm tra kết nối hoặc dán key khác nếu muốn.
                 </p>
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                   <input

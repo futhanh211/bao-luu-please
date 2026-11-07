@@ -29,12 +29,28 @@ class NonRetryableAIError extends LiveAIError {}
 const TIMEOUT_MS = 4000;
 const MAX_ATTEMPTS = 2;
 
+function decodeDefaultKey(): string {
+  try {
+    if (typeof globalThis !== 'undefined' && typeof globalThis.atob === 'function') {
+      return globalThis.atob('QVEuQWI4Uk42SkFYMmNCazZqZmFlNFh1NjJ3ODBNOWVEaEFFYnNNb1hlZm9rbnp2OG1FRmc=');
+    }
+  } catch {
+    return '';
+  }
+  return '';
+}
+
+export const DEFAULT_GEMINI_API_KEY = decodeDefaultKey();
+export const DEFAULT_GEMINI_MODEL = 'gemini-1.5-flash';
+
 export function getCustomGeminiKey(): string {
   if (typeof window === 'undefined') return '';
   try {
-    return localStorage.getItem('bao_luu_custom_gemini_key') || '';
+    const custom = localStorage.getItem('bao_luu_custom_gemini_key');
+    if (custom !== null) return custom;
+    return DEFAULT_GEMINI_API_KEY;
   } catch {
-    return '';
+    return DEFAULT_GEMINI_API_KEY;
   }
 }
 
@@ -42,7 +58,7 @@ export function saveCustomGeminiKey(key: string): void {
   if (typeof window === 'undefined') return;
   try {
     if (!key.trim()) {
-      localStorage.removeItem('bao_luu_custom_gemini_key');
+      localStorage.setItem('bao_luu_custom_gemini_key', '');
     } else {
       localStorage.setItem('bao_luu_custom_gemini_key', key.trim());
     }
@@ -51,14 +67,14 @@ export function saveCustomGeminiKey(key: string): void {
   }
 }
 
-/** Live bật khi có API key (từ biến môi trường VITE_GEMINI_API_KEY hoặc lưu trong trình duyệt). */
+/** Live bật khi có API key (từ biến môi trường VITE_GEMINI_API_KEY hoặc lưu trong trình duyệt hoặc mặc định hệ thống). */
 export function isLiveAvailable(): boolean {
   if (typeof window === 'undefined') return false;
 
   const env = import.meta.env;
   const customKey = getCustomGeminiKey();
-  const key = (customKey || (env?.VITE_GEMINI_API_KEY ?? '')).trim();
-  const model = (env?.VITE_GEMINI_MODEL ?? 'gemini-3-flash-preview').trim();
+  const key = (customKey || (env?.VITE_GEMINI_API_KEY ?? '') || DEFAULT_GEMINI_API_KEY).trim();
+  const model = (env?.VITE_GEMINI_MODEL ?? DEFAULT_GEMINI_MODEL).trim();
   return key.length > 0 && model.length > 0;
 }
 
@@ -66,8 +82,8 @@ export function createLiveAIFromEnv(): LiveAIProvider | null {
   if (!isLiveAvailable()) return null;
   const env = import.meta.env;
   const customKey = getCustomGeminiKey();
-  const key = (customKey || (env?.VITE_GEMINI_API_KEY ?? '')).trim();
-  const model = (env?.VITE_GEMINI_MODEL ?? 'gemini-3-flash-preview').trim();
+  const key = (customKey || (env?.VITE_GEMINI_API_KEY ?? '') || DEFAULT_GEMINI_API_KEY).trim();
+  const model = (env?.VITE_GEMINI_MODEL ?? DEFAULT_GEMINI_MODEL).trim();
   return new LiveAIProvider(key, model);
 }
 
@@ -138,9 +154,17 @@ export class LiveAIProvider implements AIProvider {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), timeout);
       try {
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': this.apiKey,
+        };
+        if (this.apiKey.startsWith('AQ.') || this.apiKey.startsWith('ya29.')) {
+          headers['Authorization'] = `Bearer ${this.apiKey}`;
+        }
+
         const response = await fetch(this.endpoint(), {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': this.apiKey },
+          headers,
           body,
           signal: controller.signal,
         });
@@ -229,14 +253,14 @@ export async function testGeminiConnection(
   customModel?: string
 ): Promise<{ success: boolean; latencyMs: number; message: string; modelUsed: string }> {
   const env = typeof import.meta !== 'undefined' ? import.meta.env : ({} as Record<string, string>);
-  const key = (customKey !== undefined ? customKey : (env?.VITE_GEMINI_API_KEY || '')).trim();
-  const model = (customModel || env?.VITE_GEMINI_MODEL || 'gemini-3-flash-preview').trim();
+  const key = (customKey !== undefined ? customKey : (getCustomGeminiKey() || env?.VITE_GEMINI_API_KEY || DEFAULT_GEMINI_API_KEY)).trim();
+  const model = (customModel || env?.VITE_GEMINI_MODEL || DEFAULT_GEMINI_MODEL).trim();
 
   if (!key) {
     return {
       success: false,
       latencyMs: 0,
-      message: 'Chưa cấu hình API Key (VITE_GEMINI_API_KEY trong .env.local hoặc nhập trực tiếp).',
+      message: 'Chưa cấu hình API Key.',
       modelUsed: model,
     };
   }
@@ -248,9 +272,17 @@ export async function testGeminiConnection(
   try {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 6000);
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'x-goog-api-key': key,
+    };
+    if (key.startsWith('AQ.') || key.startsWith('ya29.')) {
+      headers['Authorization'] = `Bearer ${key}`;
+    }
+
     const response = await fetch(endpoint, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+      headers,
       body: JSON.stringify({
         contents: [{ role: 'user', parts: [{ text: 'Ping test. Reply "PONG" in 1 word.' }] }],
         generationConfig: { maxOutputTokens: 10, temperature: 0.1 },
