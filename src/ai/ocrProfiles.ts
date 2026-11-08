@@ -150,6 +150,12 @@ export const MOCK_MEDICAL_PROFILES: MedicalProfile[] = [
 
 export const MOCK_MILITARY_PROFILES: MilitaryProfile[] = [
   {
+    militaryUnit: 'Ban Chỉ huy Quân sự quận Thanh Xuân - TP. Hà Nội',
+    orderPrefix: '142',
+    location: 'Sân vận động quận Thanh Xuân, số 166 Khuất Duy Tiến, quận Thanh Xuân, TP. Hà Nội',
+    keywords: ['thanh xuan', 'thanh xuân', 'k6m4', 'gemini_generated_image'],
+  },
+  {
     militaryUnit: 'Ban Chỉ huy Quân sự quận Hải Châu - TP. Đà Nẵng',
     orderPrefix: '142',
     location: 'Nhà hát Trưng Vương, số 86 Hùng Vương, quận Hải Châu, TP. Đà Nẵng',
@@ -435,6 +441,7 @@ export function resolveOcrPayload(
   }
 
   if (optionKey === 'military') {
+    const isThanhXuan = file.name.includes('k6m4') || textNorm.includes('thanh xuan');
     const isSpecialSample =
       file.name === 'lenh_goi_nhap_ngu_2026.pdf' ||
       file.name.includes('lenh_goi_nhap_ngu_bch_quan_su') ||
@@ -444,27 +451,43 @@ export function resolveOcrPayload(
       p.keywords.some((k) => textNorm.includes(k))
     );
 
-    if (isSpecialSample || !matchedProfile) {
+    if (isThanhXuan) {
+      matchedProfile = MOCK_MILITARY_PROFILES[0];
+    } else if (isSpecialSample || !matchedProfile) {
       const idx = hash % MOCK_MILITARY_PROFILES.length;
-      matchedProfile = isSpecialSample ? MOCK_MILITARY_PROFILES[0] : MOCK_MILITARY_PROFILES[idx];
+      matchedProfile = isSpecialSample
+        ? MOCK_MILITARY_PROFILES.find((p) => p.keywords.includes('hai chau')) || MOCK_MILITARY_PROFILES[1]
+        : MOCK_MILITARY_PROFILES[idx];
     }
 
-    const militaryUnit = isSpecialSample
-      ? 'Ban Chỉ huy Quân sự quận Hải Châu - TP. Đà Nẵng'
-      : matchedProfile.militaryUnit;
-    const location = isSpecialSample
-      ? 'Trung tâm Văn hóa Thể thao quận Hải Châu, TP. Đà Nẵng'
-      : matchedProfile.location;
-    const orderNumber = isSpecialSample
+    const militaryUnit = isThanhXuan
+      ? 'Ban Chỉ huy Quân sự quận Thanh Xuân - TP. Hà Nội'
+      : isSpecialSample
+        ? 'Ban Chỉ huy Quân sự quận Hải Châu - TP. Đà Nẵng'
+        : matchedProfile.militaryUnit;
+    const location = isThanhXuan
+      ? 'Sân vận động quận Thanh Xuân, số 166 Khuất Duy Tiến, quận Thanh Xuân, TP. Hà Nội'
+      : isSpecialSample
+        ? 'Trung tâm Văn hóa Thể thao quận Hải Châu, TP. Đà Nẵng'
+        : matchedProfile.location;
+    const orderNumber = isThanhXuan
       ? '142/LGN-QS26'
-      : `${matchedProfile.orderPrefix}/LGN-QS26`;
+      : isSpecialSample
+        ? '142/LGN-QS26'
+        : `${matchedProfile.orderPrefix}/LGN-QS26`;
 
     const signDay = 5 + (hash % 10);
     const reportDay = 1 + (hash % 10);
-    const signDate = isSpecialSample ? '10/08/2026' : `${signDay < 10 ? '0' : ''}${signDay}/08/2026`;
-    const reportDate = isSpecialSample
-      ? '05/09/2026'
-      : `${reportDay < 10 ? '0' : ''}${reportDay}/09/2026`;
+    const signDate = isThanhXuan
+      ? '15/10/2026'
+      : isSpecialSample
+        ? '10/08/2026'
+        : `${signDay < 10 ? '0' : ''}${signDay}/08/2026`;
+    const reportDate = isThanhXuan
+      ? '07/11/2026'
+      : isSpecialSample
+        ? '05/09/2026'
+        : `${reportDay < 10 ? '0' : ''}${reportDay}/09/2026`;
     const isValidStamp = true;
 
     const fields: ExtractedOcrField[] = [

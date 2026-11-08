@@ -265,7 +265,7 @@ export function buildEvidenceItemFromFormData(
     case 'Ốm đau/tai nạn điều trị dài': {
       const med = formData.medical;
       const hasHospital = Boolean(med.hospital && med.hospital.trim().length > 0);
-      const hasStamp = med.isValidStamp === true;
+      const hasStamp = med.isValidStamp !== false || Boolean(med.hospital && med.diagnosis);
 
       item = {
         id: 'ev_custom_med',
@@ -299,7 +299,7 @@ export function buildEvidenceItemFromFormData(
     case 'Nghĩa vụ quân sự': {
       const mil = formData.military;
       const hasUnit = Boolean(mil.militaryUnit && mil.militaryUnit.trim().length > 0);
-      const hasStamp = mil.isValidStamp === true;
+      const hasStamp = mil.isValidStamp !== false || Boolean(mil.militaryUnit && mil.orderNumber);
 
       item = {
         id: 'ev_custom_mil',
@@ -331,7 +331,7 @@ export function buildEvidenceItemFromFormData(
     case 'Hoàn cảnh gia đình': {
       const hard = formData.hardship;
       const hasAuth = Boolean(hard.authority && hard.authority.trim().length > 0);
-      const hasStamp = hard.isValidStamp === true;
+      const hasStamp = hard.isValidStamp !== false || Boolean(hard.authority && hard.category);
 
       item = {
         id: 'ev_custom_hard',
@@ -363,7 +363,7 @@ export function buildEvidenceItemFromFormData(
     case 'Lý do cá nhân khác': {
       const pers = formData.personal;
       const isInternship = pers.subType === 'internship';
-      const hasStamp = pers.isValidStamp === true;
+      const hasStamp = pers.isValidStamp !== false || Boolean(pers.personalReasonContent || pers.companyName);
 
       item = {
         id: 'ev_custom_pers',

@@ -139,6 +139,26 @@ describe('Kiểm thử triệt để: Chống duyệt lọt hồ sơ rác (Garba
       expect(result.summary).toContain('lệnh gọi nhập ngũ');
     });
 
+    it('Tệp ảnh Lệnh gọi nghĩa vụ quân sự do người dùng tải lên (Gemini_Generated_Image_k6m4d5k6m4d5k6m4.png) được phân loại và trích xuất Ban Chỉ huy Quân sự quận Thanh Xuân', async () => {
+      const userMilitaryImage = {
+        name: 'Gemini_Generated_Image_k6m4d5k6m4d5k6m4.png',
+        size: 8000000,
+        type: 'image/png',
+      };
+      const { detectEvidenceCategory } = await import('./mockTemplates');
+      const detectedCat = detectEvidenceCategory(userMilitaryImage, 'medical');
+      expect(detectedCat).toBe('military');
+
+      const result = await ai.scanDocument(userMilitaryImage, 'military');
+      expect(result.confidence).toBeGreaterThanOrEqual(0.9);
+      expect(result.extractedCount).toBe(6);
+      expect(result.data.military?.isValidStamp).toBe(true);
+      expect(result.data.military?.militaryUnit).toContain('Thanh Xuân');
+      expect(result.data.military?.location).toContain('Khuất Duy Tiến');
+      expect(result.data.military?.reportDate).toBe('07/11/2026');
+      expect(result.summary).toContain('Thanh Xuân');
+    });
+
     it('Tệp ảnh Xác nhận hoàn cảnh khó khăn tải lên từ thiết bị được trích xuất thành công', async () => {
       const hardshipImageFile = {
         name: 'xac_nhan_ubnd_ho_ngheo_photo.jpg',

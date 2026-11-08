@@ -145,7 +145,7 @@ export const EvidenceFormModal: React.FC<Props> = ({
         setAutoFilledFields([]);
         const rejectMsg =
           visualAnalysis.rejectReason ||
-          'Không tìm thấy thông tin hợp lệ trên tài liệu để tự động điền các trường. Hình ảnh không phải là văn bản hành chính in trên giấy trắng có con dấu mộc đỏ.';
+          'Không tìm thấy thông tin hợp lệ trên tài liệu để tự động điền các trường. Hình ảnh không phải là văn bản hành chính hợp lệ.';
         setFileError(`TÀI LIỆU BỊ LOẠI BỎ: ${rejectMsg}`);
         setScanSummary(rejectMsg);
         sfx.playBuzz();
@@ -155,19 +155,21 @@ export const EvidenceFormModal: React.FC<Props> = ({
       const liveAvailable = isLiveAvailable();
       let effectiveCategory = targetCategory || category;
 
-      // Nếu ở chế độ Mock, kiểm tra phân loại tài liệu
-      if (!liveAvailable) {
-        const detectedCat = detectEvidenceCategory(fileToScan, effectiveCategory);
-        if (!detectedCat) {
-          setScanStatus('warning');
-          setAutoFilledFields([]);
-          const rejectMsg = `Tệp "${fileToScan.name}" không phát hiện thông tin chứng thực của cơ quan có thẩm quyền để tự động điền các trường. Vui lòng kiểm tra lại chất lượng tài liệu hoặc tự nhập thông tin.`;
-          setFileError(`TÀI LIỆU BỊ LOẠI BỎ: ${rejectMsg}`);
-          setScanSummary(rejectMsg);
-          sfx.playBuzz();
-          return;
-        }
+      // Tự động nhận diện danh mục tài liệu từ tệp tải lên
+      const detectedCat = detectEvidenceCategory(fileToScan, effectiveCategory);
+      if (detectedCat) {
         effectiveCategory = detectedCat;
+        if (effectiveCategory !== category) {
+          setCategory(effectiveCategory);
+        }
+      } else if (!liveAvailable) {
+        setScanStatus('warning');
+        setAutoFilledFields([]);
+        const rejectMsg = `Tệp "${fileToScan.name}" không phát hiện thông tin chứng thực của cơ quan có thẩm quyền để tự động điền các trường. Vui lòng kiểm tra lại chất lượng tài liệu hoặc tự nhập thông tin.`;
+        setFileError(`TÀI LIỆU BỊ LOẠI BỎ: ${rejectMsg}`);
+        setScanSummary(rejectMsg);
+        sfx.playBuzz();
+        return;
       }
 
       const activeAi = getActiveAI();
@@ -219,7 +221,7 @@ export const EvidenceFormModal: React.FC<Props> = ({
               ...(m.admissionDate ? { admissionDate: m.admissionDate } : {}),
               ...(m.dischargeDate ? { dischargeDate: m.dischargeDate } : {}),
               ...(m.diagnosis ? { diagnosis: m.diagnosis } : {}),
-              ...(m.isValidStamp !== undefined ? { isValidStamp: m.isValidStamp } : {}),
+              isValidStamp: m.isValidStamp !== undefined ? m.isValidStamp : true,
             },
           }));
           filledKeys.push(...result.fields.map((f) => f.key));
@@ -234,7 +236,7 @@ export const EvidenceFormModal: React.FC<Props> = ({
               ...(mil.signDate ? { signDate: mil.signDate } : {}),
               ...(mil.reportDate ? { reportDate: mil.reportDate } : {}),
               ...(mil.location ? { location: mil.location } : {}),
-              ...(mil.isValidStamp !== undefined ? { isValidStamp: mil.isValidStamp } : {}),
+              isValidStamp: mil.isValidStamp !== undefined ? mil.isValidStamp : true,
             },
           }));
           filledKeys.push(...result.fields.map((f) => f.key));
@@ -249,7 +251,7 @@ export const EvidenceFormModal: React.FC<Props> = ({
               ...(h.guardianName ? { guardianName: h.guardianName } : {}),
               ...(h.confirmDate ? { confirmDate: h.confirmDate } : {}),
               ...(h.description ? { description: h.description } : {}),
-              ...(h.isValidStamp !== undefined ? { isValidStamp: h.isValidStamp } : {}),
+              isValidStamp: h.isValidStamp !== undefined ? h.isValidStamp : true,
             },
           }));
           filledKeys.push(...result.fields.map((f) => f.key));
@@ -267,7 +269,7 @@ export const EvidenceFormModal: React.FC<Props> = ({
               ...(p.internshipRole ? { internshipRole: p.internshipRole } : {}),
               ...(p.startDate ? { startDate: p.startDate } : {}),
               ...(p.endDate ? { endDate: p.endDate } : {}),
-              ...(p.isValidStamp !== undefined ? { isValidStamp: p.isValidStamp } : {}),
+              isValidStamp: p.isValidStamp !== undefined ? p.isValidStamp : true,
             },
           }));
           filledKeys.push(...result.fields.map((f) => f.key));
