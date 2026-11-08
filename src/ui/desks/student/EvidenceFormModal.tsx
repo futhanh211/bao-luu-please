@@ -257,18 +257,19 @@ export const EvidenceFormModal: React.FC<Props> = ({
           filledKeys.push(...result.fields.map((f) => f.key));
         } else if (finalCategory === 'personal' && result.data.personal) {
           const p = result.data.personal;
+          const isLetterType = p.subType === 'personal_letter';
           setData((prev) => ({
             ...prev,
             personal: {
               ...prev.personal,
-              ...(p.subType ? { subType: p.subType } : {}),
+              subType: p.subType || 'personal_letter',
               ...(p.personalReasonContent ? { personalReasonContent: p.personalReasonContent } : {}),
               ...(p.parentName ? { parentName: p.parentName } : {}),
               ...(p.parentPhone ? { parentPhone: p.parentPhone } : {}),
-              ...(p.companyName ? { companyName: p.companyName } : {}),
-              ...(p.internshipRole ? { internshipRole: p.internshipRole } : {}),
-              ...(p.startDate ? { startDate: p.startDate } : {}),
-              ...(p.endDate ? { endDate: p.endDate } : {}),
+              companyName: isLetterType ? '' : (p.companyName || prev.personal.companyName),
+              internshipRole: isLetterType ? '' : (p.internshipRole || prev.personal.internshipRole),
+              startDate: isLetterType ? '' : (p.startDate || prev.personal.startDate),
+              endDate: isLetterType ? '' : (p.endDate || prev.personal.endDate),
               isValidStamp: p.isValidStamp !== undefined ? p.isValidStamp : true,
             },
           }));

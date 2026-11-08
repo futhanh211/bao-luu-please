@@ -153,6 +153,27 @@ describe('AI OCR Document Scanner (Session 1)', () => {
       expect(resIntern.data.personal?.companyName).toContain('Danang Tech Solutions');
     });
 
+    it('Quét Căn cước công dân (cccdCatTuong - Copy.jpg) trích xuất đúng thông tin cá nhân, KHÔNG bị quét nhầm thành giấy thực tập', async () => {
+      const cccdFile: UploadedEvidenceFile = {
+        name: 'cccdCatTuong - Copy.jpg',
+        size: 85000,
+        type: 'image/jpeg',
+      };
+      const { detectEvidenceCategory } = await import('./mockTemplates');
+      const detectedCat = detectEvidenceCategory(cccdFile);
+      expect(detectedCat).toBe('personal');
+
+      const resCccd = await mock.scanDocument(cccdFile, 'personal');
+      expect(resCccd.data.personal?.subType).toBe('personal_letter');
+      expect(resCccd.data.personal?.companyName).toBeUndefined();
+      expect(resCccd.data.personal?.internshipRole).toBeUndefined();
+      expect(resCccd.data.personal?.personalReasonContent).toContain('045195003605');
+      expect(resCccd.data.personal?.personalReasonContent).toContain('NGUYỄN THỊ CÁT TƯỜNG');
+      expect(resCccd.summary).toContain('Căn cước công dân');
+      expect(resCccd.summary).not.toContain('thực tập');
+      expect(resCccd.summary).not.toContain('FPT Software');
+    });
+
     it('Đa dạng hóa thông minh (Khắc phục lỗi luôn ra cùng 1 đáp án): Các tệp khác nhau trích xuất bệnh viện, bác sĩ và chẩn đoán khác nhau', async () => {
       const fileHoanMy: UploadedEvidenceFile = {
         name: 'giay_xac_nhan_bv_hoan_my_da_nang.jpg',

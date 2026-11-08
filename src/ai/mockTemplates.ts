@@ -487,6 +487,11 @@ export const DOCUMENT_CATEGORY_KEYWORDS: Record<
       'trao doi',
       'viec lam',
       'khoi nghiep',
+      'cccd',
+      'can cuoc',
+      'can cuoc cong dan',
+      'cmnd',
+      'dinh danh',
     ],
   },
 };
@@ -522,7 +527,11 @@ export function detectEvidenceCategory(
   if (
     file.name.includes('don_trinh_bay') ||
     file.name.includes('thuc_tap') ||
-    file.svgRaw?.includes('THỰC TẬP')
+    file.name.toLowerCase().includes('cccd') ||
+    file.name.toLowerCase().includes('can_cuoc') ||
+    file.name.toLowerCase().includes('cmnd') ||
+    file.svgRaw?.includes('THỰC TẬP') ||
+    file.svgRaw?.includes('CĂN CƯỚC')
   ) {
     return 'personal';
   }
@@ -572,6 +581,14 @@ export function detectEvidenceCategory(
     'viec lam',
     'khoi nghiep',
     'ngoai truong',
+    'cccd',
+    'can cuoc',
+    'can cuoc cong dan',
+    'cmnd',
+    'chung minh nhan dan',
+    'the can cuoc',
+    'dinh danh',
+    'citizen identity card',
   ];
   if (personalCues.some((c) => norm.includes(c))) {
     return 'personal';

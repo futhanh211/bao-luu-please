@@ -571,12 +571,70 @@ export function resolveOcrPayload(
   }
 
   // Personal
-  const isLetter =
-    textNorm.includes('don') ||
-    textNorm.includes('trinh bay') ||
-    textNorm.includes('giai trinh');
+  // 1. Nhận diện Căn cước công dân (CCCD / CMND / Citizen Identity Card)
+  const isCccd =
+    textNorm.includes('cccd') ||
+    textNorm.includes('can cuoc') ||
+    textNorm.includes('cmnd') ||
+    textNorm.includes('chung minh') ||
+    textNorm.includes('identity card') ||
+    textNorm.includes('dinh danh');
 
-  if (isLetter) {
+  if (isCccd) {
+    const isCatTuong =
+      textNorm.includes('cattuong') ||
+      textNorm.includes('045195003605') ||
+      file.name.toLowerCase().includes('cattuong');
+    const cccdNumber = isCatTuong
+      ? '045195003605'
+      : `04820${1000000 + (hash % 8999999)}`;
+    const citizenName = isCatTuong ? 'NGUYỄN THỊ CÁT TƯỜNG' : 'Nguyễn Thị Cát Tường';
+    const dob = '27/07/2007';
+    const residence = isCatTuong
+      ? '105 Quang Trung, thị trấn Hồ Xá, huyện Vĩnh Linh, tỉnh Quảng Trị'
+      : 'Thị trấn Hồ Xá, huyện Vĩnh Linh, tỉnh Quảng Trị';
+    const origin = 'Hồ Xá, Vĩnh Linh, Quảng Trị';
+
+    const personalReasonContent = `Đính kèm Căn cước công dân số: ${cccdNumber} (Họ và tên: ${citizenName}, Ngày sinh: ${dob}, Quê quán: ${origin}, Nơi thường trú: ${residence}) để xác thực định danh cá nhân đính kèm đơn trình bày nguyện vọng cá nhân.`;
+    const parentName = 'Nguyễn Văn Hùng';
+    const parentPhone = '0905123456';
+    const isValidStamp = true;
+
+    const fields: ExtractedOcrField[] = [
+      { key: 'subType', label: 'Loại hồ sơ', value: 'personal_letter', confidence: 0.98 },
+      { key: 'idNumber', label: 'Số Căn cước công dân', value: cccdNumber, confidence: 0.99 },
+      { key: 'citizenName', label: 'Họ và tên công dân', value: citizenName, confidence: 0.99 },
+      { key: 'dob', label: 'Ngày sinh', value: dob, confidence: 0.97 },
+      { key: 'residence', label: 'Nơi thường trú', value: residence, confidence: 0.96 },
+      { key: 'personalReasonContent', label: 'Nội dung định danh & đơn', value: personalReasonContent, confidence: 0.95 },
+      { key: 'parentName', label: 'Họ tên phụ huynh', value: parentName, confidence: 0.93 },
+      { key: 'parentPhone', label: 'SĐT phụ huynh', value: parentPhone, confidence: 0.92 },
+      { key: 'isValidStamp', label: 'Xác thực định danh', value: isValidStamp, confidence: 0.98 },
+    ];
+
+    return {
+      summary: `Đã nhận diện Căn cước công dân (Số: ${cccdNumber} - ${citizenName}) từ ${file.name}. Thông tin định danh đã được tự động cập nhật vào Đơn trình bày lý do cá nhân.`,
+      data: {
+        personal: {
+          subType: 'personal_letter',
+          personalReasonContent,
+          parentName,
+          parentPhone,
+          isValidStamp,
+        },
+      },
+      fields,
+    };
+  }
+
+  // 2. Đơn giải trình lý do cá nhân
+  const isInternship =
+    textNorm.includes('thuc tap') ||
+    textNorm.includes('internship') ||
+    textNorm.includes('doanh nghiep') ||
+    file.name === 'xac_nhan_thuc_tap_doanh_nghiep.pdf';
+
+  if (!isInternship) {
     const letterProfile = MOCK_LETTER_PROFILES[hash % MOCK_LETTER_PROFILES.length];
     const personalReasonContent = letterProfile.personalReasonContent;
     const parentName = letterProfile.parentName;
@@ -606,7 +664,7 @@ export function resolveOcrPayload(
     };
   }
 
-  // Internship
+  // 3. Giấy tiếp nhận thực tập ngoài trường (Internship)
   const isSpecialSample = file.name === 'xac_nhan_thuc_tap_doanh_nghiep.pdf';
 
   let matchedProfile = MOCK_INTERNSHIP_PROFILES.find((p) =>
