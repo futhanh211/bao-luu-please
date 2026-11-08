@@ -19,7 +19,6 @@ import {
   isLiveAvailable,
   createLiveAIFromEnv,
 } from '../../../ai/live';
-import { createSampleEvidenceFile } from '../../../data/sampleEvidenceImages';
 
 const CATEGORY_TABS: { key: StudentEvidenceOptionKey; icon: string; label: string }[] = [
   { key: 'medical', icon: '🏥', label: 'Bệnh viện / Y tế' },
@@ -125,21 +124,6 @@ export const EvidenceFormModal: React.FC<Props> = ({
       setFileError('Không thể đọc tệp từ thiết bị. Vui lòng thử lại.');
     };
     reader.readAsDataURL(file);
-  };
-
-  const handleLoadSample = (sampleCat?: StudentEvidenceOptionKey | React.MouseEvent) => {
-    const targetCat = typeof sampleCat === 'string' ? sampleCat : category;
-    const sample = createSampleEvidenceFile(targetCat, data.fullName || 'Nguyễn Minh Khoa');
-    setImgLoadError(false);
-    setUploadedFile(sample);
-    setData((prev) => ({ ...prev, uploadedFile: sample }));
-    setFileError(null);
-    setScanSummary(null);
-    setScanStatus('idle');
-    setAutoFilledFields([]);
-    sfx.playPaperSlide();
-    // Tự động kích hoạt AI quét & điền trường ngay khi tạo đơn mẫu
-    void executeAiScan(sample, targetCat);
   };
 
   const executeAiScan = async (
@@ -492,23 +476,6 @@ export const EvidenceFormModal: React.FC<Props> = ({
                 </span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <button
-                  type="button"
-                  className="ai-sample-preset-btn"
-                  onClick={() => handleLoadSample()}
-                  style={{
-                    background: '#fef3c7',
-                    color: '#92400e',
-                    border: '1.5px solid #d97706',
-                    fontWeight: 'bold',
-                    padding: '4px 10px',
-                    fontSize: 12,
-                    cursor: 'pointer',
-                  }}
-                  title="Tạo đơn mẫu chuẩn ĐH Đà Nẵng để thử nghiệm nhanh không cần tìm tệp ngoài"
-                >
-                  📄 Tạo đơn mẫu (ĐHĐN)
-                </button>
                 <span
                   style={{
                     fontSize: 11.5,
@@ -568,39 +535,12 @@ export const EvidenceFormModal: React.FC<Props> = ({
                   transition: 'all 0.15s ease',
                 }}
               >
-                <div style={{ fontSize: 24, marginBottom: 2 }}>📂</div>
-                <div style={{ fontWeight: 'bold', fontSize: 12.5, color: 'var(--ink)' }}>
+                <div style={{ fontSize: 26, marginBottom: 4 }}>📂</div>
+                <div style={{ fontWeight: 'bold', fontSize: 13, color: 'var(--ink)' }}>
                   Bấm vào đây để chọn tệp ảnh hoặc PDF từ máy tính
                 </div>
-                <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 2 }}>
+                <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 4 }}>
                   Hỗ trợ định dạng hình ảnh (PNG, JPG, SVG) hoặc tệp tài liệu PDF
-                </div>
-                <div style={{ marginTop: 10 }}>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleLoadSample();
-                    }}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 6,
-                      padding: '7px 16px',
-                      fontFamily: 'var(--font-paper)',
-                      fontSize: 12.5,
-                      fontWeight: 'bold',
-                      background: '#fef3c7',
-                      color: '#92400e',
-                      border: '1.5px solid #d97706',
-                      borderRadius: 'var(--radius-sm)',
-                      cursor: 'pointer',
-                    }}
-                    title="Tự động tạo đơn mẫu chuẩn ĐHĐN để thử nghiệm OCR 1-chạm"
-                  >
-                    <span>📄</span>
-                    <span>TẠO ĐƠN MẪU (ĐHĐN)</span>
-                  </button>
                 </div>
               </div>
             ) : (
