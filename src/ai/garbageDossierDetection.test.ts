@@ -309,6 +309,70 @@ describe('Kiểm thử triệt để: Chống duyệt lọt hồ sơ rác (Garba
       expect(events.some((e) => e.type === 'node.entered' && e.nodeId === 'T9')).toBe(false);
     });
 
+    it('Nộp hồ sơ minh chứng không có con dấu mộc đỏ -> T1 phát hiện -> G1 trả hồ sơ T2, không bao giờ tới tay L2 Cố vấn', async () => {
+      const baseScenario = SCENARIOS[0];
+      const customAi = new MockAIProvider(undefined, 0);
+      const testDeps: EngineDeps = {
+        clock,
+        db: { ds1: academicFinanceDb, ds2: studentsDb },
+        ai: customAi,
+      };
+
+      const engine = createEngine(PROCESS_DEF, baseScenario, testDeps);
+      const events: EngineEvent[] = [];
+      engine.subscribe((e) => events.push(e));
+
+      const unsealedEvidence: EvidenceItem[] = [
+        {
+          id: 'ev_no_stamp_1',
+          type: 'medical_record',
+          name: 'Giấy xác nhận nằm viện chưa có dấu mộc',
+          content: 'Bệnh nhân điều trị nhưng đơn vị chưa đóng dấu mộc đỏ',
+          fields: [
+            { id: 'hospital', label: 'Bệnh viện', value: 'Bệnh viện C Đà Nẵng' },
+            { id: 'hospitalStamp', label: 'Dấu bệnh viện', value: 'Chưa có dấu mộc đỏ' },
+          ],
+          issueNotes: 'Giấy xác nhận chưa có chữ ký và dấu mộc đỏ của Bệnh viện theo quy định',
+        },
+      ];
+
+      await engine.start({
+        form: {
+          fullName: 'Lê Không Dấu',
+          mssv: '3121102998',
+          className: '47K12.1',
+          faculty: 'Khoa CNTT Kinh doanh',
+          phone: '0905123456',
+          email: 'khongdau@due.edu.vn',
+          reason: 'Ốm đau/tai nạn điều trị dài',
+          semesterCount: 1,
+          startSemester: 'Học kỳ 1, Năm học 2026-2027',
+          commitment: true,
+        },
+        attachedEvidenceIds: ['ev_no_stamp_1'],
+        evidence: unsealedEvidence,
+      });
+
+      await engine.runUntilBlocked();
+
+      // Kiểm tra G1 rẽ T2 (Trả hồ sơ)
+      const g1Branch = events.find((e) => e.type === 'edge.traversed' && e.from === 'G1');
+      expect(g1Branch).toBeDefined();
+      expect((g1Branch as { to: string }).to).toBe('T2');
+
+      // Kết thúc tại E_END_RETURNED
+      const caseEnded = events.find((e) => e.type === 'case.ended');
+      expect(caseEnded).toBeDefined();
+      if (caseEnded?.type === 'case.ended') {
+        expect(caseEnded.endEventId).toBe('E_END_RETURNED');
+        expect(caseEnded.outcome).toBe('Trả hồ sơ');
+      }
+
+      // Tuyệt đối KHÔNG đến tay L2 Cố vấn học tập (T4)
+      expect(events.some((e) => e.type === 'node.entered' && e.nodeId === 'T4')).toBe(false);
+      expect(events.some((e) => e.type === 'task.assigned' && (e as { taskId?: string }).taskId === 'T4')).toBe(false);
+    });
+
     it('Nộp form với các trường bắt buộc rỗng hoặc chỉ có khoảng trắng -> bị chặn tại T1', async () => {
       const baseScenario = SCENARIOS[0];
       const engine = createEngine(PROCESS_DEF, baseScenario, deps);

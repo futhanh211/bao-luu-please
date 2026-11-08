@@ -430,7 +430,7 @@ export const StudentDesk: React.FC = () => {
                   )}
                 </div>
                 <div style={{ fontSize: 10, color: 'var(--ink-soft)', marginTop: 2, textAlign: 'center' }}>
-                  Ô viền đỏ = trường bắt buộc còn trống. Cứ nộp — T1 sẽ kiểm tra và trả kết quả tức thì.
+                  Hệ thống AI sẽ tự động kiểm tra con dấu mộc đỏ trước khi chuyển hồ sơ đến Cố vấn học tập (L2). Hồ sơ không có con dấu hợp lệ sẽ được trả lại ngay.
                 </div>
               </>
             )}

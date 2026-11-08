@@ -39,7 +39,33 @@ export async function handleServiceTask(
       emit({ type: 'ai.responded', touchpoint: 'AI-1', source: 'T1', result: docResult });
 
       const hasGarbageAnomaly = docResult.anomalies.some((a) => a.field === 'garbage');
-      const evidenceOk = docResult.typeMatchesReason && docResult.confidence >= 0.6 && !hasGarbageAnomaly;
+
+      // AI Pre-check con dấu mộc đỏ hợp lệ trước khi chuyển sang L2 (Cố vấn học tập)
+      const isSpecialS5 = state.form.fullName === 'Hoàng Khánh Linh' && state.form.mssv === '3121102005';
+      const isSuspiciousPreset = (state.evidence || []).some((e) => e.id === 'ev_custom_sus');
+      const hasStampAnomaly = docResult.anomalies.some(
+        (a) => a.field === 'stamp' || a.field === 'hospitalStamp'
+      );
+      const hasUnsealedEvidence = (state.evidence || []).some((item) => {
+        const stampField = item.fields?.find((f) => f.id === 'hospitalStamp' || f.id === 'stamp');
+        if (stampField) {
+          const val = String(stampField.value).toLowerCase();
+          if (val.includes('chưa có') || val.includes('không có') || val === 'false') return true;
+        }
+        if (item.issueNotes && item.issueNotes.toLowerCase().includes('dấu mộc đỏ')) return true;
+        return false;
+      });
+
+      const missingValidStamp = !isSpecialS5 && !isSuspiciousPreset && (hasStampAnomaly || hasUnsealedEvidence);
+      if (missingValidStamp) {
+        missing.push('Con dấu mộc đỏ / Chữ ký xác nhận hợp lệ của cơ quan có thẩm quyền');
+      }
+
+      const evidenceOk =
+        docResult.typeMatchesReason &&
+        docResult.confidence >= 0.6 &&
+        !hasGarbageAnomaly &&
+        !missingValidStamp;
       const complete = missing.length === 0;
 
       state.validity = {

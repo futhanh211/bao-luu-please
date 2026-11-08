@@ -101,10 +101,13 @@ export const EvidenceFormModal: React.FC<Props> = ({
         setData((prev) => ({ ...prev, uploadedFile: fData }));
         // Tự động nhận diện loại tài liệu từ tệp tải lên
         const detected = detectEvidenceCategory(fData, category);
+        const targetCategory = detected || category;
         if (detected && detected !== category) {
           setCategory(detected);
         }
         sfx.playPaperSlide();
+        // Tự động kích hoạt AI quét & điền trường ngay khi tệp được tải lên
+        void executeAiScan(fData, targetCategory);
       };
 
       if (file.type.includes('svg') || file.name.endsWith('.svg')) {
@@ -124,8 +127,9 @@ export const EvidenceFormModal: React.FC<Props> = ({
     reader.readAsDataURL(file);
   };
 
-  const handleLoadSample = () => {
-    const sample = createSampleEvidenceFile(category, data.fullName || 'Nguyễn Minh Khoa');
+  const handleLoadSample = (sampleCat?: StudentEvidenceOptionKey | React.MouseEvent) => {
+    const targetCat = typeof sampleCat === 'string' ? sampleCat : category;
+    const sample = createSampleEvidenceFile(targetCat, data.fullName || 'Nguyễn Minh Khoa');
     setImgLoadError(false);
     setUploadedFile(sample);
     setData((prev) => ({ ...prev, uploadedFile: sample }));
@@ -134,22 +138,30 @@ export const EvidenceFormModal: React.FC<Props> = ({
     setScanStatus('idle');
     setAutoFilledFields([]);
     sfx.playPaperSlide();
+    // Tự động kích hoạt AI quét & điền trường ngay khi tạo đơn mẫu
+    void executeAiScan(sample, targetCat);
   };
 
-  const handleTriggerAiScan = async () => {
-    if (!uploadedFile || isScanning) return;
+  const executeAiScan = async (
+    fileToScan: UploadedEvidenceFile,
+    targetCategory?: StudentEvidenceOptionKey
+  ) => {
+    if (isScanning) return;
     setIsScanning(true);
     setFileError(null);
+    setScanSummary(null);
+    setAutoFilledFields([]);
+    setScanStatus('idle');
 
     try {
       // 0. Phân tích thị giác (Computer Vision / Canvas) phát hiện ảnh mạng xã hội, ảnh nền tối / infographic
-      const visualAnalysis = await analyzeImageVisualFeatures(uploadedFile);
+      const visualAnalysis = await analyzeImageVisualFeatures(fileToScan);
       if (!visualAnalysis.isValidDocumentPaper) {
         setScanStatus('warning');
         setAutoFilledFields([]);
         const rejectMsg =
           visualAnalysis.rejectReason ||
-          'Hình ảnh không phải là văn bản hành chính in trên giấy trắng có con dấu mộc đỏ.';
+          'Không tìm thấy thông tin hợp lệ trên tài liệu để tự động điền các trường. Hình ảnh không phải là văn bản hành chính in trên giấy trắng có con dấu mộc đỏ.';
         setFileError(`TÀI LIỆU BỊ LOẠI BỎ: ${rejectMsg}`);
         setScanSummary(rejectMsg);
         sfx.playBuzz();
@@ -157,15 +169,15 @@ export const EvidenceFormModal: React.FC<Props> = ({
       }
 
       const liveAvailable = isLiveAvailable();
+      let effectiveCategory = targetCategory || category;
 
-      // Nếu ở chế độ Mock (chưa cấu hình Gemini API Key), kiểm tra từ khóa hành chính
-      let effectiveCategory = category;
+      // Nếu ở chế độ Mock, kiểm tra phân loại tài liệu
       if (!liveAvailable) {
-        const detectedCat = detectEvidenceCategory(uploadedFile, category);
+        const detectedCat = detectEvidenceCategory(fileToScan, effectiveCategory);
         if (!detectedCat) {
           setScanStatus('warning');
           setAutoFilledFields([]);
-          const rejectMsg = `Tệp "${uploadedFile.name}" không phát hiện thông tin chứng thực của cơ quan có thẩm quyền (Bệnh viện, BCH Quân sự, UBND hoặc Đơn giải trình hợp lệ). Vui lòng nhập Gemini API Key để AI đọc nhận diện ảnh thật trực tiếp.`;
+          const rejectMsg = `Tệp "${fileToScan.name}" không phát hiện thông tin chứng thực của cơ quan có thẩm quyền để tự động điền các trường. Vui lòng kiểm tra lại chất lượng tài liệu hoặc tự nhập thông tin.`;
           setFileError(`TÀI LIỆU BỊ LOẠI BỎ: ${rejectMsg}`);
           setScanSummary(rejectMsg);
           sfx.playBuzz();
@@ -187,9 +199,16 @@ export const EvidenceFormModal: React.FC<Props> = ({
         ai.setMode('live');
         ai.resetSource();
       }
-      const result = await ai.scanDocument(uploadedFile, effectiveCategory);
+      const result = await ai.scanDocument(fileToScan, effectiveCategory);
 
-      const isSuccess = result.confidence >= 0.6 && result.extractedCount > 0;
+      // "nếu mà không thấy thông tin để điền sẽ báo lỗi"
+      const isSuccess = Boolean(
+        result &&
+        result.confidence >= 0.6 &&
+        result.extractedCount > 0 &&
+        result.fields &&
+        result.fields.length > 0
+      );
       setScanSummary(result.summary);
 
       if (isSuccess) {
@@ -271,18 +290,28 @@ export const EvidenceFormModal: React.FC<Props> = ({
         }
         setAutoFilledFields(filledKeys);
       } else {
-        // Tệp cảnh báo / rác / không hợp lệ: Loại ra, không điền trường nào vào form
+        // Tệp cảnh báo / rác / không hợp lệ hoặc không tìm thấy thông tin để điền: Báo lỗi rõ ràng
         setScanStatus('warning');
         setAutoFilledFields([]);
-        setFileError(`TÀI LIỆU BỊ LOẠI BỎ: ${result.summary}`);
+        const errorMsg =
+          result.summary ||
+          'Không tìm thấy thông tin hợp lệ trên tài liệu để tự động điền các trường. Vui lòng kiểm tra lại hình ảnh hoặc tự nhập thông tin.';
+        setFileError(`TÀI LIỆU BỊ LOẠI BỎ: ${errorMsg}`);
         sfx.playBuzz();
       }
     } catch {
       setScanStatus('warning');
-      setFileError('Không thể hoàn tất quét OCR tài liệu. Vui lòng thử lại hoặc điền tay.');
+      setAutoFilledFields([]);
+      setFileError('Không thể hoàn tất quét OCR tài liệu để tự động điền ô. Vui lòng thử lại hoặc điền tay.');
       sfx.playBuzz();
     } finally {
       setIsScanning(false);
+    }
+  };
+
+  const handleTriggerAiScan = () => {
+    if (uploadedFile) {
+      void executeAiScan(uploadedFile, category);
     }
   };
 
@@ -466,7 +495,7 @@ export const EvidenceFormModal: React.FC<Props> = ({
                 <button
                   type="button"
                   className="ai-sample-preset-btn"
-                  onClick={handleLoadSample}
+                  onClick={() => handleLoadSample()}
                   style={{
                     background: '#fef3c7',
                     color: '#92400e',
@@ -694,8 +723,25 @@ export const EvidenceFormModal: React.FC<Props> = ({
             )}
 
             {fileError && (
-              <div style={{ color: 'var(--stamp-red)', fontSize: 11.5, marginTop: 6, fontWeight: 'bold' }}>
-                ⚠ {fileError}
+              <div
+                role="alert"
+                style={{
+                  color: 'var(--stamp-red)',
+                  backgroundColor: '#fef2f2',
+                  border: '1.5px solid #f87171',
+                  borderRadius: 'var(--radius-sm)',
+                  padding: '8px 12px',
+                  fontSize: 12,
+                  marginTop: 8,
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  lineHeight: 1.4,
+                }}
+              >
+                <span style={{ fontSize: 16 }}>⚠️</span>
+                <span>{fileError}</span>
               </div>
             )}
           </div>
@@ -1175,7 +1221,7 @@ export const EvidenceFormModal: React.FC<Props> = ({
             }}
           >
             <div style={{ flex: 1, fontSize: 11.5, color: 'var(--ink-soft)', lineHeight: 1.4 }}>
-              💡 Hệ thống sẽ nộp đồng thời Giấy xác nhận và tệp minh chứng bạn vừa tải lên từ máy tính.
+              💡 <strong>Lưu ý tiếp nhận:</strong> Cổng Một Cửa (AI Pre-check) sẽ kiểm tra con dấu mộc đỏ hợp lệ khi nộp đơn. Hồ sơ có con dấu hợp lệ mới được chuyển tiếp đến <strong>Cố vấn học tập (L2)</strong>; hồ sơ thiếu hoặc không có con dấu hợp lệ sẽ bị tự động trả về để bổ sung.
             </div>
             <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
               <button

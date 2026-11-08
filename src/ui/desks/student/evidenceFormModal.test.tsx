@@ -278,4 +278,19 @@ describe('EvidenceFormModal & AI Auto-Fill Integration (Session 3)', () => {
       })
     ).toBeNull();
   });
+
+  it('8. Modal hiển thị lưu ý tiếp nhận: AI Pre-check con dấu mộc đỏ hợp lệ trước khi chuyển sang L2 Cố vấn học tập', () => {
+    const html = renderToStaticMarkup(
+      <EvidenceFormModal
+        optionKey="medical"
+        initialData={INITIAL_FORM_DATA}
+        onSave={vi.fn()}
+        onClose={vi.fn()}
+      />
+    );
+
+    expect(html).toContain('AI Pre-check');
+    expect(html).toContain('Cố vấn học tập (L2)');
+    expect(html).toContain('con dấu mộc đỏ hợp lệ');
+  });
 });
