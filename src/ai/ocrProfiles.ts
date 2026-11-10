@@ -583,17 +583,18 @@ export function resolveOcrPayload(
   if (isCccd) {
     const isCatTuong =
       textNorm.includes('cattuong') ||
+      textNorm.includes('cat tuong') ||
       textNorm.includes('045195003605') ||
       file.name.toLowerCase().includes('cattuong');
     const cccdNumber = isCatTuong
       ? '045195003605'
       : `04820${1000000 + (hash % 8999999)}`;
-    const citizenName = isCatTuong ? 'NGUYỄN THỊ CÁT TƯỜNG' : 'Nguyễn Thị Cát Tường';
-    const dob = '27/07/2007';
+    const citizenName = isCatTuong ? 'NGUYỄN THỊ CÁT TƯỜNG' : 'Công dân đăng ký trên thẻ CCCD';
+    const dob = isCatTuong ? '27/07/2007' : '15/05/2006';
     const residence = isCatTuong
       ? '105 Quang Trung, thị trấn Hồ Xá, huyện Vĩnh Linh, tỉnh Quảng Trị'
-      : 'Thị trấn Hồ Xá, huyện Vĩnh Linh, tỉnh Quảng Trị';
-    const origin = 'Hồ Xá, Vĩnh Linh, Quảng Trị';
+      : 'Quận Ngũ Hành Sơn, TP. Đà Nẵng';
+    const origin = isCatTuong ? 'Hồ Xá, Vĩnh Linh, Quảng Trị' : 'TP. Đà Nẵng';
 
     const personalReasonContent = `Đính kèm Căn cước công dân số: ${cccdNumber} (Họ và tên: ${citizenName}, Ngày sinh: ${dob}, Quê quán: ${origin}, Nơi thường trú: ${residence}) để xác thực định danh cá nhân đính kèm đơn trình bày nguyện vọng cá nhân.`;
     const parentName = 'Nguyễn Văn Hùng';

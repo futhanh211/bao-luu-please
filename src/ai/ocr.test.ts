@@ -373,5 +373,31 @@ describe('AI OCR Document Scanner (Session 1)', () => {
       expect(result?.extractedCount).toBe(0);
       expect(result?.summary).toContain('draw.io');
     });
+
+    it('validateOcrResult tự động sửa subType thành personal_letter và xóa companyName nếu Gemini đọc ảnh CCCD', () => {
+      const geminiCccdResponse = {
+        isValidDocument: true,
+        documentType: 'personal',
+        confidence: 0.96,
+        summary: 'Đã nhận diện Căn cước công dân của Nguyễn Thị Cát Tường (Số: 045195003605)',
+        data: {
+          personal: {
+            subType: 'internship',
+            personalReasonContent: 'Căn cước công dân số 045195003605, Họ tên: NGUYỄN THỊ CÁT TƯỜNG, Ngày sinh: 27/07/2007',
+            companyName: 'Công ty nhầm lẫn',
+            internshipRole: 'Thực tập sinh',
+            isValidStamp: true,
+          },
+        },
+      };
+
+      const result = validateOcrResult(geminiCccdResponse, 'personal');
+      expect(result).not.toBeNull();
+      expect(result?.documentType).toBe('personal');
+      expect(result?.data.personal?.subType).toBe('personal_letter');
+      expect(result?.data.personal?.companyName).toBeUndefined();
+      expect(result?.data.personal?.internshipRole).toBeUndefined();
+      expect(result?.data.personal?.personalReasonContent).toContain('045195003605');
+    });
   });
 });

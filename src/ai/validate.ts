@@ -124,7 +124,11 @@ export function validateOcrResult(
   const isValidDoc = raw.isValidDocument !== false;
 
   // Nếu Gemini Vision phát hiện đây không phải văn bản hành chính hợp lệ (sơ đồ, drawio, infographic, ảnh rác...)
-  if (!isValidDoc || docTypeCandidate === 'unknown') {
+  if (
+    !isValidDoc ||
+    docTypeCandidate === 'unknown' ||
+    (typeof raw.confidence === 'number' && raw.confidence < 0.5)
+  ) {
     return {
       documentType: expectedType,
       confidence: 0.1,
@@ -254,7 +258,42 @@ export function validateOcrResult(
         fields.push({ key, label, value: val, confidence });
       }
     }
-    const stampVal = pers.isValidStamp === true;
+
+    // Bảo vệ chống nhận diện nhầm CCCD/CMND thành thực tập (internship)
+    const combinedPersonalText = `${summary} ${personalData.personalReasonContent ?? ''} ${personalData.companyName ?? ''}`.toLowerCase();
+    const looksLikeCccd =
+      combinedPersonalText.includes('căn cước') ||
+      combinedPersonalText.includes('can cuoc') ||
+      combinedPersonalText.includes('cccd') ||
+      combinedPersonalText.includes('cmnd') ||
+      combinedPersonalText.includes('chứng minh nhân dân') ||
+      combinedPersonalText.includes('identity card') ||
+      combinedPersonalText.includes('045195003605');
+
+    if (looksLikeCccd && !combinedPersonalText.includes('thực tập sinh')) {
+      personalData.subType = 'personal_letter';
+      delete personalData.companyName;
+      delete personalData.internshipRole;
+      delete personalData.startDate;
+      delete personalData.endDate;
+      if (!personalData.personalReasonContent) {
+        personalData.personalReasonContent = `${summary}. Đính kèm Căn cước công dân để xác thực định danh cá nhân kèm đơn trình bày nguyện vọng.`;
+        fields.push({
+          key: 'personalReasonContent',
+          label: 'Nội dung trình bày',
+          value: personalData.personalReasonContent,
+          confidence,
+        });
+      }
+      const subTypeField = fields.find((f) => f.key === 'subType');
+      if (subTypeField) {
+        subTypeField.value = 'personal_letter';
+      } else {
+        fields.unshift({ key: 'subType', label: 'Loại hồ sơ cá nhân', value: 'personal_letter', confidence });
+      }
+    }
+
+    const stampVal = pers.isValidStamp !== false;
     personalData.isValidStamp = stampVal;
     fields.push({ key: 'isValidStamp', label: 'Dấu mộc / Chữ ký', value: stampVal, confidence });
     data.personal = personalData;

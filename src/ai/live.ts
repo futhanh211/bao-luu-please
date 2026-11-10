@@ -295,7 +295,7 @@ export async function testGeminiConnection(
 ): Promise<{ success: boolean; latencyMs: number; message: string; modelUsed: string }> {
   const env = typeof import.meta !== 'undefined' ? import.meta.env : ({} as Record<string, string>);
   const key = (customKey !== undefined ? customKey : getCustomGeminiKey()).trim();
-  const model = resolveGeminiModel(customModel || env?.VITE_GEMINI_MODEL);
+  const model = customModel && customModel.trim() ? customModel.trim() : resolveGeminiModel(env?.VITE_GEMINI_MODEL);
 
   if (!key) {
     return {

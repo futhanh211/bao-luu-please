@@ -13,7 +13,7 @@ import { getActiveAI } from '../../../store/playback/session';
 import { defaultMockAI } from '../../../ai/mock';
 import { AIService } from '../../../ai/service';
 import { sfx } from '../../audio/sfx';
-import { detectEvidenceCategory } from '../../../ai/mockTemplates';
+import { detectEvidenceCategory, isGarbageEvidenceText } from '../../../ai/mockTemplates';
 import { analyzeImageVisualFeatures } from '../../../ai/imageScanner';
 import {
   isLiveAvailable,
@@ -66,8 +66,11 @@ export const EvidenceFormModal: React.FC<Props> = ({
   const [scanSummary, setScanSummary] = useState<string | null>(null);
   const [scanStatus, setScanStatus] = useState<'idle' | 'success' | 'warning'>('idle');
 
-  // Trạng thái AI Vision (tự động nhận diện)
+  // Trạng thái AI Vision (tự động nhận diện) và nguồn AI thực tế đã trả lời ('live' | 'mock' | 'fallback')
   const [isLiveMode] = useState<boolean>(() => isLiveAvailable());
+  const [ocrSource, setOcrSource] = useState<'live' | 'mock' | 'fallback'>(() =>
+    isLiveAvailable() ? 'live' : 'mock'
+  );
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -186,6 +189,7 @@ export const EvidenceFormModal: React.FC<Props> = ({
         ai.resetSource();
       }
       const result = await ai.scanDocument(fileToScan, effectiveCategory);
+      setOcrSource(ai.source);
 
       // "nếu mà không thấy thông tin để điền sẽ báo lỗi"
       const isSuccess = Boolean(
@@ -302,23 +306,34 @@ export const EvidenceFormModal: React.FC<Props> = ({
     }
   };
 
+  const clearScanWarningOnManualEdit = () => {
+    if (scanStatus === 'warning' && uploadedFile && !isGarbageEvidenceText(uploadedFile.name)) {
+      setScanStatus('idle');
+      setFileError(null);
+    }
+  };
+
   const updateMed = (patch: Partial<StudentDetailedFormData['medical']>) => {
     sfx.playKeyClack();
+    clearScanWarningOnManualEdit();
     setData((prev) => ({ ...prev, medical: { ...prev.medical, ...patch } }));
   };
 
   const updateMil = (patch: Partial<StudentDetailedFormData['military']>) => {
     sfx.playKeyClack();
+    clearScanWarningOnManualEdit();
     setData((prev) => ({ ...prev, military: { ...prev.military, ...patch } }));
   };
 
   const updateHard = (patch: Partial<StudentDetailedFormData['hardship']>) => {
     sfx.playKeyClack();
+    clearScanWarningOnManualEdit();
     setData((prev) => ({ ...prev, hardship: { ...prev.hardship, ...patch } }));
   };
 
   const updatePers = (patch: Partial<StudentDetailedFormData['personal']>) => {
     sfx.playKeyClack();
+    clearScanWarningOnManualEdit();
     setData((prev) => ({ ...prev, personal: { ...prev.personal, ...patch } }));
   };
 
@@ -695,9 +710,9 @@ export const EvidenceFormModal: React.FC<Props> = ({
               <span style={{ fontSize: 16, color: 'var(--stamp-green)' }}>✔</span>
               <div>
                 <strong style={{ color: 'var(--stamp-green)' }}>
-                  {isLiveMode ? 'Trích xuất OCR bằng Gemini Vision thành công:' : 'Trích xuất OCR thành công:'}
+                  {ocrSource === 'live' ? 'Trích xuất OCR bằng Gemini Vision thành công:' : 'Trích xuất OCR thành công:'}
                 </strong>{' '}
-                {scanSummary}.
+                {scanSummary.replace(/\.+$/, '')}.
                 <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 2 }}>
                   Các trường có nhãn <strong>[✓ AI điền]</strong> bên dưới đã được điền tự động. Bạn có thể kiểm tra và chỉnh sửa trước khi lưu.
                 </div>
@@ -1155,6 +1170,7 @@ export const EvidenceFormModal: React.FC<Props> = ({
           <div
             style={{
               display: 'flex',
+              flexWrap: 'wrap',
               alignItems: 'center',
               justifyContent: 'space-between',
               gap: 12,
@@ -1163,10 +1179,10 @@ export const EvidenceFormModal: React.FC<Props> = ({
               borderTop: '1px dashed var(--paper-line)',
             }}
           >
-            <div style={{ flex: 1, fontSize: 11.5, color: 'var(--ink-soft)', lineHeight: 1.4 }}>
-              💡 <strong>Lưu ý tiếp nhận:</strong> Cổng Một Cửa (AI Pre-check) sẽ kiểm tra con dấu mộc đỏ hợp lệ khi nộp đơn. Hồ sơ có con dấu hợp lệ mới được chuyển tiếp đến <strong>Cố vấn học tập (L2)</strong>; hồ sơ thiếu hoặc không có con dấu hợp lệ sẽ bị tự động trả về để bổ sung.
+            <div style={{ flex: '1 1 280px', fontSize: 11.5, color: 'var(--ink-soft)', lineHeight: 1.45 }}>
+              💡 <strong>Lưu ý tiếp nhận:</strong> Cổng Một Cửa (AI Pre-check) sẽ tự động quét trích xuất và kiểm tra tính hợp lệ của dữ liệu minh chứng khi nộp đơn. Hồ sơ có thông tin minh chứng đầy đủ, hợp lệ sẽ được chuyển tiếp đến <strong>Cố vấn học tập (L2)</strong>; hồ sơ thiếu dữ liệu hoặc tệp không hợp lệ sẽ được trả về để bổ sung.
             </div>
-            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginLeft: 'auto' }}>
               <button
                 type="button"
                 onClick={onClose}
