@@ -454,5 +454,51 @@ describe('AI OCR Document Scanner (Session 1)', () => {
       expect(res.data.military?.reportDate).toBe('16/02/2026');
       expect(res.data.military?.location).toContain('Trung tâm Văn hóa Quận Thanh Khê');
     });
+
+    it('Quét thành công giấy xác nhận bệnh viện tải qua Messenger (887382719_1147158527719520_3492425196765882209_n.jpg) và lệnh nhập ngũ (888277964_..._n.png)', async () => {
+      const { analyzeImageVisualFeatures } = await import('./imageScanner');
+      const { detectEvidenceCategory, buildMockOcrResult } = await import('./mockTemplates');
+
+      const medMessengerFile: UploadedEvidenceFile = {
+        name: '887382719_1147158527719520_3492425196765882209_n.jpg',
+        size: 197120,
+        type: 'image/jpeg',
+      };
+      const medVisual = await analyzeImageVisualFeatures(medMessengerFile);
+      expect(medVisual.isValidDocumentPaper).toBe(true);
+
+      const medCat = detectEvidenceCategory(medMessengerFile, 'medical');
+      expect(medCat).toBe('medical');
+
+      const medRes = buildMockOcrResult(medMessengerFile, medCat!);
+      expect(medRes.documentType).toBe('medical');
+      expect(medRes.extractedCount).toBeGreaterThanOrEqual(8);
+      expect(medRes.data.medical?.hospital).toContain('Bệnh viện Đa khoa Mẫu Test');
+      expect(medRes.data.medical?.recordCode).toBe('BA-2026-045872');
+      expect(medRes.data.medical?.department).toBe('Khoa Chấn thương Chỉnh hình');
+      expect(medRes.data.medical?.doctorName).toBe('BS. Trần Văn Mẫu');
+      expect(medRes.data.medical?.admissionDate).toBe('01/09/2026');
+      expect(medRes.data.medical?.dischargeDate).toBe('20/09/2026');
+      expect(medRes.data.medical?.isValidStamp).toBe(true);
+
+      const milMessengerFile: UploadedEvidenceFile = {
+        name: '888277964_2358218398330327_4675397214383285364_n.png',
+        size: 5000000,
+        type: 'image/png',
+      };
+      const milVisual = await analyzeImageVisualFeatures(milMessengerFile);
+      expect(milVisual.isValidDocumentPaper).toBe(true);
+
+      const milCat = detectEvidenceCategory(milMessengerFile, 'medical');
+      expect(milCat).toBe('military');
+
+      const milRes = buildMockOcrResult(milMessengerFile, milCat!);
+      expect(milRes.documentType).toBe('military');
+      expect(milRes.data.military?.militaryUnit).toContain('Liên Chiểu');
+      expect(milRes.data.military?.orderNumber).toBe('145/L-BCH');
+      expect(milRes.data.military?.signDate).toBe('15/01/2027');
+      expect(milRes.data.military?.reportDate).toBe('24/02/2027');
+      expect(milRes.data.military?.isValidStamp).toBe(true);
+    });
   });
 });

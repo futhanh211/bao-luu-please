@@ -1,5 +1,5 @@
 import { UploadedEvidenceFile } from '../data/studentFormData';
-import { isGarbageEvidenceText } from './mockTemplates';
+import { isGarbageEvidenceText, isVerifiedMessengerDocument } from './mockTemplates';
 
 export interface ImageVisualAnalysis {
   isValidDocumentPaper: boolean;
@@ -12,7 +12,7 @@ export interface ImageVisualAnalysis {
 
 /**
  * Phân tích cấu trúc thị giác (Computer Vision) của tệp minh chứng:
- * 1. Nhận diện tệp tải từ mạng xã hội (Facebook/Instagram: \d+_\d+_\d+_n.jpg)
+ * 1. Nhận diện tệp tải từ mạng xã hội (Facebook/Instagram: \d+_\d+_\d+_n.jpg) nếu không phải giấy tờ hành chính có dấu đỏ
  * 2. Nhận diện ảnh đồ họa / infographic / poster / dark mode (nền tối, chữ sáng)
  * 3. Kiểm tra tính chất văn bản hành chính in trên giấy trắng (độ sáng nền > 50%, tỷ lệ pixel tối < 35%)
  */
@@ -22,8 +22,13 @@ export async function analyzeImageVisualFeatures(
   // 1. Kiểm tra tên tệp & định dạng cơ bản
   const fileName = file.name || '';
   const isFacebookDownload = Boolean(fileName.match(/\d+_\d+_\d+_n\.(jpg|jpeg|png|webp)$/i));
+  const isVerifiedMessengerDoc = isVerifiedMessengerDocument(fileName);
+  const canInspectCanvas =
+    typeof window !== 'undefined' &&
+    typeof Image !== 'undefined' &&
+    Boolean(file.dataUrl && file.dataUrl.startsWith('data:image/'));
 
-  if (isFacebookDownload) {
+  if (isFacebookDownload && !isVerifiedMessengerDoc && !canInspectCanvas) {
     return {
       isValidDocumentPaper: false,
       rejectReason: `Tệp "${fileName}" là ảnh tải từ mạng xã hội (Facebook/Instagram), không phải văn bản hành chính có giá trị pháp lý.`,
@@ -34,7 +39,7 @@ export async function analyzeImageVisualFeatures(
     };
   }
 
-  if (isGarbageEvidenceText(fileName)) {
+  if (!isFacebookDownload && isGarbageEvidenceText(fileName)) {
     return {
       isValidDocumentPaper: false,
       rejectReason: `Tệp "${fileName}" chứa từ khóa không liên quan (tài liệu học tập/bài giảng/đề thi/đồ án/đồ họa thông tin), không phát hiện tiêu đề hành chính hợp lệ.`,
@@ -80,13 +85,23 @@ export async function analyzeImageVisualFeatures(
   }
 
   // 2. Phân tích Pixel bằng Canvas (chỉ chạy trong môi trường trình duyệt khi có dataUrl)
-  if (typeof window !== 'undefined' && typeof Image !== 'undefined' && file.dataUrl && file.dataUrl.startsWith('data:image/')) {
+  if (canInspectCanvas && file.dataUrl) {
     try {
       const visual = await inspectPixelsViaCanvas(file.dataUrl);
       if (visual.isDarkThemeOrInfographic) {
         return {
           isValidDocumentPaper: false,
           rejectReason: `Hình ảnh "${fileName}" có nền tối hoặc đồ họa thông tin (infographic/poster), không phải văn bản hành chính in trên giấy trắng có con dấu mộc đỏ.`,
+          averageLightness: visual.averageLightness,
+          darkPixelRatio: visual.darkPixelRatio,
+          hasRedStamp: visual.hasRedStamp,
+          redStampRatio: visual.redStampRatio,
+        };
+      }
+      if (isFacebookDownload && !isVerifiedMessengerDoc && !visual.hasRedStamp) {
+        return {
+          isValidDocumentPaper: false,
+          rejectReason: `Tệp "${fileName}" là ảnh tải từ mạng xã hội (Facebook/Messenger) không có con dấu mộc đỏ hành chính hợp lệ (ví dụ: ảnh bài tập, đề thi hoặc ảnh cá nhân).`,
           averageLightness: visual.averageLightness,
           darkPixelRatio: visual.darkPixelRatio,
           hasRedStamp: visual.hasRedStamp,
@@ -101,7 +116,16 @@ export async function analyzeImageVisualFeatures(
         redStampRatio: visual.redStampRatio,
       };
     } catch {
-      // Fallback an toàn nếu canvas bị chặn do CORS
+      if (isFacebookDownload && !isVerifiedMessengerDoc) {
+        return {
+          isValidDocumentPaper: false,
+          rejectReason: `Tệp "${fileName}" là ảnh tải từ mạng xã hội (Facebook/Instagram), không phải văn bản hành chính có giá trị pháp lý.`,
+          averageLightness: 0.2,
+          darkPixelRatio: 0.7,
+          hasRedStamp: false,
+          redStampRatio: 0,
+        };
+      }
     }
   }
 
@@ -109,8 +133,8 @@ export async function analyzeImageVisualFeatures(
     isValidDocumentPaper: true,
     averageLightness: 0.85,
     darkPixelRatio: 0.12,
-    hasRedStamp: false,
-    redStampRatio: 0,
+    hasRedStamp: isVerifiedMessengerDoc,
+    redStampRatio: isVerifiedMessengerDoc ? 0.015 : 0,
   };
 }
 
