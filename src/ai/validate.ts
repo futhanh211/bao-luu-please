@@ -145,7 +145,8 @@ export function validateOcrResult(
     };
   }
 
-  const documentType: StudentEvidenceOptionKey =
+  const rawData = isRecord(raw.data) ? raw.data : {};
+  let documentType: StudentEvidenceOptionKey =
     docTypeCandidate === 'medical' ||
     docTypeCandidate === 'military' ||
     docTypeCandidate === 'hardship' ||
@@ -153,10 +154,16 @@ export function validateOcrResult(
       ? docTypeCandidate
       : expectedType;
 
+  if (!isRecord(rawData[documentType])) {
+    if (isRecord(rawData.military)) documentType = 'military';
+    else if (isRecord(rawData.medical)) documentType = 'medical';
+    else if (isRecord(rawData.hardship)) documentType = 'hardship';
+    else if (isRecord(rawData.personal)) documentType = 'personal';
+  }
+
   const confidence = asNumber(raw.confidence) ?? 0.85;
   const summary = asString(raw.summary) || 'Đã trích xuất thông tin từ tài liệu';
 
-  const rawData = isRecord(raw.data) ? raw.data : {};
   const fields: ExtractedOcrField[] = [];
   const data: OcrScanResult['data'] = {};
 

@@ -275,7 +275,8 @@ export class LiveAIProvider implements AIProvider {
     file: UploadedEvidenceFile,
     optionKey: StudentEvidenceOptionKey
   ): Promise<OcrScanResult> {
-    const payload = buildOcrPayload(file, optionKey);
+    const optimizedFile = await compressImageFileForVision(file);
+    const payload = buildOcrPayload(optimizedFile, optionKey);
     // Timeout cho multimodal Vision đọc ảnh là 18 giây
     const text = await this.generate(payload, 18000);
     const raw = parseJsonObject(text);
@@ -283,6 +284,76 @@ export class LiveAIProvider implements AIProvider {
     if (!result) throw new LiveAIError('Gemini trả JSON OCR không hợp lệ');
     return result;
   }
+}
+
+/**
+ * Tự động thu nhỏ ảnh dung lượng lớn (ví dụ ảnh 7–10 MB) xuống kích thước tối ưu (tối đa 1440px, JPEG 0.85 ~ 150KB)
+ * trước khi gửi lên Gemini Vision API để tránh timeout đường truyền và tăng tốc độ OCR.
+ */
+async function compressImageFileForVision(
+  file: UploadedEvidenceFile
+): Promise<UploadedEvidenceFile> {
+  if (
+    typeof window === 'undefined' ||
+    typeof document === 'undefined' ||
+    typeof Image === 'undefined' ||
+    !file.dataUrl ||
+    !file.dataUrl.startsWith('data:image/') ||
+    file.dataUrl.startsWith('data:image/svg') ||
+    file.dataUrl.length < 600_000
+  ) {
+    return file;
+  }
+
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    const timeoutId = setTimeout(() => resolve(file), 2000);
+
+    img.onload = () => {
+      clearTimeout(timeoutId);
+      try {
+        const maxDim = 1440;
+        let width = img.naturalWidth || img.width || 1000;
+        let height = img.naturalHeight || img.height || 1000;
+        if (width > maxDim || height > maxDim) {
+          const ratio = Math.min(maxDim / width, maxDim / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(file);
+          return;
+        }
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, width, height);
+        ctx.drawImage(img, 0, 0, width, height);
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.84);
+        if (compressedDataUrl && compressedDataUrl.startsWith('data:image/jpeg')) {
+          resolve({
+            ...file,
+            type: 'image/jpeg',
+            dataUrl: compressedDataUrl,
+          });
+          return;
+        }
+      } catch {
+        // Fallback to original file if canvas fails
+      }
+      resolve(file);
+    };
+
+    img.onerror = () => {
+      clearTimeout(timeoutId);
+      resolve(file);
+    };
+
+    img.src = file.dataUrl!;
+  });
 }
 
 /**

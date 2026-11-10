@@ -588,6 +588,7 @@ export function detectEvidenceCategory(
     'tuyen quan',
     '6k70',
     'k6m4',
+    'p95y',
     'thanh xuan',
     'thanh xuan trung',
   ];
@@ -656,10 +657,7 @@ export function detectEvidenceCategory(
 
   if (isVerifiedTestSample) {
     if (file.name.toLowerCase().includes('gemini_generated_image')) {
-      if (file.name.includes('k6m4') || file.name.includes('6k70') || norm.includes('quan su') || norm.includes('nhap ngu')) {
-        return 'military';
-      }
-      return fallbackOptionKey || 'military';
+      return 'military';
     }
     if (file.name.includes('xac_nhan_ubnd_ho_ngheo_photo')) return 'hardship';
     return fallbackOptionKey || 'medical';

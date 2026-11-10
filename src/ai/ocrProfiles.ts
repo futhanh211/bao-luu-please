@@ -442,6 +442,10 @@ export function resolveOcrPayload(
 
   if (optionKey === 'military') {
     const isThanhXuan = file.name.includes('k6m4') || textNorm.includes('thanh xuan');
+    const isP95ThanhKhe =
+      file.name.toLowerCase().includes('p95y') && file.name.includes('(2)');
+    const isP95HaiChau =
+      file.name.toLowerCase().includes('p95y') && !file.name.includes('(2)');
     const isSpecialSample =
       file.name === 'lenh_goi_nhap_ngu_2026.pdf' ||
       file.name.includes('lenh_goi_nhap_ngu_bch_quan_su') ||
@@ -453,41 +457,64 @@ export function resolveOcrPayload(
 
     if (isThanhXuan) {
       matchedProfile = MOCK_MILITARY_PROFILES[0];
-    } else if (isSpecialSample || !matchedProfile) {
+    } else if (isP95ThanhKhe) {
+      matchedProfile =
+        MOCK_MILITARY_PROFILES.find((p) => p.keywords.includes('thanh khe')) ||
+        MOCK_MILITARY_PROFILES[2];
+    } else if (isP95HaiChau || isSpecialSample || !matchedProfile) {
       const idx = hash % MOCK_MILITARY_PROFILES.length;
-      matchedProfile = isSpecialSample
-        ? MOCK_MILITARY_PROFILES.find((p) => p.keywords.includes('hai chau')) || MOCK_MILITARY_PROFILES[1]
-        : MOCK_MILITARY_PROFILES[idx];
+      matchedProfile =
+        isP95HaiChau || isSpecialSample
+          ? MOCK_MILITARY_PROFILES.find((p) => p.keywords.includes('hai chau')) || MOCK_MILITARY_PROFILES[1]
+          : MOCK_MILITARY_PROFILES[idx];
     }
 
     const militaryUnit = isThanhXuan
       ? 'Ban Chỉ huy Quân sự quận Thanh Xuân - TP. Hà Nội'
-      : isSpecialSample
-        ? 'Ban Chỉ huy Quân sự quận Hải Châu - TP. Đà Nẵng'
-        : matchedProfile.militaryUnit;
+      : isP95ThanhKhe
+        ? 'Ban Chỉ huy Quân sự quận Thanh Khê - TP. Đà Nẵng'
+        : isP95HaiChau || isSpecialSample
+          ? 'Ban Chỉ huy Quân sự quận Hải Châu - TP. Đà Nẵng'
+          : matchedProfile.militaryUnit;
     const location = isThanhXuan
       ? 'Sân vận động quận Thanh Xuân, số 166 Khuất Duy Tiến, quận Thanh Xuân, TP. Hà Nội'
-      : isSpecialSample
-        ? 'Trung tâm Văn hóa Thể thao quận Hải Châu, TP. Đà Nẵng'
-        : matchedProfile.location;
+      : isP95ThanhKhe
+        ? 'Trung tâm Văn hóa Quận Thanh Khê, Đà Nẵng'
+        : isP95HaiChau
+          ? 'Sân vận động Quân khu 5, Quận Hải Châu, Đà Nẵng'
+          : isSpecialSample
+            ? 'Trung tâm Văn hóa Thể thao quận Hải Châu, TP. Đà Nẵng'
+            : matchedProfile.location;
     const orderNumber = isThanhXuan
       ? '142/LGN-QS26'
-      : isSpecialSample
-        ? '142/LGN-QS26'
-        : `${matchedProfile.orderPrefix}/LGN-QS26`;
+      : isP95ThanhKhe
+        ? '089/LG-BCH'
+        : isP95HaiChau
+          ? '125/LG-BCH'
+          : isSpecialSample
+            ? '142/LGN-QS26'
+            : `${matchedProfile.orderPrefix}/LGN-QS26`;
 
     const signDay = 5 + (hash % 10);
     const reportDay = 1 + (hash % 10);
     const signDate = isThanhXuan
       ? '15/10/2026'
-      : isSpecialSample
-        ? '10/08/2026'
-        : `${signDay < 10 ? '0' : ''}${signDay}/08/2026`;
+      : isP95ThanhKhe
+        ? '25/01/2026'
+        : isP95HaiChau
+          ? '20/01/2026'
+          : isSpecialSample
+            ? '10/08/2026'
+            : `${signDay < 10 ? '0' : ''}${signDay}/08/2026`;
     const reportDate = isThanhXuan
       ? '07/11/2026'
-      : isSpecialSample
-        ? '05/09/2026'
-        : `${reportDay < 10 ? '0' : ''}${reportDay}/09/2026`;
+      : isP95ThanhKhe
+        ? '16/02/2026'
+        : isP95HaiChau
+          ? '15/02/2026'
+          : isSpecialSample
+            ? '05/09/2026'
+            : `${reportDay < 10 ? '0' : ''}${reportDay}/09/2026`;
     const isValidStamp = true;
 
     const fields: ExtractedOcrField[] = [

@@ -324,7 +324,9 @@ describe('AI OCR Document Scanner (Session 1)', () => {
       expect(payload.imagePart).toBeDefined();
       expect(payload.imagePart?.mimeType).toBe('image/jpeg');
       expect(payload.imagePart?.data.length).toBeGreaterThan(10);
-      expect(payload.user).toContain('LOẠI GIẤY TỜ MỤC TIÊU: medical');
+      expect(payload.user).toContain('LOẠI GIẤY TỜ MỤC TIÊU (TAB HIỆN TẠI): medical');
+      // Chứa đầy đủ cả 4 schema để tự động chuyển tab khi người dùng tải giấy nhập ngũ ở tab y tế
+      expect(payload.user).toContain('"documentType":"military"');
     });
 
     it('Xử lý an toàn khi tệp không có dataUrl ảnh', () => {
@@ -431,6 +433,26 @@ describe('AI OCR Document Scanner (Session 1)', () => {
       expect(result?.data.personal?.companyName).toBeUndefined();
       expect(result?.data.personal?.internshipRole).toBeUndefined();
       expect(result?.data.personal?.personalReasonContent).toContain('045195003605');
+    });
+
+    it('Nhận diện đúng ảnh Giấy báo nhập ngũ Gemini_Generated_Image_p95ywhp95ywhp95y(2).png ngay cả khi đang mở ở tab Bệnh viện (medical)', async () => {
+      const milImgFile: UploadedEvidenceFile = {
+        name: 'Gemini_Generated_Image_p95ywhp95ywhp95y(2).png',
+        size: 7975195,
+        type: 'image/png',
+      };
+      const { detectEvidenceCategory, buildMockOcrResult } = await import('./mockTemplates');
+      // Dù fallbackOptionKey là 'medical', vẫn phải tự động nhận diện là 'military'
+      const detected = detectEvidenceCategory(milImgFile, 'medical');
+      expect(detected).toBe('military');
+
+      const res = buildMockOcrResult(milImgFile, detected!);
+      expect(res.documentType).toBe('military');
+      expect(res.data.military?.militaryUnit).toContain('Thanh Khê');
+      expect(res.data.military?.orderNumber).toBe('089/LG-BCH');
+      expect(res.data.military?.signDate).toBe('25/01/2026');
+      expect(res.data.military?.reportDate).toBe('16/02/2026');
+      expect(res.data.military?.location).toContain('Trung tâm Văn hóa Quận Thanh Khê');
     });
   });
 });

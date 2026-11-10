@@ -139,16 +139,25 @@ export function buildOcrPayload(
     }
   }
 
-  const schema = OCR_SCHEMAS[optionKey] || OCR_SCHEMAS.medical;
+  const primarySchema = OCR_SCHEMAS[optionKey] || OCR_SCHEMAS.medical;
+  const allSchemasText = [
+    `- Nếu là giấy y tế / bệnh viện (medical): ${OCR_SCHEMAS.medical}`,
+    `- Nếu là lệnh gọi nhập ngũ / nghĩa vụ quân sự (military): ${OCR_SCHEMAS.military}`,
+    `- Nếu là giấy xác nhận hoàn cảnh gia đình / hộ nghèo UBND (hardship): ${OCR_SCHEMAS.hardship}`,
+    `- Nếu là đơn trình bày cá nhân / thực tập / CCCD (personal): ${OCR_SCHEMAS.personal}`,
+  ].join('\n');
+
   const userText = [
-    `LOẠI GIẤY TỜ MỤC TIÊU: ${optionKey}`,
+    `LOẠI GIẤY TỜ MỤC TIÊU (TAB HIỆN TẠI): ${optionKey}`,
     `TÊN TỆP ĐÍNH KÈM: ${file.name}`,
     `DUNG LƯỢNG TỆP: ${file.size} bytes`,
     imagePart
       ? 'HÌNH ẢNH / BẢN SCAN PDF MINH CHỨNG: (Đính kèm trong phần đa phương thức bên dưới)'
       : 'TỆP KHÔNG CÓ DỮ LIỆU ẢNH TRỰC TIẾP.',
-    'Hãy nhận diện chữ viết (OCR) trên ảnh hoặc các trang PDF bản scan, phân tích ngữ nghĩa các trường hành chính và trả về JSON đúng schema sau. Nếu tệp PDF/ảnh là bài giảng, slide môn học, đề thi, báo cáo đồ án hoặc không có thông tin minh chứng hợp lệ thì bắt buộc trả về {"isValidDocument":false,"documentType":"unknown","confidence":0.1,"summary":"Tài liệu bị từ chối: ...","data":{}}:',
-    schema,
+    'QUAN TRỌNG: Người dùng có thể đang đứng ở tab khác với loại giấy tờ thực tế trong ảnh. Hãy đọc nội dung chữ viết (OCR) thực tế trên giấy tờ để tự động xác định đúng "documentType" ("medical", "military", "hardship", hoặc "personal") và trả về JSON theo đúng schema tương ứng bên dưới (không thêm văn bản nào khác):',
+    allSchemasText,
+    `Schema mặc định nếu khớp tab hiện tại (${optionKey}):`,
+    primarySchema,
   ].join('\n');
 
   return {
