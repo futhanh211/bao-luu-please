@@ -332,6 +332,39 @@ describe('AI OCR Document Scanner (Session 1)', () => {
       expect(payload.imagePart).toBeUndefined();
       expect(payload.user).toContain('TỆP KHÔNG CÓ DỮ LIỆU ẢNH TRỰC TIẾP');
     });
+
+    it('Đính kèm inlineData application/pdf khi tệp PDF có dataUrl để Gemini Vision đọc bản scan PDF', () => {
+      const pdfWithDataUrl: UploadedEvidenceFile = {
+        name: 'scan_giay_ra_vien.pdf',
+        size: 1024 * 450,
+        type: 'application/pdf',
+        dataUrl: 'data:application/pdf;base64,JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyA+PgplbmRvYmo=',
+      };
+      const payload = buildOcrPayload(pdfWithDataUrl, 'medical');
+      expect(payload.imagePart).toBeDefined();
+      expect(payload.imagePart?.mimeType).toBe('application/pdf');
+      expect(payload.user).toContain('BẢN SCAN PDF MINH CHỨNG');
+    });
+
+    it('Từ chối tệp PDF bài giảng môn học (MIS3052_Ch03-SV-1.pdf), báo lỗi thay vì tự điền sai Bệnh viện Quân y 17', async () => {
+      const lecturePdfFile: UploadedEvidenceFile = {
+        name: 'MIS3052_Ch03-SV-1.pdf',
+        size: 5715877,
+        type: 'application/pdf',
+      };
+      const { isGarbageEvidenceText, detectEvidenceCategory, evaluateEvidenceFile, buildMockOcrResult } = await import('./mockTemplates');
+      expect(isGarbageEvidenceText(lecturePdfFile.name)).toBe(true);
+      expect(detectEvidenceCategory(lecturePdfFile, 'medical')).toBeNull();
+
+      const evalRes = evaluateEvidenceFile(lecturePdfFile, 'medical');
+      expect(evalRes.valid).toBe(false);
+
+      const mockRes = buildMockOcrResult(lecturePdfFile, 'medical');
+      expect(mockRes.confidence).toBeLessThan(0.6);
+      expect(mockRes.extractedCount).toBe(0);
+      expect(mockRes.data.medical?.hospital).toBeUndefined();
+      expect(mockRes.summary).toContain('CẢNH BÁO');
+    });
   });
 
   describe('5. Gemini Vision & Strict Diagram Rejection (Loại bỏ ảnh sơ đồ draw.io / ERD)', () => {

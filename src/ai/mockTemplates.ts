@@ -55,7 +55,7 @@ export function isGarbageEvidenceText(text: string): boolean {
     'khong co gi',
     'tap tin rac',
     'vo nghia',
-    // Tài liệu học tập, bài giảng, chuyên đề không phải hồ sơ hành chính
+    // Tài liệu học tập, bài giảng, chuyên đề, đề thi, đồ án không phải hồ sơ hành chính
     'chuyen de',
     'bai tap',
     'tieu luan',
@@ -68,6 +68,30 @@ export function isGarbageEvidenceText(text: string): boolean {
     'khoa luan',
     'on thi',
     'thao luan',
+    'do an',
+    'yeu cau do an',
+    'bao cao',
+    'kiem tra',
+    'giua ky',
+    'cuoi ky',
+    'bt tong hop',
+    'de anh chi',
+    'de thi',
+    'hoc phan',
+    'mon hoc',
+    'chuong 1',
+    'chuong 2',
+    'chuong 3',
+    'chuong 4',
+    'chuong 5',
+    'chapter',
+    'lecture',
+    'syllabus',
+    'bctd',
+    'quan ly ks',
+    'mo phong',
+    'asis',
+    'tobe',
     // Ứng dụng, mạng xã hội, ảnh chụp màn hình, ảnh giải trí
     'thanh nien',
     'facebook',
@@ -120,7 +144,20 @@ export function isGarbageEvidenceText(text: string): boolean {
     return true;
   }
 
-  return garbageCues.some((cue) => norm.includes(cue));
+  // Nhận diện mã học phần đại học / chương bài giảng (VD: MIS3052_Ch03-SV-1.pdf, MIS2001_Ch04 - Part 2.pdf)
+  const cleanNorm = norm.replace(/[_\-.]/g, ' ');
+  if (
+    Boolean(
+      cleanNorm.match(
+        /\b(mis|mkt|acc|fin|eco|law|sta|eng|hrm|ibs)\s*\d{3,4}\b/i
+      )
+    ) ||
+    Boolean(cleanNorm.match(/\b(ch0?\d+|chap\s*\d+|part\s*\d+|sv\s*\d+)\b/i))
+  ) {
+    return true;
+  }
+
+  return garbageCues.some((cue) => cleanNorm.includes(cue) || norm.includes(cue));
 }
 
 function evidenceText(item: EvidenceItem): string {
@@ -691,8 +728,61 @@ export function evaluateEvidenceFile(
     }
   }
 
-  // 3. Với các tệp tài liệu hợp lệ thông thường (ảnh chụp từ máy, scan, pdf không phải tệp rác):
-  // Hệ thống chấp nhận và trích xuất dữ liệu, không bắt buộc tên tệp phải chứa từ khóa cố định hay dấu mộc.
+  // 3. Nếu là tệp PDF tải lên có dataUrl nhưng rơi về chế độ dự phòng (không qua được Gemini Vision)
+  // thì kiểm tra số trang trong cấu trúc PDF và từ khóa hành chính để tránh tự điền sai thông tin giả định.
+  const isPdf =
+    file.type === 'application/pdf' ||
+    file.name.toLowerCase().endsWith('.pdf') ||
+    Boolean(file.dataUrl?.startsWith('data:application/pdf'));
+
+  if (isPdf && file.dataUrl && file.dataUrl.includes(',')) {
+    try {
+      const b64 = file.dataUrl.slice(file.dataUrl.indexOf(',') + 1);
+      if (b64 && typeof globalThis.atob === 'function') {
+        const chunkLen = Math.min(b64.length, 160000);
+        const alignedLen = chunkLen - (chunkLen % 4);
+        const headBin = globalThis.atob(b64.slice(0, alignedLen));
+        const countMatches = Array.from(headBin.matchAll(/\/Count\s+(\d+)/g));
+        let maxPages = 0;
+        for (const m of countMatches) {
+          const n = parseInt(m[1], 10);
+          if (Number.isFinite(n) && n > maxPages && n < 10000) maxPages = n;
+        }
+        if (maxPages > 10) {
+          return {
+            valid: false,
+            reason: `Tệp PDF "${file.name}" có tới ${maxPages} trang (tài liệu bài giảng / giáo trình / báo cáo nhiều trang), không phải bản scan giấy tờ minh chứng hành chính hợp lệ.`,
+          };
+        }
+      }
+    } catch {
+      // Ignore base64 decode errors
+    }
+
+    const adminPdfCues = [
+      ...DOCUMENT_CATEGORY_KEYWORDS.medical.cues,
+      ...DOCUMENT_CATEGORY_KEYWORDS.military.cues,
+      ...DOCUMENT_CATEGORY_KEYWORDS.hardship.cues,
+      ...DOCUMENT_CATEGORY_KEYWORDS.personal.cues,
+      'xac nhan',
+      'chung nhan',
+      'giay',
+      'minh chung',
+      'ho so',
+      'don',
+      'scan',
+    ];
+    const hasAdminCue = adminPdfCues.some((c) => norm.includes(c));
+    if (!hasAdminCue) {
+      return {
+        valid: false,
+        reason: `Không tìm thấy thông tin văn bản hành chính hợp lệ trong tệp PDF "${file.name}" để tự động điền. Vui lòng kiểm tra lại tệp bản scan hoặc tự nhập thông tin.`,
+      };
+    }
+  }
+
+  // 4. Với các tệp tài liệu hợp lệ thông thường (ảnh chụp từ máy, scan, pdf hợp lệ):
+  // Hệ thống chấp nhận và trích xuất dữ liệu.
   return { valid: true };
 }
 

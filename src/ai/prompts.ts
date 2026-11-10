@@ -127,9 +127,14 @@ export function buildOcrPayload(
       const header = file.dataUrl.slice(0, commaIdx);
       const base64Data = file.dataUrl.slice(commaIdx + 1);
       const mimeMatch = header.match(/data:([^;]+)/);
-      const mimeType = mimeMatch ? mimeMatch[1] : file.type || 'image/jpeg';
-      if (mimeType.startsWith('image/')) {
-        imagePart = { mimeType, data: base64Data };
+      const rawMime = mimeMatch ? mimeMatch[1] : file.type || 'image/jpeg';
+      const isPdf =
+        rawMime === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+      if (rawMime.startsWith('image/') || isPdf) {
+        imagePart = {
+          mimeType: isPdf ? 'application/pdf' : rawMime,
+          data: base64Data,
+        };
       }
     }
   }
@@ -139,8 +144,10 @@ export function buildOcrPayload(
     `LOẠI GIẤY TỜ MỤC TIÊU: ${optionKey}`,
     `TÊN TỆP ĐÍNH KÈM: ${file.name}`,
     `DUNG LƯỢNG TỆP: ${file.size} bytes`,
-    imagePart ? 'HÌNH ẢNH MINH CHỨNG: (Đính kèm trong phần đa phương thức bên dưới)' : 'TỆP KHÔNG CÓ DỮ LIỆU ẢNH TRỰC TIẾP.',
-    'Hãy nhận diện chữ viết (OCR), phân tích ngữ nghĩa các trường hành chính và trả về JSON đúng schema sau, không thêm bất kỳ văn bản nào khác:',
+    imagePart
+      ? 'HÌNH ẢNH / BẢN SCAN PDF MINH CHỨNG: (Đính kèm trong phần đa phương thức bên dưới)'
+      : 'TỆP KHÔNG CÓ DỮ LIỆU ẢNH TRỰC TIẾP.',
+    'Hãy nhận diện chữ viết (OCR) trên ảnh hoặc các trang PDF bản scan, phân tích ngữ nghĩa các trường hành chính và trả về JSON đúng schema sau. Nếu tệp PDF/ảnh là bài giảng, slide môn học, đề thi, báo cáo đồ án hoặc không có thông tin minh chứng hợp lệ thì bắt buộc trả về {"isValidDocument":false,"documentType":"unknown","confidence":0.1,"summary":"Tài liệu bị từ chối: ...","data":{}}:',
     schema,
   ].join('\n');
 
