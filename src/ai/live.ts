@@ -26,13 +26,26 @@ export class LiveAIError extends Error {}
 /** Lỗi không nên thử lại (4xx, nội dung rỗng, JSON sai) — fallback ngay. */
 class NonRetryableAIError extends LiveAIError {}
 
-const TIMEOUT_MS = 4000;
+const TIMEOUT_MS = 10000;
 const MAX_ATTEMPTS = 2;
+
+const RETIRED_MODELS = new Set([
+  'gemini-1.5-flash',
+  'gemini-1.5-pro',
+  'gemini-2.0-flash',
+  'gemini-2.0-flash-lite',
+  'gemini-2.5-flash',
+  'gemini-2.5-flash-lite',
+]);
+
+function isRevokedKey(key: string): boolean {
+  return key.startsWith('AQ.Ab8RN6JAX2');
+}
 
 function decodeDefaultKey(): string {
   try {
     if (typeof globalThis !== 'undefined' && typeof globalThis.atob === 'function') {
-      return globalThis.atob('QVEuQWI4Uk42SkFYMmNCazZqZmFlNFh1NjJ3ODBNOWVEaEFFYnNNb1hlZm9rbnp2OG1FRmc=');
+      return globalThis.atob('QVEuQWI4Uk42S3daZ0NuLVNWaUVsd1pieWdfRmIzLTBuZDJWQkpUVHoxY0RvbVRUWnZtbWc=');
     }
   } catch {
     return '';
@@ -41,13 +54,28 @@ function decodeDefaultKey(): string {
 }
 
 export const DEFAULT_GEMINI_API_KEY = decodeDefaultKey();
-export const DEFAULT_GEMINI_MODEL = 'gemini-1.5-flash';
+export const DEFAULT_GEMINI_MODEL = 'gemini-3.5-flash-lite';
+
+export function resolveGeminiModel(candidate?: string): string {
+  const cleaned = (candidate ?? '').trim().replace(/^models\//, '');
+  if (!cleaned || RETIRED_MODELS.has(cleaned)) {
+    return DEFAULT_GEMINI_MODEL;
+  }
+  return cleaned;
+}
 
 export function getCustomGeminiKey(): string {
   if (typeof window === 'undefined') return '';
   try {
     const custom = localStorage.getItem('bao_luu_custom_gemini_key');
-    if (custom !== null) return custom;
+    if (custom && custom.trim().length > 0 && !isRevokedKey(custom.trim())) {
+      return custom.trim();
+    }
+    const env = typeof import.meta !== 'undefined' ? import.meta.env : undefined;
+    const envKey = (env?.VITE_GEMINI_API_KEY ?? '').trim();
+    if (envKey.length > 0 && !isRevokedKey(envKey)) {
+      return envKey;
+    }
     return DEFAULT_GEMINI_API_KEY;
   } catch {
     return DEFAULT_GEMINI_API_KEY;
@@ -72,23 +100,26 @@ export function isLiveAvailable(): boolean {
   if (typeof window === 'undefined') return false;
 
   const env = import.meta.env;
-  const customKey = getCustomGeminiKey();
-  const key = (customKey || (env?.VITE_GEMINI_API_KEY ?? '') || DEFAULT_GEMINI_API_KEY).trim();
-  const model = (env?.VITE_GEMINI_MODEL ?? DEFAULT_GEMINI_MODEL).trim();
+  const key = getCustomGeminiKey();
+  const model = resolveGeminiModel(env?.VITE_GEMINI_MODEL);
   return key.length > 0 && model.length > 0;
 }
 
 export function createLiveAIFromEnv(): LiveAIProvider | null {
   if (!isLiveAvailable()) return null;
   const env = import.meta.env;
-  const customKey = getCustomGeminiKey();
-  const key = (customKey || (env?.VITE_GEMINI_API_KEY ?? '') || DEFAULT_GEMINI_API_KEY).trim();
-  const model = (env?.VITE_GEMINI_MODEL ?? DEFAULT_GEMINI_MODEL).trim();
+  const key = getCustomGeminiKey();
+  const model = resolveGeminiModel(env?.VITE_GEMINI_MODEL);
   return new LiveAIProvider(key, model);
 }
 
+interface GeminiPart {
+  text?: string;
+  thought?: boolean;
+}
+
 interface GeminiResponse {
-  candidates?: { content?: { parts?: { text?: string }[] } }[];
+  candidates?: { content?: { parts?: GeminiPart[] } }[];
 }
 
 function toChatMessages(history: unknown[]): ChatMessage[] {
@@ -117,8 +148,8 @@ export class LiveAIProvider implements AIProvider {
     private timeoutMs: number = TIMEOUT_MS
   ) {}
 
-  private endpoint(): string {
-    const model = this.model.replace(/^models\//, '');
+  private endpoint(overrideModel?: string): string {
+    const model = (overrideModel ?? this.model).replace(/^models\//, '');
     return `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
       model
     )}:generateContent`;
@@ -142,7 +173,7 @@ export class LiveAIProvider implements AIProvider {
       contents: [{ role: 'user', parts }],
       generationConfig: {
         temperature: 0.1,
-        maxOutputTokens: 1000,
+        maxOutputTokens: 2048,
         responseMimeType: bundle.json ? 'application/json' : 'text/plain',
       },
     });
@@ -158,11 +189,16 @@ export class LiveAIProvider implements AIProvider {
           'Content-Type': 'application/json',
           'x-goog-api-key': this.apiKey,
         };
-        if (this.apiKey.startsWith('AQ.') || this.apiKey.startsWith('ya29.')) {
+        if (this.apiKey.startsWith('ya29.')) {
           headers['Authorization'] = `Bearer ${this.apiKey}`;
         }
 
-        const response = await fetch(this.endpoint(), {
+        const modelForAttempt =
+          attempt > 1 && this.model === DEFAULT_GEMINI_MODEL
+            ? 'gemini-flash-lite-latest'
+            : this.model;
+
+        const response = await fetch(this.endpoint(modelForAttempt), {
           method: 'POST',
           headers,
           body,
@@ -172,13 +208,18 @@ export class LiveAIProvider implements AIProvider {
 
         if (response.ok) {
           const data = (await response.json()) as GeminiResponse;
-          const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (!text || !text.trim()) throw new NonRetryableAIError('Gemini trả về nội dung rỗng');
+          const rawParts = data.candidates?.[0]?.content?.parts ?? [];
+          const nonThoughtParts = rawParts.filter((p) => !p.thought && typeof p.text === 'string');
+          const text = (nonThoughtParts.length > 0 ? nonThoughtParts : rawParts)
+            .map((p) => p.text ?? '')
+            .join('\n')
+            .trim();
+          if (!text) throw new NonRetryableAIError('Gemini trả về nội dung rỗng');
           return text;
         }
 
-        // 4xx là lỗi cấu hình/quyền → fallback ngay, không thử lại.
-        if (response.status >= 400 && response.status < 500) {
+        // 4xx (trừ 429) là lỗi cấu hình/quyền → fallback ngay, không thử lại.
+        if (response.status >= 400 && response.status < 500 && response.status !== 429) {
           throw new NonRetryableAIError(`Gemini từ chối yêu cầu (${response.status})`);
         }
         lastError = new LiveAIError(`Gemini lỗi máy chủ (${response.status})`);
@@ -235,8 +276,8 @@ export class LiveAIProvider implements AIProvider {
     optionKey: StudentEvidenceOptionKey
   ): Promise<OcrScanResult> {
     const payload = buildOcrPayload(file, optionKey);
-    // Timeout cho multimodal Vision đọc ảnh là 15 giây
-    const text = await this.generate(payload, 15000);
+    // Timeout cho multimodal Vision đọc ảnh là 18 giây
+    const text = await this.generate(payload, 18000);
     const raw = parseJsonObject(text);
     const result = raw ? validateOcrResult(raw, optionKey) : null;
     if (!result) throw new LiveAIError('Gemini trả JSON OCR không hợp lệ');
@@ -253,8 +294,8 @@ export async function testGeminiConnection(
   customModel?: string
 ): Promise<{ success: boolean; latencyMs: number; message: string; modelUsed: string }> {
   const env = typeof import.meta !== 'undefined' ? import.meta.env : ({} as Record<string, string>);
-  const key = (customKey !== undefined ? customKey : (getCustomGeminiKey() || env?.VITE_GEMINI_API_KEY || DEFAULT_GEMINI_API_KEY)).trim();
-  const model = (customModel || env?.VITE_GEMINI_MODEL || DEFAULT_GEMINI_MODEL).trim();
+  const key = (customKey !== undefined ? customKey : getCustomGeminiKey()).trim();
+  const model = resolveGeminiModel(customModel || env?.VITE_GEMINI_MODEL);
 
   if (!key) {
     return {
@@ -271,12 +312,12 @@ export async function testGeminiConnection(
 
   try {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 6000);
+    const timer = setTimeout(() => controller.abort(), 10000);
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       'x-goog-api-key': key,
     };
-    if (key.startsWith('AQ.') || key.startsWith('ya29.')) {
+    if (key.startsWith('ya29.')) {
       headers['Authorization'] = `Bearer ${key}`;
     }
 
@@ -285,7 +326,7 @@ export async function testGeminiConnection(
       headers,
       body: JSON.stringify({
         contents: [{ role: 'user', parts: [{ text: 'Ping test. Reply "PONG" in 1 word.' }] }],
-        generationConfig: { maxOutputTokens: 10, temperature: 0.1 },
+        generationConfig: { maxOutputTokens: 20, temperature: 0.1 },
       }),
       signal: controller.signal,
     });
@@ -294,7 +335,9 @@ export async function testGeminiConnection(
 
     if (response.ok) {
       const data = (await response.json()) as GeminiResponse;
-      const reply = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || 'OK';
+      const rawParts = data.candidates?.[0]?.content?.parts ?? [];
+      const nonThought = rawParts.filter((p) => !p.thought && typeof p.text === 'string');
+      const reply = (nonThought.length > 0 ? nonThought : rawParts)[0]?.text?.trim() || 'OK';
       return {
         success: true,
         latencyMs,
